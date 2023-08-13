@@ -1,0 +1,15 @@
+[package]
+name = "gfx"
+version = "0.1.0"
+authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
+edition = "2021"
+
+[dependencies]
+util = { path = "../util" }
+
+derive_deref = "1"
+glam = { version = "0.24", features = ["serde"] }
+image = { version = "0.24", default-features = false, features = ["png"] }
+itertools = "0.11"
+navni = { git = "https://github.com/rsaarelm/navni" }
+regex = "1"
