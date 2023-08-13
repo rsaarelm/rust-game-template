@@ -1,0 +1,14 @@
+# Formatting check
+set -e
+cargo fmt --all --check
+
+# Make sure both backends compile and WASM build works.
+cargo check --features=tty --no-default-features
+cargo check --features=gui --no-default-features
+cargo build --release --target wasm32-unknown-unknown
+
+# Main program unit tests
+cargo test --all
+
+# Make sure benchmarks compile. Don't waste time running them though.
+cargo bench --no-run

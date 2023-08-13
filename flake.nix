@@ -10,7 +10,7 @@
   outputs = { self, fenix, flake-utils, naersk, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pname = "rust-game-template";
+        pname = "gametemplate";
         pkgs = (import nixpkgs) { inherit system; };
 
         toolchain = with fenix.packages.${system};
@@ -57,13 +57,13 @@
           lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi alsa-lib ];
 
       in rec {
-        defaultPackage = packages.rust-game-template;
+        defaultPackage = packages.gametemplate;
 
-        # For `nix build .#rust-game-template`
-        packages.rust-game-template =
+        # For `nix build .#gametemplate`
+        packages.gametemplate =
           naerskBuildPackage "x86_64-unknown-linux-gnu" {
             src = ./.;
-            pname = "rust-game-template";
+            pname = "gametemplate";
             doCheck = true;
 
             nativeBuildInputs = with pkgs; [ makeWrapper ];
@@ -77,11 +77,11 @@
             '';
           };
 
-        # For `nix build .#rust-game-template-tty`
-        packages.rust-game-template-tty =
+        # For `nix build .#gametemplate-tty`
+        packages.gametemplate-tty =
           naerskBuildPackage "x86_64-unknown-linux-gnu" {
             src = ./.;
-            pname = "rust-game-template-tty";
+            pname = "gametemplate-tty";
             doCheck = true;
 
             release = false;
@@ -100,8 +100,8 @@
             '';
           };
 
-        # For `nix build .#rust-game-template-wasm`:
-        packages.rust-game-template-wasm =
+        # For `nix build .#gametemplate-wasm`:
+        packages.gametemplate-wasm =
           naerskBuildPackage "wasm32-unknown-unknown" {
             src = ./.;
             doCheck = false;
@@ -112,8 +112,8 @@
             cargoTestOptions = (x: x ++ [ "--all" ]);
           };
 
-        # For `nix build .#rust-game-template-win`:
-        packages.rust-game-template-win =
+        # For `nix build .#gametemplate-win`:
+        packages.gametemplate-win =
           naerskBuildPackage "x86_64-pc-windows-gnu" {
             src = ./.;
             # FIXME: Unit test running doensn't work
@@ -138,8 +138,8 @@
 
         devShell = pkgs.mkShell ({
           inputsFrom = with packages; [
-            rust-game-template
-            rust-game-template-win
+            gametemplate
+            gametemplate-win
           ];
 
           buildInputs = with pkgs; [

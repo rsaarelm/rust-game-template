@@ -1,1 +1,8 @@
 /target
+
+# Flake stuff
+.direnv/
+result
+
+# Generated WASM files
+web/*.wasm
