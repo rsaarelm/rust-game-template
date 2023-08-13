@@ -12,4 +12,8 @@ lto = true
 panic = 'abort'
 codegen-units = 1
 
+[workspace]
+members = ["util"]
+
 [dependencies]
+util = { path = "util" }

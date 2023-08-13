@@ -1,0 +1,22 @@
+[package]
+name = "util"
+version = "0.1.0"
+authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
+edition = "2021"
+description = "Miscellaneous low-level utilities"
+
+[dependencies]
+glam = { version = "0.24", features = ["serde"] }
+idm = "0.4"
+num-traits = "0.2"
+pathfinding = "4"
+rand = "0.8"
+rand_xorshift = { version = "0.3", features = ["serde1"] }
+regex = "1"
+rustc-hash = "1"
+serde = { version = "1", features = ["derive"] }
+serde_with = "3"
+walkdir = "2"
+
+[dev-dependencies]
+fraction = "0.13"
