@@ -5,3 +5,19 @@ edition = "2021"
 description = "Core game logic"
 
 [dependencies]
+fov = { path = "../fov" }
+util = { path = "../util" }
+
+derive_deref = "1"
+glam = { version = "0.24", features = ["serde"] }
+hecs = { version = "0.10", features = ["row-serialize"] }
+idm = "0.4"
+log = "0.4"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_with = "3"
+strum = { version = "0.25", features = ["derive"] }
+
+[dev-dependencies]
+quickcheck = "1"
+quickcheck_macros = "1"

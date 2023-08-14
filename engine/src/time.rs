@@ -1,15 +1,42 @@
-use crate::Core;
+use serde::{Deserialize, Serialize};
+
+use crate::{Core, PHASES_IN_TURN};
 
 /// An opaque representation of a time instant.
 ///
 /// The unit of time is a tick that's 1/60th of a second.
-#[derive(Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(
+    Copy,
+    Clone,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Serialize,
+    Deserialize,
+)]
 pub struct Instant(pub(crate) i64);
 
 impl Instant {
     /// Return number of ticks elapsed since this instant.
     pub fn elapsed(&self, c: &Core) -> i64 {
         c.now() - *self
+    }
+
+    /// Return whether mobs with the given speed get to act on this time
+    /// point.
+    pub const fn is_action_frame(self, speed: u8) -> bool {
+        let speed = speed as i64;
+        if speed == 0 {
+            false
+        } else {
+            let phase = self.0.rem_euclid(PHASES_IN_TURN);
+            phase * speed / PHASES_IN_TURN
+                != (phase + 1) * speed / PHASES_IN_TURN
+        }
     }
 }
 
