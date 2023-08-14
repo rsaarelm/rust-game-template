@@ -1,6 +1,8 @@
 use gfx::Buffer;
 use navni::prelude::*;
 
+mod wasm_getrandom;
+
 const WIDTH: u32 = 160;
 const HEIGHT: u32 = 45;
 

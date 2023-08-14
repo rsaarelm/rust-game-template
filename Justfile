@@ -5,6 +5,12 @@ run-tty *ARGS:
 run *ARGS:
     @cargo run --release -- {{ARGS}}
 
+# Spin up a test web server to run the WASM binary
+run-wasm: build-wasm
+    @cargo install basic-http-server
+    @echo Starting WASM game server at http://localhost:4000/
+    ~/.cargo/bin/basic-http-server web/
+
 # Build a WASM version
 build-wasm:
     nix build .#gametemplate-wasm

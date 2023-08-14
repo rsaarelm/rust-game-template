@@ -331,8 +331,10 @@ version = "0.1.0"
 dependencies = [
  "engine",
  "fov",
+ "getrandom",
  "gfx",
  "navni",
+ "quad-rand",
  "ui",
  "util",
 ]
@@ -810,6 +812,12 @@ checksum = "18fb31db3f9bddb2ea821cde30a9f70117e3f119938b5ee630b7403aa6e2ead9"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "quad-rand"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "658fa1faf7a4cc5f057c9ee5ef560f717ad9d8dc66d975267f709624d6e1ab88"
 
 [[package]]
 name = "quote"
