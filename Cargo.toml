@@ -13,9 +13,11 @@ panic = 'abort'
 codegen-units = 1
 
 [workspace]
-members = ["fov", "gfx", "util"]
+members = ["fov", "engine", "gfx", "ui", "util"]
 
 [dependencies]
 fov = { path = "fov" }
+engine = { path = "engine" }
 gfx = { path = "gfx" }
+ui = { path = "ui" }
 util = { path = "util" }

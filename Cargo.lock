@@ -197,6 +197,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "engine"
+version = "0.1.0"
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -251,8 +255,10 @@ dependencies = [
 name = "gametemplate"
 version = "0.1.0"
 dependencies = [
+ "engine",
  "fov",
  "gfx",
+ "ui",
  "util",
 ]
 
@@ -847,6 +853,10 @@ checksum = "eb71511c991639bb078fd5bf97757e03914361c48100d52878b8e52b46fb92cd"
 dependencies = [
  "time-core",
 ]
+
+[[package]]
+name = "ui"
+version = "0.1.0"
 
 [[package]]
 name = "unicode-ident"

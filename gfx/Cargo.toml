@@ -3,6 +3,7 @@ name = "gfx"
 version = "0.1.0"
 authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
 edition = "2021"
+description = "Graphics and user interface primitives"
 
 [dependencies]
 util = { path = "../util" }
