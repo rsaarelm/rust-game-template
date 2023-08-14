@@ -16,6 +16,18 @@ pub struct Buffer<P> {
     pub(crate) data: Vec<P>,
 }
 
+impl<P> AsRef<[P]> for Buffer<P> {
+    fn as_ref(&self) -> &[P] {
+        &self.data
+    }
+}
+
+impl<P> AsMut<[P]> for Buffer<P> {
+    fn as_mut(&mut self) -> &mut [P] {
+        &mut self.data
+    }
+}
+
 impl From<image::DynamicImage> for Buffer<Rgba> {
     fn from(image: image::DynamicImage) -> Self {
         let image = image.to_rgba8();
@@ -85,10 +97,6 @@ impl<P: Pixel> Buffer<P> {
             height,
             data: vec![Default::default(); (width * height) as usize],
         }
-    }
-
-    pub fn data(&self) -> &[P] {
-        &self.data
     }
 
     pub fn pixels_mut(&mut self) -> impl Iterator<Item = &mut P> {
