@@ -4,6 +4,15 @@ version = "0.1.0"
 authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
 edition = "2021"
 
+[features]
+
+# For convenience, use GUI backend by default. When this default is enabled,
+# the TTY backend must be built with "--no-default-features --features=tty"
+default = ["gui"]
+
+gui = ["navni/gui"]
+tty = ["navni/tty"]
+
 [profile.release-lto]
 inherits = "release"
 strip = true
@@ -21,3 +30,5 @@ engine = { path = "engine" }
 gfx = { path = "gfx" }
 ui = { path = "ui" }
 util = { path = "util" }
+
+navni = { git = "https://github.com/rsaarelm/navni" }
