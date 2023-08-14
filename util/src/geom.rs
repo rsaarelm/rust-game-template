@@ -45,6 +45,8 @@ pub trait VecExt: Sized + Default {
     }
 
     fn to_char(&self) -> char;
+
+    fn is_wide_cell_center(&self) -> bool;
 }
 
 impl VecExt for IVec2 {
@@ -88,6 +90,10 @@ impl VecExt for IVec2 {
             _ => '∙',
         }
     }
+
+    fn is_wide_cell_center(&self) -> bool {
+        self.x % 2 == 0
+    }
 }
 
 impl VecExt for IVec3 {
@@ -107,6 +113,10 @@ impl VecExt for IVec3 {
 
     fn to_char(&self) -> char {
         self.truncate().to_char()
+    }
+
+    fn is_wide_cell_center(&self) -> bool {
+        self.truncate().is_wide_cell_center()
     }
 }
 

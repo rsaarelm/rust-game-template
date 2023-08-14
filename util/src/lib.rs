@@ -34,3 +34,16 @@ pub mod text;
 
 pub use rustc_hash::FxHashMap as HashMap;
 pub use rustc_hash::FxHashSet as HashSet;
+pub type IndexSet<V> =
+    indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
+pub type IndexMap<K, V> = indexmap::IndexMap<
+    K,
+    V,
+    std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
+>;
+
+/// The "I don't care, just make it work" error type.
+pub type Error = Box<dyn std::error::Error>;
+
+/// Good default concrete rng.
+pub type GameRng = rand_xorshift::XorShiftRng;

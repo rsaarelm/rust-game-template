@@ -8,6 +8,7 @@ description = "Miscellaneous low-level utilities"
 [dependencies]
 glam = { version = "0.24", features = ["serde"] }
 idm = "0.4"
+indexmap = { version = "2", features = ["serde"] }
 num-traits = "0.2"
 pathfinding = "4"
 rand = "0.8"
