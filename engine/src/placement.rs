@@ -36,9 +36,9 @@ impl From<Location> for Place {
     }
 }
 
-impl Into<Option<Entity>> for Place {
-    fn into(self) -> Option<Entity> {
-        if let In(e) = self {
+impl From<Place> for Option<Entity> {
+    fn from(val: Place) -> Self {
+        if let In(e) = val {
             Some(e)
         } else {
             None
@@ -46,9 +46,9 @@ impl Into<Option<Entity>> for Place {
     }
 }
 
-impl Into<Option<Location>> for Place {
-    fn into(self) -> Option<Location> {
-        if let At(loc) = self {
+impl From<Place> for Option<Location> {
+    fn from(val: Place) -> Self {
+        if let At(loc) = val {
             Some(loc)
         } else {
             None
@@ -154,8 +154,8 @@ impl From<BTreeMap<Entity, Place>> for Placement {
     }
 }
 
-impl Into<BTreeMap<Entity, Place>> for Placement {
-    fn into(self) -> BTreeMap<Entity, Place> {
-        self.places
+impl From<Placement> for BTreeMap<Entity, Place> {
+    fn from(val: Placement) -> Self {
+        val.places
     }
 }

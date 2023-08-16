@@ -344,21 +344,21 @@ impl From<(i16, i16, i16)> for Location {
     }
 }
 
-impl Into<(i16, i16, i16)> for Location {
-    fn into(self) -> (i16, i16, i16) {
-        (self.x, self.y, self.z)
+impl From<Location> for (i16, i16, i16) {
+    fn from(val: Location) -> Self {
+        (val.x, val.y, val.z)
     }
 }
 
-impl Into<IVec2> for Location {
-    fn into(self) -> IVec2 {
-        self.to_vec()
+impl From<Location> for IVec2 {
+    fn from(val: Location) -> Self {
+        val.to_vec()
     }
 }
 
-impl Into<IVec3> for Location {
-    fn into(self) -> IVec3 {
-        self.to_vec3()
+impl From<Location> for IVec3 {
+    fn from(val: Location) -> Self {
+        val.to_vec3()
     }
 }
 

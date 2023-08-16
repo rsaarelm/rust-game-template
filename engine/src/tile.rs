@@ -89,10 +89,10 @@ impl TryFrom<char> for Tile {
     }
 }
 
-impl Into<char> for Tile {
-    fn into(self) -> char {
+impl From<Tile> for char {
+    fn from(val: Tile) -> Self {
         // NB. This must match Tile's TryFrom inputs above.
-        match self {
+        match val {
             Ground => '.',
             Wall => '#',
             LowWall => '-',
