@@ -9,7 +9,7 @@ use crate::{
 /// Game runtime main engine data container.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct Core {
+pub struct Runtime {
     now: Instant,
     pub(crate) quest: Option<Quest>,
     pub(crate) player: Option<Entity>,
@@ -20,9 +20,9 @@ pub struct Core {
     pub(crate) rng: GameRng,
 }
 
-impl Default for Core {
+impl Default for Runtime {
     fn default() -> Self {
-        Core {
+        Runtime {
             now: Default::default(),
             quest: Default::default(),
             rng: GameRng::seed_from_u64(0xdeadbeef),
@@ -35,9 +35,9 @@ impl Default for Core {
     }
 }
 
-impl Core {
+impl Runtime {
     pub fn new(w: &Worldfile) -> Result<Self> {
-        let mut ret = Core::default();
+        let mut ret = Runtime::default();
 
         // Start placing spawns when the world is finished so they can react
         // to the terrain properly (eg. for initial FOV calculation).
@@ -375,7 +375,7 @@ mod test {
     :level 4",
         )
         .unwrap();
-        let mut c = Core::new(&w).unwrap();
+        let mut c = Runtime::new(&w).unwrap();
 
         let player = c.player().expect("No player entity created");
         // Set field to value.
@@ -386,7 +386,7 @@ mod test {
         let save1 = idm::to_string(&c).unwrap();
         eprintln!("{save1}");
 
-        let c2: Core = idm::from_str(&save1).unwrap();
+        let c2: Runtime = idm::from_str(&save1).unwrap();
         assert_eq!(c.placement, c2.placement);
 
         let save2 = idm::to_string(&c2).unwrap();

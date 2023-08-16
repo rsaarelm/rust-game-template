@@ -30,7 +30,7 @@ impl Ability {
 
     pub fn invoke(
         self,
-        c: &mut Core,
+        r: &mut Runtime,
         loc: Location,
         v: IVec2,
         perp: Option<Entity>,
@@ -53,17 +53,17 @@ pub struct AbilityState {
 }
 
 impl Entity {
-    pub fn has_abilities(&self, c: &Core) -> bool {
-        self.with::<Abilities, _>(c, |a| !a.0.is_empty())
+    pub fn has_abilities(&self, r: &Runtime) -> bool {
+        self.with::<Abilities, _>(r, |a| !a.0.is_empty())
     }
 
-    pub fn abilities(&self, c: &Core) -> Vec<Ability> {
-        self.with::<Abilities, _>(c, |ab| ab.0.keys().copied().collect())
+    pub fn abilities(&self, r: &Runtime) -> Vec<Ability> {
+        self.with::<Abilities, _>(r, |ab| ab.0.keys().copied().collect())
     }
 
-    pub(crate) fn cast(&self, c: &mut Core, ability: Ability, v: IVec2) {
-        let Some(loc) = self.loc(c) else { return };
-        ability.invoke(c, loc, v, Some(*self));
-        self.complete_turn(c);
+    pub(crate) fn cast(&self, r: &mut Runtime, ability: Ability, v: IVec2) {
+        let Some(loc) = self.loc(r) else { return };
+        ability.invoke(r, loc, v, Some(*self));
+        self.complete_turn(r);
     }
 }

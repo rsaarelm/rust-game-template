@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Core, PHASES_IN_TURN};
+use crate::{Runtime, PHASES_IN_TURN};
 
 /// An opaque representation of a time instant.
 ///
@@ -22,7 +22,7 @@ pub struct Instant(pub(crate) i64);
 
 impl Instant {
     /// Return number of ticks elapsed since this instant.
-    pub fn elapsed(&self, c: &Core) -> i64 {
+    pub fn elapsed(&self, c: &Runtime) -> i64 {
         c.now() - *self
     }
 

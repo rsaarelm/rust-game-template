@@ -9,7 +9,7 @@ const HEIGHT: u32 = 48;
 /// Toplevel context object for game state.
 pub struct Game {
     /// Logic level data.
-    pub c: Core,
+    pub r: Runtime,
     /// Display buffer.
     pub s: Buffer<CharCell>,
 }
@@ -17,7 +17,7 @@ pub struct Game {
 impl Default for Game {
     fn default() -> Self {
         Game {
-            c: Default::default(),
+            r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
         }
     }

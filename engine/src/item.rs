@@ -55,46 +55,46 @@ impl EquippedAt {
 }
 
 impl Entity {
-    pub fn is_item(&self, c: &Core) -> bool {
-        !self.is_mob(c)
+    pub fn is_item(&self, r: &Runtime) -> bool {
+        !self.is_mob(r)
     }
 
-    pub fn use_needs_aim(&self, _c: &Core) -> bool {
+    pub fn use_needs_aim(&self, _c: &Runtime) -> bool {
         // TODO 2023-02-01 Make wands etc. require aiming when applied
         false
     }
 
-    pub fn can_be_applied(&self, c: &Core) -> bool {
-        self.get::<ItemAbility>(c).0.is_some()
+    pub fn can_be_applied(&self, r: &Runtime) -> bool {
+        self.get::<ItemAbility>(r).0.is_some()
     }
 
-    pub fn is_equipped(&self, c: &Core) -> bool {
-        self.equipped_at(c).is_some()
+    pub fn is_equipped(&self, r: &Runtime) -> bool {
+        self.equipped_at(r).is_some()
     }
 
-    pub fn can_be_equipped(&self, c: &Core) -> bool {
+    pub fn can_be_equipped(&self, r: &Runtime) -> bool {
         use ItemKind::*;
         matches!(
-            self.get::<ItemKind>(c),
+            self.get::<ItemKind>(r),
             MeleeWeapon | RangedWeapon | Armor | Ring
         )
     }
 
-    pub fn equip(&self, c: &mut Core, item: &Entity) {
-        if !item.can_be_equipped(c) {
+    pub fn equip(&self, r: &mut Runtime, item: &Entity) {
+        if !item.can_be_equipped(r) {
             msg!("You can't equip that.");
             return;
         }
 
-        if item.is_equipped(c) {
+        if item.is_equipped(r) {
             msg!("That is already equipped.");
             return;
         }
 
-        let kind = item.get::<ItemKind>(c);
+        let kind = item.get::<ItemKind>(r);
 
         let slots: Vec<EquippedAt> = self
-            .free_slots(c)
+            .free_slots(r)
             .into_iter()
             .filter(|&s| kind.fits(s))
             .collect();
@@ -117,30 +117,30 @@ impl Entity {
             slot = slots[0];
         }
 
-        msg!("Equipped {}.", item.name(c));
-        item.set(c, slot);
-        self.complete_turn(c);
+        msg!("Equipped {}.", item.name(r));
+        item.set(r, slot);
+        self.complete_turn(r);
     }
 
-    pub fn is_ranged_weapon(&self, c: &Core) -> bool {
-        self.get::<ItemKind>(c) == ItemKind::RangedWeapon
+    pub fn is_ranged_weapon(&self, r: &Runtime) -> bool {
+        self.get::<ItemKind>(r) == ItemKind::RangedWeapon
     }
 
-    pub fn unequip(&self, c: &mut Core, item: &Entity) {
-        if item.is_equipped(c) {
-            item.set(c, EquippedAt::None);
-            msg!("Removed {}.", item.name(c));
-            self.complete_turn(c);
+    pub fn unequip(&self, r: &mut Runtime, item: &Entity) {
+        if item.is_equipped(r) {
+            item.set(r, EquippedAt::None);
+            msg!("Removed {}.", item.name(r));
+            self.complete_turn(r);
         } else {
             msg!("That isn't equipped.");
         }
     }
 
-    pub fn free_slots(&self, c: &Core) -> Vec<EquippedAt> {
+    pub fn free_slots(&self, r: &Runtime) -> Vec<EquippedAt> {
         let mut ret: Vec<EquippedAt> =
             EquippedAt::iter().filter(|c| c.is_some()).collect();
 
-        for (slot, _) in self.current_equipment(c) {
+        for (slot, _) in self.current_equipment(r) {
             if let Some(p) = ret.iter().position(|&a| a == slot) {
                 ret.remove(p);
             }
@@ -149,63 +149,67 @@ impl Entity {
         ret
     }
 
-    pub fn equipped_at(&self, c: &Core) -> EquippedAt {
-        self.get(c)
+    pub fn equipped_at(&self, r: &Runtime) -> EquippedAt {
+        self.get(r)
     }
 
     pub fn current_equipment<'a>(
         &self,
-        c: &'a Core,
+        r: &'a Runtime,
     ) -> impl Iterator<Item = (EquippedAt, Entity)> + 'a {
-        self.contents(c).filter_map(|e| {
-            let slot = e.equipped_at(c);
+        self.contents(r).filter_map(|e| {
+            let slot = e.equipped_at(r);
             slot.is_some().then_some((slot, e))
         })
     }
 
-    pub fn equipment_at(&self, c: &Core, slot: EquippedAt) -> Option<Entity> {
-        self.contents(c).find(|e| e.equipped_at(c) == slot)
+    pub fn equipment_at(
+        &self,
+        r: &Runtime,
+        slot: EquippedAt,
+    ) -> Option<Entity> {
+        self.contents(r).find(|e| e.equipped_at(r) == slot)
     }
 
-    pub fn consumed_on_use(&self, c: &Core) -> bool {
+    pub fn consumed_on_use(&self, r: &Runtime) -> bool {
         use ItemKind::*;
-        matches!(self.get::<ItemKind>(c), Scroll | Potion)
+        matches!(self.get::<ItemKind>(r), Scroll | Potion)
     }
 
-    pub(crate) fn take(&self, c: &mut Core, item: &Entity) {
-        c.placement.insert(*self, *item);
-        msg!("{} picks up {}.", self.Name(c), item.name(c));
+    pub(crate) fn take(&self, r: &mut Runtime, item: &Entity) {
+        r.placement.insert(*self, *item);
+        msg!("{} picks up {}.", self.Name(r), item.name(r));
     }
 
-    pub(crate) fn drop(&self, c: &mut Core, item: &Entity) {
-        if let Some(loc) = self.loc(c) {
-            if item.is_equipped(c) {
-                self.unequip(c, item);
+    pub(crate) fn drop(&self, r: &mut Runtime, item: &Entity) {
+        if let Some(loc) = self.loc(r) {
+            if item.is_equipped(r) {
+                self.unequip(r, item);
             }
-            item.place_on_open_spot(c, loc);
-            msg!("{} drops {}.", self.Name(c), item.name(c));
+            item.place_on_open_spot(r, loc);
+            msg!("{} drops {}.", self.Name(r), item.name(r));
         } else {
             log::warn!("Entity::drop: Dropping entity has no location");
         }
-        self.complete_turn(c);
+        self.complete_turn(r);
     }
 
-    pub(crate) fn use_item(&self, c: &mut Core, item: &Entity, v: IVec2) {
+    pub(crate) fn use_item(&self, r: &mut Runtime, item: &Entity, v: IVec2) {
         // TODO 2023-02-01 Item apply logic
-        let effect = item.get::<ItemAbility>(c).0;
-        let Some(loc) = self.loc(c) else { return };
+        let effect = item.get::<ItemAbility>(r).0;
+        let Some(loc) = self.loc(r) else { return };
         if let Some(effect) = effect {
-            effect.invoke(c, loc, v, Some(*self));
+            effect.invoke(r, loc, v, Some(*self));
         }
-        if item.consumed_on_use(c) {
-            item.destroy(c);
+        if item.consumed_on_use(r) {
+            item.destroy(r);
         }
-        self.complete_turn(c);
+        self.complete_turn(r);
     }
 
-    pub(crate) fn throw(&self, c: &mut Core, item: &Entity, _v: IVec2) {
+    pub(crate) fn throw(&self, r: &mut Runtime, item: &Entity, _v: IVec2) {
         // TODO 2023-02-01 Item throw logic
         msg!("Whoosh!");
-        self.drop(c, item);
+        self.drop(r, item);
     }
 }

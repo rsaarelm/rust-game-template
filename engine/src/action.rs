@@ -9,34 +9,34 @@ use crate::{
 };
 
 impl Entity {
-    pub fn execute(&self, c: &mut Core, action: Action) {
+    pub fn execute(&self, r: &mut Runtime, action: Action) {
         use Action::*;
 
         match action {
-            Pass => self.pass(c),
+            Pass => self.pass(r),
             Bump(dir) => {
-                self.attack_step(c, dir);
+                self.attack_step(r, dir);
             }
             Shoot(dir) => {
-                self.shoot(c, dir);
+                self.shoot(r, dir);
             }
-            Drop(item) => self.drop(c, &item),
-            Use(item, dir) => self.use_item(c, &item, dir),
-            Cast(ability, dir) => self.cast(c, ability, dir),
-            Throw(item, dir) => self.throw(c, &item, dir),
-            Equip(item) => self.equip(c, &item),
-            Unequip(item) => self.unequip(c, &item),
+            Drop(item) => self.drop(r, &item),
+            Use(item, dir) => self.use_item(r, &item, dir),
+            Cast(ability, dir) => self.cast(r, ability, dir),
+            Throw(item, dir) => self.throw(r, &item, dir),
+            Equip(item) => self.equip(r, &item),
+            Unequip(item) => self.unequip(r, &item),
         }
     }
 
-    fn step(&self, c: &mut Core, dir: IVec2) -> bool {
+    fn step(&self, r: &mut Runtime, dir: IVec2) -> bool {
         debug_assert!(dir.taxi_len() == 1);
 
-        let Some(loc) = self.loc(c) else { return false };
-        let new_loc = (loc + dir).fold(c);
+        let Some(loc) = self.loc(r) else { return false };
+        let new_loc = (loc + dir).fold(r);
 
         // Early exit here if the target terrain is unwalkable.
-        if !new_loc.is_walkable(c) {
+        if !new_loc.is_walkable(r) {
             return false;
         }
 
@@ -45,114 +45,114 @@ impl Entity {
 
         let mut displace = None;
 
-        if let Some(mob) = new_loc.mob_at(c) {
-            if self.can_displace(c, dir, &mob) {
+        if let Some(mob) = new_loc.mob_at(r) {
+            if self.can_displace(r, dir, &mob) {
                 displace = Some(mob);
-                c.placement.remove(&mob);
+                r.placement.remove(&mob);
             }
         }
 
-        if self.can_enter(c, new_loc) {
-            self.place(c, new_loc);
-            self.set(c, Momentum(dir));
+        if self.can_enter(r, new_loc) {
+            self.place(r, new_loc);
+            self.set(r, Momentum(dir));
             // This is walking, so we only complete a phase, not a full turn.
-            self.complete_phase(c);
+            self.complete_phase(r);
 
             // Put the displaced mob where this one was.
             if let Some(mob) = displace {
-                c.placement.insert(loc, mob);
+                r.placement.insert(loc, mob);
             }
             true
         } else {
             // Put the displaced mob back where it was.
             if let Some(mob) = displace {
-                c.placement.insert(new_loc, mob);
+                r.placement.insert(new_loc, mob);
             }
             false
         }
     }
 
     /// Attack if running into enemy.
-    fn attack_step(&self, c: &mut Core, dir: IVec2) -> bool {
-        if let Some(mob) = self.attack_target(c, dir, EquippedAt::RunHand) {
-            self.attack(c, mob);
+    fn attack_step(&self, r: &mut Runtime, dir: IVec2) -> bool {
+        if let Some(mob) = self.attack_target(r, dir, EquippedAt::RunHand) {
+            self.attack(r, mob);
             return true;
         }
 
-        self.step(c, dir)
+        self.step(r, dir)
     }
 
-    fn shoot(&self, c: &mut Core, dir: IVec2) {
-        if let Some(mob) = self.attack_target(c, dir, EquippedAt::GunHand) {
-            self.attack(c, mob);
+    fn shoot(&self, r: &mut Runtime, dir: IVec2) {
+        if let Some(mob) = self.attack_target(r, dir, EquippedAt::GunHand) {
+            self.attack(r, mob);
         }
     }
 
-    fn pass(&self, c: &mut Core) {
-        self.complete_phase(c);
+    fn pass(&self, r: &mut Runtime) {
+        self.complete_phase(r);
     }
 
     /// Mark the entity as having taken a long action.
-    pub(crate) fn complete_turn(&self, c: &mut Core) {
-        let t = self.acts_next(c).max(c.now());
-        self.set(c, ActsNext(t + PHASES_IN_TURN));
+    pub(crate) fn complete_turn(&self, r: &mut Runtime) {
+        let t = self.acts_next(r).max(r.now());
+        self.set(r, ActsNext(t + PHASES_IN_TURN));
     }
 
     /// Mark the entity as having taken a short action.
-    fn complete_phase(&self, c: &mut Core) {
-        self.set(c, ActsNext(self.next_phase_frame(c)));
+    fn complete_phase(&self, r: &mut Runtime) {
+        self.set(r, ActsNext(self.next_phase_frame(r)));
     }
 
-    fn attack(&self, c: &mut Core, target: Entity) {
-        if let Some(d) = self.vec_towards(c, &target) {
+    fn attack(&self, r: &mut Runtime, target: Entity) {
+        if let Some(d) = self.vec_towards(r, &target) {
             if d.taxi_len() > 1 {
                 send_msg(Msg::Fire(*self, d.to_dir4()));
             }
         }
 
-        if self.try_to_hit(c, &target) {
-            let dmg = self.stats(c).dmg;
-            target.damage(c, dmg);
+        if self.try_to_hit(r, &target) {
+            let dmg = self.stats(r).dmg;
+            target.damage(r, dmg);
         } else {
             send_msg(Msg::Miss(target));
         }
 
-        self.complete_turn(c);
+        self.complete_turn(r);
     }
 
-    pub fn try_to_hit(&self, c: &mut Core, other: &Entity) -> bool {
-        let stats = self.stats(c);
-        let other_stats = other.stats(c);
+    pub fn try_to_hit(&self, r: &mut Runtime, other: &Entity) -> bool {
+        let stats = self.stats(r);
+        let other_stats = other.stats(r);
 
         let odds = Odds(stats.hit - other_stats.ev);
-        c.rng().sample(odds)
+        r.rng().sample(odds)
     }
 
-    pub(crate) fn shout(&self, c: &mut Core, enemy: Option<&Entity>) {
-        match self.get::<Voice>(c) {
+    pub(crate) fn shout(&self, r: &mut Runtime, enemy: Option<&Entity>) {
+        match self.get::<Voice>(r) {
             Voice::Silent => {
                 return;
             }
             Voice::Shout => {
-                msg!("{} shouts angrily.", self.Name(c));
+                msg!("{} shouts angrily.", self.Name(r));
             }
             Voice::Hiss => {
-                msg!("{} hisses.", self.Name(c));
+                msg!("{} hisses.", self.Name(r));
             }
             Voice::Gibber => {
-                msg!("{} gibbers.", self.Name(c));
+                msg!("{} gibbers.", self.Name(r));
             }
             Voice::Roar => {
-                msg!("{} roars.", self.Name(c));
+                msg!("{} roars.", self.Name(r));
             }
         }
 
         // The shout alerts nearby other mobs.
-        let mobs = self.fov_mobs(c, SHOUT_RADIUS);
+        let mobs = self.fov_mobs(r, SHOUT_RADIUS);
         for m in mobs {
-            if m != *self && m.is_ally(c, self) {
+            if m != *self && m.is_ally(r, self) {
                 if let Some(enemy) = enemy {
-                    m.alert_to(c, enemy);
+                    m.alert_to(r, enemy);
                 }
                 // Not doing anything for the case where enemy isn't know for
                 // now. Might have the mobs wake up and start roaming
@@ -164,14 +164,14 @@ impl Entity {
     /// Alert a mob to the presence of another entity.
     ///
     /// Return whether mob was actually alerted
-    pub(crate) fn alert_to(&self, c: &mut Core, enemy: &Entity) -> bool {
-        match self.vec_towards(c, enemy) {
+    pub(crate) fn alert_to(&self, r: &mut Runtime, enemy: &Entity) -> bool {
+        match self.vec_towards(r, enemy) {
             None => return false,
             Some(v) if v.taxi_len() > ALERT_RADIUS => return false,
             _ => {}
         }
-        if self.is_looking_for_fight(c) {
-            self.set_goal(c, Goal::Attack(*enemy));
+        if self.is_looking_for_fight(r) {
+            self.set_goal(r, Goal::Attack(*enemy));
             return true;
         }
         false

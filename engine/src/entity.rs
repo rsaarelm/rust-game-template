@@ -26,17 +26,17 @@ use crate::{ecs::*, prelude::*};
 pub struct Entity(pub(crate) hecs::Entity);
 
 impl Entity {
-    pub(crate) fn get<T>(&self, c: &Core) -> T
+    pub(crate) fn get<T>(&self, r: &Runtime) -> T
     where
         T: Component + Clone + Default,
     {
-        c.ecs
+        r.ecs
             .get::<&T>(**self)
             .map(|c| (*c).clone())
             .unwrap_or_default()
     }
 
-    pub(crate) fn set<T>(&self, c: &mut Core, val: T)
+    pub(crate) fn set<T>(&self, r: &mut Runtime, val: T)
     where
         T: Component + Default + PartialEq,
     {
@@ -46,9 +46,9 @@ impl Entity {
             //
             // Will give an error if the component wasn't there to begin with,
             // just ignore that.
-            let _ = c.ecs.remove_one::<T>(**self);
+            let _ = r.ecs.remove_one::<T>(**self);
         } else {
-            c.ecs.insert_one(**self, val).expect("Entity::set failed");
+            r.ecs.insert_one(**self, val).expect("Entity::set failed");
         }
     }
 
@@ -60,13 +60,13 @@ impl Entity {
     ///
     /// Use for complex components that aren't just atomic values.
     #[allow(dead_code)]
-    pub(crate) fn with<'a, T: Component + Default, U>(
+    pub(crate) fn with<T: Component + Default, U>(
         &self,
-        c: &Core,
+        r: &Runtime,
         f: impl Fn(&T) -> U,
     ) -> U {
         let scratch = T::default();
-        if let Ok(c) = c.ecs.get::<&T>(**self) {
+        if let Ok(c) = r.ecs.get::<&T>(**self) {
             f(&*c)
         } else {
             f(&scratch)
@@ -79,7 +79,7 @@ impl Entity {
     #[allow(dead_code)]
     pub(crate) fn with_mut<T: Component + Default + Eq, U>(
         &self,
-        c: &mut Core,
+        r: &mut Runtime,
         mut f: impl FnMut(&mut T) -> U,
     ) -> U {
         let mut delete = false;
@@ -87,7 +87,7 @@ impl Entity {
         let ret;
 
         let mut scratch = T::default();
-        if let Ok(query) = c.ecs.query_one_mut::<&mut T>(**self) {
+        if let Ok(query) = r.ecs.query_one_mut::<&mut T>(**self) {
             ret = f(&mut *query);
             // We created a default value once, reuse it here.
             if *query == scratch {
@@ -102,10 +102,10 @@ impl Entity {
 
         if delete {
             // Component became default value, remove from ECS.
-            let _ = c.ecs.remove_one::<T>(**self);
+            let _ = r.ecs.remove_one::<T>(**self);
         } else if insert {
             // Scratch component became a valid value.
-            c.ecs
+            r.ecs
                 .insert_one(**self, scratch)
                 .expect("Entity::with_mut failed to set entity");
         }
@@ -113,78 +113,78 @@ impl Entity {
         ret
     }
 
-    pub fn loc(&self, c: &Core) -> Option<Location> {
-        c.placement.entity_pos(self)
+    pub fn loc(&self, r: &Runtime) -> Option<Location> {
+        r.placement.entity_pos(self)
     }
 
-    pub fn place(&self, c: &mut Core, loc: Location) {
-        c.placement.insert(loc, *self);
-        self.post_move_hook(c);
+    pub fn place(&self, r: &mut Runtime, loc: Location) {
+        r.placement.insert(loc, *self);
+        self.post_move_hook(r);
     }
 
     /// Place an item near `loc`, deviating to avoid similar entities.
     ///
     /// Items will avoid other items, mobs will avoid other mobs.
-    pub fn place_on_open_spot(&self, c: &mut Core, loc: Location) {
+    pub fn place_on_open_spot(&self, r: &mut Runtime, loc: Location) {
         // If no open position is found, just squeeze the thing right where it
         // was asked to go.
         let mut place_loc = loc;
-        for loc in c.perturbed_fill_positions(loc) {
-            if self.can_enter(c, loc) {
+        for loc in r.perturbed_fill_positions(loc) {
+            if self.can_enter(r, loc) {
                 place_loc = loc;
                 break;
             }
         }
 
-        self.place(c, place_loc);
+        self.place(r, place_loc);
     }
 
-    fn post_move_hook(&self, c: &mut Core) {
-        self.scan_fov(c);
-        if let (true, Some(loc)) = (self.is_player(c), self.loc(c)) {
-            if let Some(item) = loc.item_at(c) {
-                self.take(c, &item);
+    fn post_move_hook(&self, r: &mut Runtime) {
+        self.scan_fov(r);
+        if let (true, Some(loc)) = (self.is_player(r), self.loc(r)) {
+            if let Some(item) = loc.item_at(r) {
+                self.take(r, &item);
             }
         }
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &Core) -> Tile {
+    pub fn preferred_tile(&self, _c: &Runtime) -> Tile {
         // Return a different tile if entity is aquatic or another weird type.
         Tile::Ground
     }
 
-    pub fn icon(&self, c: &Core) -> char {
-        match self.get::<Icon>(c) {
+    pub fn icon(&self, r: &Runtime) -> char {
+        match self.get::<Icon>(r) {
             Icon('\0') => '�',
             Icon(c) => c,
         }
     }
 
-    pub fn draw_layer(&self, c: &Core) -> i32 {
-        if self.is_mob(c) {
+    pub fn draw_layer(&self, r: &Runtime) -> i32 {
+        if self.is_mob(r) {
             return 1;
         }
         0
     }
 
-    pub fn is_alive(&self, c: &Core) -> bool {
-        self.loc(c).is_some()
+    pub fn is_alive(&self, r: &Runtime) -> bool {
+        self.loc(r).is_some()
     }
 
     /// Return capitalized name of an entity.
     ///
     /// This will probably get deprecated by a string templating system later.
     #[allow(non_snake_case)]
-    pub fn Name(&self, c: &Core) -> String {
-        let name = self.name(c);
+    pub fn Name(&self, r: &Runtime) -> String {
+        let name = self.name(r);
         // XXX: ASCII only
         name[..1].to_uppercase() + &name[1..]
     }
 
-    pub fn name(&self, c: &Core) -> String {
-        let nickname = self.get::<Nickname>(c).0;
-        let name = self.get::<Name>(c).0;
+    pub fn name(&self, r: &Runtime) -> String {
+        let nickname = self.get::<Nickname>(r).0;
+        let name = self.get::<Name>(r).0;
         let is_proper = name.chars().next().map_or(false, |c| c.is_uppercase());
 
         if !nickname.is_empty() {
@@ -199,14 +199,14 @@ impl Entity {
         }
     }
 
-    pub fn can_enter(&self, c: &Core, loc: Location) -> bool {
-        if !loc.is_walkable(c) {
+    pub fn can_enter(&self, r: &Runtime, loc: Location) -> bool {
+        if !loc.is_walkable(r) {
             return false;
         }
-        if self.is_mob(c) && loc.mob_at(c).is_some() {
+        if self.is_mob(r) && loc.mob_at(r).is_some() {
             return false;
         }
-        if self.is_item(c) && loc.item_at(c).is_some() {
+        if self.is_item(r) && loc.item_at(r).is_some() {
             return false;
         }
 
@@ -214,10 +214,10 @@ impl Entity {
     }
 
     /// Method called at the start of every frame.
-    pub(crate) fn tick(&self, c: &mut Core) {
-        if self.acts_this_frame(c) {
+    pub(crate) fn tick(&self, r: &mut Runtime) {
+        if self.acts_this_frame(r) {
             // Clear momentum from previous turn at the start of the next one.
-            self.set(c, Momentum::default());
+            self.set(r, Momentum::default());
         }
     }
 
@@ -225,7 +225,7 @@ impl Entity {
     /// the map provides any valid steps.
     pub fn dijkstra_map_direction(
         &self,
-        c: &Core,
+        r: &Runtime,
         map: &HashMap<Location, usize>,
         loc: Location,
     ) -> Option<IVec2> {
@@ -236,8 +236,8 @@ impl Entity {
             .neighbors_4()
             .filter_map(|loc| {
                 // Don't walk into enemies.
-                if let Some(mob) = loc.mob_at(c) {
-                    if self.is_enemy(c, &mob) {
+                if let Some(mob) = loc.mob_at(r) {
+                    if self.is_enemy(r, &mob) {
                         return None;
                     }
                     // Friendlies are okay, assume they can be displaced.
@@ -256,62 +256,62 @@ impl Entity {
         None
     }
 
-    pub fn max_wounds(&self, c: &Core) -> i32 {
-        ((self.get::<Level>(c).0 * 2) as f32).powf(1.25).round() as i32
+    pub fn max_wounds(&self, r: &Runtime) -> i32 {
+        ((self.get::<Level>(r).0 * 2) as f32).powf(1.25).round() as i32
     }
 
-    pub fn wounds(&self, c: &Core) -> i32 {
-        self.get::<Wounds>(c).0
+    pub fn wounds(&self, r: &Runtime) -> i32 {
+        self.get::<Wounds>(r).0
     }
 
-    pub fn damage(&self, c: &mut Core, amount: i32) {
-        let mut wounds = self.wounds(c);
+    pub fn damage(&self, r: &mut Runtime, amount: i32) {
+        let mut wounds = self.wounds(r);
         wounds += amount;
-        self.set(c, Wounds(wounds));
+        self.set(r, Wounds(wounds));
         if amount > 0 {
             send_msg(Msg::Hurt(*self));
         }
-        if wounds >= self.max_wounds(c) {
-            self.die(c);
+        if wounds >= self.max_wounds(r) {
+            self.die(r);
         }
     }
 
-    pub fn die(&self, c: &mut Core) {
-        if let Some(loc) = self.loc(c) {
+    pub fn die(&self, r: &mut Runtime) {
+        if let Some(loc) = self.loc(r) {
             send_msg(Msg::Death(loc));
         }
         // TODO 2023-01-17 Visual effect for mob death
-        if let Some(loc) = self.loc(c) {
+        if let Some(loc) = self.loc(r) {
             let splat: Vec<Location> =
-                c.perturbed_fill_positions(loc).take(6).collect();
+                r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.set_tile(c, Tile::Gore);
+                loc.set_tile(r, Tile::Gore);
             }
         }
-        self.destroy(c);
+        self.destroy(r);
 
-        if c.player == Some(*self) {
+        if r.player == Some(*self) {
             // Field promote a minion.
-            let npc = c.live_entities().find(|e| e.is_player_aligned(c));
+            let npc = r.live_entities().find(|e| e.is_player_aligned(r));
             if let Some(npc) = npc {
-                c.player = Some(npc);
+                r.player = Some(npc);
             } else {
                 // No minions found, game over.
-                c.player = None;
+                r.player = None;
             }
         }
     }
 
-    pub fn destroy(&self, c: &mut Core) {
-        c.placement.remove(self);
+    pub fn destroy(&self, r: &mut Runtime) {
+        r.placement.remove(self);
     }
 
     pub(crate) fn vec_towards(
         &self,
-        c: &Core,
+        r: &Runtime,
         other: &Entity,
     ) -> Option<IVec2> {
-        let (Some(a), Some(b)) = (self.loc(c), other.loc(c)) else {
+        let (Some(a), Some(b)) = (self.loc(r), other.loc(r)) else {
             return None;
         };
         a.vec_towards(&b)
@@ -319,9 +319,9 @@ impl Entity {
 
     pub fn contents<'a>(
         &self,
-        c: &'a Core,
+        r: &'a Runtime,
     ) -> impl Iterator<Item = Entity> + 'a {
-        c.placement.entities_in(self)
+        r.placement.entities_in(self)
     }
 }
 

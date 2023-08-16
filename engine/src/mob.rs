@@ -9,71 +9,71 @@ use crate::{
 };
 
 impl Entity {
-    pub fn is_player(&self, c: &Core) -> bool {
-        c.player == Some(*self)
+    pub fn is_player(&self, r: &Runtime) -> bool {
+        r.player == Some(*self)
     }
 
-    pub fn become_player(&self, c: &mut Core) {
-        let prev_player = c.player();
+    pub fn become_player(&self, r: &mut Runtime) {
+        let prev_player = r.player();
 
-        c.player = Some(*self);
+        r.player = Some(*self);
         // Clear goal, existing ones probably won't make sense for a
         // player mob.
-        self.clear_goal(c);
+        self.clear_goal(r);
 
         if let Some(prev_player) = prev_player {
             // Give the previous player mob a follower AI so it won't just
             // stand around.
             if prev_player != *self {
-                prev_player.set_goal(c, Goal::FollowPlayer);
+                prev_player.set_goal(r, Goal::FollowPlayer);
             }
         }
     }
 
-    pub fn is_mob(&self, c: &Core) -> bool {
-        self.get::<IsMob>(c).0
+    pub fn is_mob(&self, r: &Runtime) -> bool {
+        self.get::<IsMob>(r).0
     }
 
-    pub fn is_player_aligned(&self, c: &Core) -> bool {
-        self.get::<IsFriendly>(c).0
+    pub fn is_player_aligned(&self, r: &Runtime) -> bool {
+        self.get::<IsFriendly>(r).0
     }
 
-    pub fn is_npc(&self, c: &Core) -> bool {
-        self.is_player_aligned(c) && !self.is_player(c)
+    pub fn is_npc(&self, r: &Runtime) -> bool {
+        self.is_player_aligned(r) && !self.is_player(r)
     }
 
-    pub fn is_enemy(&self, c: &Core, other: &Entity) -> bool {
-        self.is_player_aligned(c) != other.is_player_aligned(c)
+    pub fn is_enemy(&self, r: &Runtime, other: &Entity) -> bool {
+        self.is_player_aligned(r) != other.is_player_aligned(r)
     }
 
-    pub fn is_ally(&self, c: &Core, other: &Entity) -> bool {
-        self.is_player_aligned(c) == other.is_player_aligned(c)
+    pub fn is_ally(&self, r: &Runtime, other: &Entity) -> bool {
+        self.is_player_aligned(r) == other.is_player_aligned(r)
     }
 
     /// Return the vector the mob is moving along "right now".
     ///
     /// Used for displace deadlocks, a mob with existing momentum shouldn't be
     /// displaced against the momentum vector.
-    pub fn live_momentum(&self, c: &Core) -> IVec2 {
-        if self.acts_next(c) > c.now() {
+    pub fn live_momentum(&self, r: &Runtime) -> IVec2 {
+        if self.acts_next(r) > r.now() {
             // Only display momentum if the mob has moved during the current
             // phase.
-            self.get::<Momentum>(c).0
+            self.get::<Momentum>(r).0
         } else {
             Default::default()
         }
     }
 
-    pub fn can_step(&self, c: &Core, dir: IVec2) -> bool {
-        let Some(loc) = self.loc(c) else { return false };
-        let n = (loc + dir).fold(c);
+    pub fn can_step(&self, r: &Runtime, dir: IVec2) -> bool {
+        let Some(loc) = self.loc(r) else { return false };
+        let n = (loc + dir).fold(r);
 
-        if !n.is_walkable(c) {
+        if !n.is_walkable(r) {
             return false;
         }
 
-        if let Some(mob) = n.mob_at(c) {
-            if !self.can_displace(c, dir, &mob) {
+        if let Some(mob) = n.mob_at(r) {
+            if !self.can_displace(r, dir, &mob) {
                 return false;
             }
         }
@@ -81,23 +81,28 @@ impl Entity {
         true
     }
 
-    pub fn can_displace(&self, c: &Core, dir: IVec2, other: &Entity) -> bool {
-        if other.is_player(c) {
+    pub fn can_displace(
+        &self,
+        r: &Runtime,
+        dir: IVec2,
+        other: &Entity,
+    ) -> bool {
+        if other.is_player(r) {
             // Don't displace the player.
             return false;
         }
 
-        if !self.is_ally(c, other) {
+        if !self.is_ally(r, other) {
             // Can't displace enemies.
             return false;
         }
 
-        if self.is_player(c) {
+        if self.is_player(r) {
             // Player can displace regardless of momentum.
             return true;
         }
 
-        let m = other.live_momentum(c);
+        let m = other.live_momentum(r);
         if (m - dir).taxi_len() < m.taxi_len() {
             // Never displace against live momentum, this avoids deadlocks
             // where two NPCs try move in opposing directions and keep
@@ -108,25 +113,25 @@ impl Entity {
         true
     }
 
-    pub fn acts_next(&self, c: &Core) -> Instant {
-        self.get::<ActsNext>(c).0
+    pub fn acts_next(&self, r: &Runtime) -> Instant {
+        self.get::<ActsNext>(r).0
     }
 
-    pub fn acts_this_frame(&self, c: &Core) -> bool {
-        self.get::<Speed>(c).0 > 0 && self.acts_next(c) <= c.now()
+    pub fn acts_this_frame(&self, r: &Runtime) -> bool {
+        self.get::<Speed>(r).0 > 0 && self.acts_next(r) <= r.now()
     }
 
-    pub fn acts_before_next_player_frame(&self, c: &Core) -> bool {
-        if let Some(player) = c.player() {
-            self.acts_next(c) <= player.next_phase_frame(c)
+    pub fn acts_before_next_player_frame(&self, r: &Runtime) -> bool {
+        if let Some(player) = r.player() {
+            self.acts_next(r) <= player.next_phase_frame(r)
         } else {
-            self.acts_this_frame(c)
+            self.acts_this_frame(r)
         }
     }
 
-    pub fn can_be_commanded(&self, c: &Core) -> bool {
+    pub fn can_be_commanded(&self, r: &Runtime) -> bool {
         // NPCs can be commanded up to one full turn into the future.
-        self.is_alive(c) && self.acts_next(c).elapsed(c) < PHASES_IN_TURN
+        self.is_alive(r) && self.acts_next(r).elapsed(r) < PHASES_IN_TURN
     }
 
     /// Special method to immediately run goals on a NPC.
@@ -136,16 +141,16 @@ impl Entity {
     ///
     /// NB. Since this is meant for running explicit orders on NPCs, it does
     /// nothing and returns false if the goal is the default `FollowPlayer`.
-    pub fn exhaust_actions(&self, c: &mut Core) {
-        if !self.is_npc(c) {
+    pub fn exhaust_actions(&self, r: &mut Runtime) {
+        if !self.is_npc(r) {
             return;
         }
 
         // XXX: Goals might spin wheels forever, so add a release valve of
         // only spinning for a limited number of rounds.
         for _failsafe in 0..32 {
-            let goal = self.goal(c);
-            if !self.can_be_commanded(c) {
+            let goal = self.goal(r);
+            if !self.can_be_commanded(r) {
                 break;
             }
 
@@ -153,18 +158,18 @@ impl Entity {
                 break;
             }
 
-            if let Some(act) = self.decide(c, goal) {
-                self.execute(c, act);
+            if let Some(act) = self.decide(r, goal) {
+                self.execute(r, act);
             } else {
-                self.next_goal(c);
+                self.next_goal(r);
                 break;
             }
         }
     }
 
-    pub(crate) fn next_phase_frame(&self, c: &Core) -> Instant {
-        let mut t = self.acts_next(c).max(c.now()) + 1;
-        let speed = self.get::<Speed>(c).0;
+    pub(crate) fn next_phase_frame(&self, r: &Runtime) -> Instant {
+        let mut t = self.acts_next(r).max(r.now()) + 1;
+        let speed = self.get::<Speed>(r).0;
         assert!(speed > 0);
 
         while !t.is_action_frame(speed) {
@@ -174,19 +179,19 @@ impl Entity {
     }
 
     /// Decide on the next action given a goal.
-    pub fn decide(&self, c: &Core, goal: Goal) -> Option<Action> {
+    pub fn decide(&self, r: &Runtime, goal: Goal) -> Option<Action> {
         let mut dest;
 
-        let Some(loc) = self.loc(c) else { return None };
+        let Some(loc) = self.loc(r) else { return None };
 
         match goal {
             Goal::None => return Some(Action::Pass),
             Goal::FollowPlayer => {
-                let Some(player) = c.player() else {
+                let Some(player) = r.player() else {
                     return None;
                 };
 
-                if self.is_player(c) {
+                if self.is_player(r) {
                     log::warn!(
                         "mob::decide: Player was assigned FollowPlayer goal"
                     );
@@ -194,11 +199,11 @@ impl Entity {
                 }
 
                 if let Some(enemy_loc) =
-                    self.first_visible_enemy(c).and_then(|e| e.loc(c))
+                    self.first_visible_enemy(r).and_then(|e| e.loc(r))
                 {
                     // Enemies visible! Go fight them.
                     dest = enemy_loc;
-                } else if let Some(loc) = player.loc(c) {
+                } else if let Some(loc) = player.loc(r) {
                     // Otherwise follow player.
                     dest = loc;
                 } else {
@@ -210,12 +215,12 @@ impl Entity {
             Goal::Autoexplore | Goal::StartAutoexplore => {
                 let start = matches!(goal, Goal::StartAutoexplore);
 
-                if let Some(e) = self.first_visible_enemy(c) {
+                if let Some(e) = self.first_visible_enemy(r) {
                     // Fight when enemies sighted.
-                    return self.decide(c, Goal::Attack(e));
+                    return self.decide(r, Goal::Attack(e));
                 }
 
-                let explore_map = c.autoexplore_map(loc);
+                let explore_map = r.autoexplore_map(loc);
                 if explore_map.is_empty() {
                     // If starting out and done exploring the current sector,
                     // branch off to neighboring sectors.
@@ -223,10 +228,10 @@ impl Entity {
                         use crate::SectorDir::*;
                         for sector_dir in [East, West, South, North, Down, Up] {
                             if let Some(dest) = loc
-                                .path_dest_to_neighboring_sector(c, sector_dir)
+                                .path_dest_to_neighboring_sector(r, sector_dir)
                             {
-                                if !c.autoexplore_map(dest).is_empty() {
-                                    return self.decide(c, Goal::GoTo(dest));
+                                if !r.autoexplore_map(dest).is_empty() {
+                                    return self.decide(r, Goal::GoTo(dest));
                                 }
                             }
                         }
@@ -244,7 +249,7 @@ impl Entity {
                 }
 
                 if let Some(step) =
-                    self.dijkstra_map_direction(c, &explore_map, loc)
+                    self.dijkstra_map_direction(r, &explore_map, loc)
                 {
                     return Some(Action::Bump(step));
                 } else {
@@ -263,19 +268,19 @@ impl Entity {
                 // Look for targets of opportunity, redirect towards them.
                 //
                 // Mob will bump-to-attack the target.
-                if let Some(e) = self.first_visible_enemy(c) {
-                    if let Some(enemy_loc) = e.loc(c) {
+                if let Some(e) = self.first_visible_enemy(r) {
+                    if let Some(enemy_loc) = e.loc(r) {
                         dest = enemy_loc;
                     }
                 }
             }
 
             Goal::Attack(e) => {
-                if !e.is_alive(c) {
+                if !e.is_alive(r) {
                     return None;
                 }
 
-                if let Some(loc) = e.loc(c) {
+                if let Some(loc) = e.loc(r) {
                     dest = loc;
                 } else {
                     // Attack target can't be found, abandon goal.
@@ -284,17 +289,17 @@ impl Entity {
             }
 
             Goal::Escort(e) => {
-                if !e.is_alive(c) {
+                if !e.is_alive(r) {
                     return None;
                 }
 
-                if self.is_player(c) {
+                if self.is_player(r) {
                     // Player mob should not have goals set that can make it
                     // stand around indefinitely. Currently the player mob
                     // rejects all escort goals.
                     return None;
                 }
-                if let Some(loc) = e.loc(c) {
+                if let Some(loc) = e.loc(r) {
                     dest = loc;
                 } else {
                     // Follow target can't be found, abandon goal.
@@ -310,7 +315,7 @@ impl Entity {
         }
 
         let enemy_at_dest =
-            dest.mob_at(c).map_or(false, |e| e.is_enemy(c, self));
+            dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self));
 
         if let Some(dir) = loc.vec_towards(&dest) {
             // Right next to the target. If it's a mob, we can attack.
@@ -329,10 +334,10 @@ impl Entity {
         // Path towards target.
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
-        if let Some(mut path) = if self.is_player_aligned(c) {
-            c.fov_aware_path_to(&loc, &dest)
+        if let Some(mut path) = if self.is_player_aligned(r) {
+            r.fov_aware_path_to(&loc, &dest)
         } else {
-            c.path_to(&loc, &dest)
+            r.path_to(&loc, &dest)
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -340,10 +345,10 @@ impl Entity {
 
             // Path should be steppable.
             let dir = loc
-                .find_step_towards(c, &next)
+                .find_step_towards(r, &next)
                 .expect("Invalid pathfind: Not steppable");
 
-            if self.can_step(c, dir) {
+            if self.can_step(r, dir) {
                 return Some(Action::Bump(dir));
             }
 
@@ -352,7 +357,7 @@ impl Entity {
                 DIR_4.into_iter().filter(|&d| d != dir).collect();
             other_dirs.shuffle(&mut util::srng(&loc));
             for d in other_dirs {
-                if self.can_step(c, d) {
+                if self.can_step(r, d) {
                     return Some(Action::Bump(d));
                 }
             }
@@ -366,45 +371,45 @@ impl Entity {
     }
 
     /// Figure out the next goal when current one is completed.
-    pub fn next_goal(&self, c: &mut Core) {
-        match self.goal(c) {
+    pub fn next_goal(&self, r: &mut Runtime) {
+        match self.goal(r) {
             Goal::None => {}
             Goal::FollowPlayer => {
                 // Becomes invalid when you can't path to player.
-                self.clear_goal(c);
+                self.clear_goal(r);
             }
             Goal::StartAutoexplore => {
-                self.set_goal(c, Goal::Autoexplore);
+                self.set_goal(r, Goal::Autoexplore);
             }
             Goal::Autoexplore => {
-                if self.is_npc(c) {
-                    self.set_goal(c, Goal::FollowPlayer);
+                if self.is_npc(r) {
+                    self.set_goal(r, Goal::FollowPlayer);
                 } else {
-                    self.clear_goal(c);
+                    self.clear_goal(r);
                 }
             }
             Goal::GoTo(_) => {
-                self.clear_goal(c);
+                self.clear_goal(r);
             }
             Goal::AttackMove(_) => {
-                if self.is_npc(c) {
-                    self.set_goal(c, Goal::FollowPlayer);
+                if self.is_npc(r) {
+                    self.set_goal(r, Goal::FollowPlayer);
                 } else {
-                    self.clear_goal(c);
+                    self.clear_goal(r);
                 }
             }
             Goal::Attack(_) => {
-                if self.is_npc(c) {
-                    self.set_goal(c, Goal::FollowPlayer);
+                if self.is_npc(r) {
+                    self.set_goal(r, Goal::FollowPlayer);
                 } else {
-                    self.clear_goal(c);
+                    self.clear_goal(r);
                 }
             }
             Goal::Escort(_) => {
-                if self.is_npc(c) {
-                    self.set_goal(c, Goal::FollowPlayer);
+                if self.is_npc(r) {
+                    self.set_goal(r, Goal::FollowPlayer);
                 } else {
-                    self.clear_goal(c);
+                    self.clear_goal(r);
                 }
             }
         }
@@ -412,15 +417,15 @@ impl Entity {
 
     /// Project a ray in dir for n steps, try to find an enemy not blocked by
     /// walls.
-    fn raycast_enemy(&self, c: &Core, dir: IVec2, n: i32) -> Option<Entity> {
-        let loc = self.loc(c)?;
+    fn raycast_enemy(&self, r: &Runtime, dir: IVec2, n: i32) -> Option<Entity> {
+        let loc = self.loc(r)?;
         for loc in loc.raycast(dir).take(n as usize) {
-            if loc.tile(c).blocks_shot() {
+            if loc.tile(r).blocks_shot() {
                 break;
             }
 
-            if let Some(mob) = loc.mob_at(c) {
-                if mob.is_enemy(c, self) {
+            if let Some(mob) = loc.mob_at(r) {
+                if mob.is_enemy(r, self) {
                     return Some(mob);
                 }
             }
@@ -431,19 +436,19 @@ impl Entity {
 
     pub fn attack_target(
         &self,
-        c: &Core,
+        r: &Runtime,
         dir: IVec2,
         weapon_slot: EquippedAt,
     ) -> Option<Entity> {
         let mut range = 1;
-        if let Some(item) = self.equipment_at(c, weapon_slot) {
-            if item.is_ranged_weapon(c) {
+        if let Some(item) = self.equipment_at(r, weapon_slot) {
+            if item.is_ranged_weapon(r) {
                 // TODO Varying ranges for ranged weapons?
                 range = THROW_DIST;
             }
         }
 
-        self.raycast_enemy(c, dir, range)
+        self.raycast_enemy(r, dir, range)
     }
 
     /// Return current stats for an entity, factoring in its equipment.
@@ -451,54 +456,54 @@ impl Entity {
     /// This method should always be used when querying the stats of a mob
     /// during gameplay, the raw `Stats` component has the base stats that
     /// don't include bonuses from equipment.
-    pub fn stats(&self, c: &Core) -> Stats {
-        let mut stats = self.get::<Stats>(c);
-        for (_, e) in self.current_equipment(c) {
-            stats += e.stats(c);
+    pub fn stats(&self, r: &Runtime) -> Stats {
+        let mut stats = self.get::<Stats>(r);
+        for (_, e) in self.current_equipment(r) {
+            stats += e.stats(r);
         }
         stats
     }
 
     /// Return score for how fast this entity should beat the other.
     #[allow(dead_code)]
-    fn kill_speed(&self, c: &Core, other: &Entity) -> i32 {
-        let s1 = self.stats(c);
-        let s2 = other.stats(c);
+    fn kill_speed(&self, r: &Runtime, other: &Entity) -> i32 {
+        let s1 = self.stats(r);
+        let s2 = other.stats(r);
 
         if s1.dmg == 0 {
             return -1;
         } else {
-            (other.max_wounds(c) as f32 * Odds(s1.hit - s2.ev).prob()
+            (other.max_wounds(r) as f32 * Odds(s1.hit - s2.ev).prob()
                 / s1.dmg as f32)
                 .round() as i32
         }
     }
 
-    pub fn goal(&self, c: &Core) -> Goal {
-        self.get::<Goal>(c)
+    pub fn goal(&self, r: &Runtime) -> Goal {
+        self.get::<Goal>(r)
     }
 
-    pub fn set_goal(&self, c: &mut Core, goal: Goal) {
-        self.set(c, goal);
+    pub fn set_goal(&self, r: &mut Runtime, goal: Goal) {
+        self.set(r, goal);
     }
 
-    pub fn clear_goal(&self, c: &mut Core) {
-        self.set(c, Goal::default());
+    pub fn clear_goal(&self, r: &mut Runtime) {
+        self.set(r, Goal::default());
     }
 
-    pub(crate) fn is_looking_for_fight(&self, c: &Core) -> bool {
-        matches!(self.goal(c), Goal::None | Goal::GoTo(_) | Goal::Escort(_))
-            && Some(*self) != c.player()
+    pub(crate) fn is_looking_for_fight(&self, r: &Runtime) -> bool {
+        matches!(self.goal(r), Goal::None | Goal::GoTo(_) | Goal::Escort(_))
+            && Some(*self) != r.player()
     }
 
-    pub(crate) fn fov_mobs(&self, c: &Core, range: i32) -> Vec<Entity> {
+    pub(crate) fn fov_mobs(&self, r: &Runtime, range: i32) -> Vec<Entity> {
         // XXX: Not returning an iterator since I'm not bothering to handle
         // the nonexistent location component case into the chain.
-        let Some(loc) = self.loc(c) else {
+        let Some(loc) = self.loc(r) else {
             return Default::default();
         };
-        c.fov_from(loc, range)
-            .filter_map(|(_, loc)| loc.mob_at(c))
+        r.fov_from(loc, range)
+            .filter_map(|(_, loc)| loc.mob_at(r))
             .collect()
     }
 
@@ -508,43 +513,43 @@ impl Entity {
     /// The selection criteria for the enemy should be that it's the most
     /// preferred target of opportunity for the current mob given its current
     /// FOV. The choice may depend on the capabilities of the queried mob.
-    pub fn first_visible_enemy(&self, c: &Core) -> Option<Entity> {
-        self.fov_mobs(c, FOV_RADIUS)
+    pub fn first_visible_enemy(&self, r: &Runtime) -> Option<Entity> {
+        self.fov_mobs(r, FOV_RADIUS)
             .into_iter()
-            .filter(|e| e.is_enemy(c, self))
+            .filter(|e| e.is_enemy(r, self))
             .next()
     }
 
-    pub(crate) fn scan_fov(&self, c: &mut Core) {
-        let Some(loc) = self.loc(c) else { return };
+    pub(crate) fn scan_fov(&self, r: &mut Runtime) {
+        let Some(loc) = self.loc(r) else { return };
 
         let cells: Vec<Location> =
-            c.fov_from(loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
+            r.fov_from(loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
 
         // Should we look for a fight while doing the scan?
-        let mut looking_for_target = self.is_looking_for_fight(c);
+        let mut looking_for_target = self.is_looking_for_fight(r);
 
         for loc in cells {
-            if let Some(mob) = loc.mob_at(c) {
-                if self.is_enemy(c, &mob) {
+            if let Some(mob) = loc.mob_at(r) {
+                if self.is_enemy(r, &mob) {
                     if looking_for_target {
                         // Found a target, go attack.
                         looking_for_target = false;
-                        self.set_goal(c, Goal::Attack(mob));
+                        self.set_goal(r, Goal::Attack(mob));
                     }
 
                     // Alert the other mob to self.
-                    if mob.alert_to(c, self) {
+                    if mob.alert_to(r, self) {
                         // Shout here if alert was successful, alert_to might
                         // get called from shout too. The first spotter is the
                         // one that makes noise.
-                        mob.shout(c, Some(self));
+                        mob.shout(r, Some(self));
                     }
                 }
             }
 
-            if self.is_player_aligned(c) {
-                c.fov.insert(loc);
+            if self.is_player_aligned(r) {
+                r.fov.insert(loc);
             }
         }
     }

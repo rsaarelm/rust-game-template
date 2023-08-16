@@ -69,12 +69,12 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn tile(&self, c: &Core) -> Tile {
-        c.terrain.get(self).copied().unwrap_or_default()
+    pub fn tile(&self, r: &Runtime) -> Tile {
+        r.terrain.get(self).copied().unwrap_or_default()
     }
 
-    pub fn set_tile(&self, c: &mut Core, t: Tile) {
-        c.terrain.insert(*self, t);
+    pub fn set_tile(&self, r: &mut Runtime, t: Tile) {
+        r.terrain.insert(*self, t);
     }
 
     /// Return location snapped to the origin of this location's sector.
@@ -117,32 +117,32 @@ impl Location {
     }
 
     /// Location has been seen by an allied unit at some point.
-    pub fn is_explored(&self, c: &Core) -> bool {
-        c.fov.contains(self)
+    pub fn is_explored(&self, r: &Runtime) -> bool {
+        r.fov.contains(self)
     }
 
-    pub fn is_walkable(&self, c: &Core) -> bool {
-        !self.tile(c).blocks_movement()
+    pub fn is_walkable(&self, r: &Runtime) -> bool {
+        !self.tile(r).blocks_movement()
     }
 
-    pub fn mob_at(&self, c: &Core) -> Option<Entity> {
-        c.placement
+    pub fn mob_at(&self, r: &Runtime) -> Option<Entity> {
+        r.placement
             .entities_at(*self)
-            .filter(|e| e.is_mob(c))
+            .filter(|e| e.is_mob(r))
             .next()
     }
 
     /// Return entities at cell sorted to draw order.
-    pub fn entities_at(&self, c: &Core) -> Vec<Entity> {
-        let mut ret: Vec<Entity> = c.placement.entities_at(*self).collect();
-        ret.sort_by_key(|e| e.draw_layer(c));
+    pub fn entities_at(&self, r: &Runtime) -> Vec<Entity> {
+        let mut ret: Vec<Entity> = r.placement.entities_at(*self).collect();
+        ret.sort_by_key(|e| e.draw_layer(r));
         ret
     }
 
-    pub fn item_at(&self, c: &Core) -> Option<Entity> {
-        c.placement
+    pub fn item_at(&self, r: &Runtime) -> Option<Entity> {
+        r.placement
             .entities_at(*self)
-            .filter(|e| e.is_item(c))
+            .filter(|e| e.is_item(r))
             .next()
     }
 
@@ -167,7 +167,7 @@ impl Location {
     /// folding.
     pub fn find_step_towards(
         &self,
-        c: &Core,
+        r: &Runtime,
         other: &Location,
     ) -> Option<IVec2> {
         // They're on the same Z-plane, just do the normal pointing direction.
@@ -180,7 +180,7 @@ impl Location {
         // Otherwise look for immediate fold portals that lead to the other
         // loc.
         for d in DIR_4 {
-            if (*self + d).fold(c) == *other {
+            if (*self + d).fold(r) == *other {
                 return Some(d);
             }
         }
@@ -191,7 +191,7 @@ impl Location {
     /// Fold space. Follow upstairs, downstairs and possible other portals
     /// until you end up at a non-portaling location starting from this
     /// location.
-    pub fn fold(&self, c: &Core) -> Location {
+    pub fn fold(&self, r: &Runtime) -> Location {
         let path = || {
             let mut p = Some(*self);
             std::iter::from_fn(move || {
@@ -199,7 +199,7 @@ impl Location {
                     return None;
                 };
                 let ret = p;
-                p = loc.portal_dest(c);
+                p = loc.portal_dest(r);
                 ret
             })
         };
@@ -218,8 +218,8 @@ impl Location {
         path().last().unwrap_or(*self)
     }
 
-    pub fn portal_dest(&self, c: &Core) -> Option<Location> {
-        match self.tile(c) {
+    pub fn portal_dest(&self, r: &Runtime) -> Option<Location> {
+        match self.tile(r) {
             Tile::Upstairs => Some(*self + ivec3(0, 0, 1)),
             Tile::Downstairs => Some(*self + ivec3(0, 0, -1)),
             _ => None,
@@ -277,9 +277,9 @@ impl Location {
 
     pub fn fold_neighbors_4<'a>(
         &self,
-        c: &'a Core,
+        r: &'a Runtime,
     ) -> impl Iterator<Item = Location> + 'a {
-        self.neighbors_4().map(move |loc| loc.fold(c))
+        self.neighbors_4().map(move |loc| loc.fold(r))
     }
 
     pub fn astar_heuristic(&self, other: &Location) -> usize {
@@ -291,22 +291,22 @@ impl Location {
     /// Find the closest pathable location on neighboring sector.
     pub fn path_dest_to_neighboring_sector(
         &self,
-        c: &Core,
+        r: &Runtime,
         neighbor_dir: SectorDir,
     ) -> Option<Location> {
         for (loc, _) in util::dijkstra_map(
             move |loc| {
                 let mut ret = Vec::new();
                 for d in DIR_4 {
-                    let loc = (loc.clone() + d).fold(c);
-                    if !loc.is_walkable(c) {
+                    let loc = (loc.clone() + d).fold(r);
+                    if !loc.is_walkable(r) {
                         continue;
                     }
 
                     // Skip unexplored sectors, but allow one to get through
                     // if it gets us to destination (unmapped stairwell)
                     if loc.sector() != self.sector() + neighbor_dir
-                        && !loc.is_explored(c)
+                        && !loc.is_explored(r)
                     {
                         continue;
                     }

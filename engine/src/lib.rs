@@ -31,9 +31,6 @@ pub use action::Action;
 mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
-mod core;
-pub use crate::core::Core;
-
 pub mod ecs;
 
 mod entity;
@@ -61,6 +58,9 @@ pub mod prelude;
 
 mod prototypes;
 pub use prototypes::Prototypes;
+
+mod runtime;
+pub use runtime::Runtime;
 
 mod terrain;
 pub use terrain::Terrain;

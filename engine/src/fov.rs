@@ -27,7 +27,7 @@ impl From<Fov> for BitAtlas {
     }
 }
 
-impl Core {
+impl Runtime {
     pub fn fov_from(
         &self,
         loc: Location,
@@ -36,7 +36,7 @@ impl Core {
         #[derive(Copy, Clone)]
         struct FovState<'a> {
             origin: Location,
-            c: &'a Core,
+            r: &'a Runtime,
             radius: i32,
             is_edge: bool,
         }
@@ -54,12 +54,12 @@ impl Core {
         impl<'a> FovState<'a> {
             pub fn new(
                 origin: Location,
-                c: &'a Core,
+                r: &'a Runtime,
                 radius: i32,
             ) -> FovState<'a> {
                 FovState {
                     origin,
-                    c,
+                    r,
                     radius,
                     is_edge: false,
                 }
@@ -85,7 +85,7 @@ impl Core {
                     return None;
                 }
 
-                let is_edge = loc.tile(self.c).blocks_sight();
+                let is_edge = loc.tile(self.r).blocks_sight();
 
                 Some(FovState { is_edge, ..*self })
             }
