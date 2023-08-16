@@ -1,31 +1,18 @@
-use gfx::Buffer;
+use gfx::prelude::*;
 use navni::prelude::*;
+use ui::Game;
 
 mod wasm_getrandom;
 
-const WIDTH: u32 = 160;
-const HEIGHT: u32 = 45;
+fn hello(g: &mut Game, b: &mut dyn Backend, _: u32) -> Option<StackOp<Game>> {
+    g.s.as_mut()[0] =
+        CharCell::new('@', X256Color::FOREGROUND, X256Color::BACKGROUND);
 
-struct GameState {
-    buf: Buffer<CharCell>,
-}
+    let win = Window::from(&g.s);
+    win.write(&mut g.s, [0, 0], "@");
+    win.write(&mut g.s, [10, 10], "Hello, world!");
 
-impl Default for GameState {
-    fn default() -> Self {
-        let mut buf = Buffer::new(WIDTH, HEIGHT);
-        buf.as_mut()[0] =
-            CharCell::new('@', X256Color::FOREGROUND, X256Color::BACKGROUND);
-
-        GameState { buf }
-    }
-}
-
-fn hello(
-    game: &mut GameState,
-    b: &mut dyn Backend,
-    _: u32,
-) -> Option<StackOp<GameState>> {
-    b.draw_chars(WIDTH, HEIGHT, game.buf.as_ref());
+    g.draw(b);
 
     None
 }
@@ -36,7 +23,7 @@ fn main() {
             window_title: "gametemplate".to_string(),
             ..Default::default()
         },
-        GameState::default(),
+        Game::default(),
         hello,
     );
 }

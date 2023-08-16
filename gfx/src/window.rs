@@ -23,6 +23,12 @@ impl From<&Buffer<Rgba>> for Window<Rgba> {
     }
 }
 
+impl From<&Buffer<CharCell>> for Window<CharCell> {
+    fn from(c: &Buffer<CharCell>) -> Self {
+        Window::new(c.area(), Default::default(), Default::default())
+    }
+}
+
 impl<P: Pixel> Window<P> {
     pub fn new(
         region: Rect,
@@ -137,6 +143,7 @@ impl<P: Pixel> Window<P> {
         text: &str,
     ) -> IVec2 {
         let mut pos = pos.into();
+        // TODO apply foreground color
         for a in text.chars() {
             if let Some(idx) = self.font.idx(a) {
                 let glyph = &self.font[idx];
