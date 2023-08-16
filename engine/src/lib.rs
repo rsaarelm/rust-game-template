@@ -74,6 +74,8 @@ pub use time::Instant;
 mod world;
 pub use world::World;
 
+pub type Rect = util::Rect<i32>;
+
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub fn err<T>(msg: impl AsRef<str>) -> Result<T> {
     Err(msg.as_ref().into())

@@ -1,6 +1,6 @@
 pub use crate::{
     err, msg, send_msg, Action, Entity, Goal, Instant, Location, Msg, Receiver,
-    Runtime, ScenarioStatus, Tile,
+    Runtime, ScenarioStatus, Tile, World, SECTOR_HEIGHT, SECTOR_WIDTH,
 };
 pub use glam::{ivec2, IVec2};
 pub use util::{

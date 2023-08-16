@@ -371,6 +371,7 @@ dependencies = [
  "gfx",
  "navni",
  "quad-rand",
+ "rand",
  "ui",
  "util",
 ]

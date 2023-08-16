@@ -553,6 +553,24 @@ impl<const N: usize> LatticeBox<N> {
     }
 }
 
+impl LatticeBox<2> {
+    /// Iterate through the outermost points in the rectangle.
+    pub fn edge(&self) -> impl Iterator<Item = [i32; 2]> {
+        let [x0, y0] = self.p0;
+        let [x1, y1] = self.p1;
+        let [x1, y1] = [x1 - 1, y1 - 1];
+
+        (x0..x1).map(move |x| [x, y0]).chain(
+            (y0..y1).map(move |y| [x1, y]).chain(
+                ((x0 + 1)..=x1)
+                    .rev()
+                    .map(move |x| [x, y1])
+                    .chain(((y0 + 1)..=y1).rev().map(move |y| [x0, y])),
+            ),
+        )
+    }
+}
+
 impl<E, T, const N: usize> Add<E> for AxisBox<T, N>
 where
     E: Into<[T; N]>,

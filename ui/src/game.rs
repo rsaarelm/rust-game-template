@@ -24,6 +24,13 @@ impl Default for Game {
 }
 
 impl Game {
+    pub fn new(runtime: Runtime) -> Self {
+        Game {
+            r: runtime,
+            ..Default::default()
+        }
+    }
+
     pub fn draw(&self, b: &mut dyn navni::Backend) {
         b.draw_chars(
             self.s.width() as _,

@@ -102,6 +102,15 @@ impl Location {
         Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
     }
 
+    pub fn at_sector_edge(&self) -> bool {
+        let (u, v) = (
+            self.x.rem_euclid(SECTOR_WIDTH as i16),
+            self.y.rem_euclid(SECTOR_HEIGHT as i16),
+        );
+        (u == 0 || u == (SECTOR_WIDTH as i16 - 1))
+            || (v == 0 || v == (SECTOR_HEIGHT as i16 - 1))
+    }
+
     /// Return sector bounds extended for the adjacent sector rim.
     pub fn expanded_sector_bounds(&self) -> Rect {
         self.sector_bounds().grow([1, 1], [1, 1])
