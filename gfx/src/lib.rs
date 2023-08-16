@@ -12,6 +12,8 @@ pub use font::Font;
 mod image;
 pub use crate::image::{Field, Image, SubImage};
 
+pub mod prelude;
+
 mod window;
 pub use window::Window;
 
