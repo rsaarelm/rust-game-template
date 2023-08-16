@@ -13,6 +13,11 @@ run-wasm: build-wasm
 
 # Build a WASM version
 build-wasm:
+    cargo build --target=wasm32-unknown-unknown --profile=release-lto
+    cp target/wasm32-unknown-unknown/release-lto/gametemplate.wasm web/
+
+# Build a WASM version (use nix build)
+build-wasm-nix:
     nix build .#gametemplate-wasm
     cp result/bin/gametemplate.wasm web/
     chmod u+w web/gametemplate.wasm
