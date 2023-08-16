@@ -60,13 +60,13 @@ impl Entity {
 
             // Put the displaced mob where this one was.
             if let Some(mob) = displace {
-                c.placement.insert_at(loc, mob);
+                c.placement.insert(loc, mob);
             }
             true
         } else {
             // Put the displaced mob back where it was.
             if let Some(mob) = displace {
-                c.placement.insert_at(new_loc, mob);
+                c.placement.insert(new_loc, mob);
             }
             false
         }

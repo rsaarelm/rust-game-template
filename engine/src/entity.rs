@@ -118,7 +118,7 @@ impl Entity {
     }
 
     pub fn place(&self, c: &mut Core, loc: Location) {
-        c.placement.insert_at(loc, *self);
+        c.placement.insert(loc, *self);
         self.post_move_hook(c);
     }
 

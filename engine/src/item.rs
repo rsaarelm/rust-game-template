@@ -173,7 +173,7 @@ impl Entity {
     }
 
     pub(crate) fn take(&self, c: &mut Core, item: &Entity) {
-        c.placement.insert_in(self, *item);
+        c.placement.insert(*self, *item);
         msg!("{} picks up {}.", self.Name(c), item.name(c));
     }
 

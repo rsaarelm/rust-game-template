@@ -125,19 +125,15 @@ impl Placement {
         false
     }
 
-    pub fn insert_at(&mut self, loc: Location, e: Entity) {
-        self.insert(loc.into(), e);
-    }
+    pub fn insert(&mut self, place: impl Into<Place>, e: Entity) {
+        let place = place.into();
+        if let Place::In(container) = place {
+            assert!(
+                container != e && !self.contains(&e, &container),
+                "Placement::insert: Containment loop"
+            );
+        }
 
-    pub fn insert_in(&mut self, container: &Entity, e: Entity) {
-        assert!(
-            *container != e && !self.contains(&e, container),
-            "Placement::insert_in: Containment loop"
-        );
-        self.insert((*container).into(), e);
-    }
-
-    fn insert(&mut self, place: Place, e: Entity) {
         self.remove(&e);
         self.places.insert(e, place);
         self.entities.entry(place).or_default().insert(e);
