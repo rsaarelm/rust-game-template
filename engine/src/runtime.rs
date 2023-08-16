@@ -2,7 +2,7 @@ use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, GameRng};
 
-use crate::{ecs::*, prelude::*, Fov, Placement, Result, Terrain, Worldfile};
+use crate::{ecs::*, prelude::*, Fov, Placement, Result, Terrain, World};
 
 /// Game runtime main engine data container.
 #[derive(Serialize, Deserialize)]
@@ -32,7 +32,7 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    pub fn new(w: &Worldfile) -> Result<Self> {
+    pub fn new(w: &World) -> Result<Self> {
         let mut ret = Runtime::default();
 
         // Start placing spawns when the world is finished so they can react
@@ -331,7 +331,7 @@ mod test {
 
     #[test]
     fn simple_game() {
-        let w: crate::Worldfile = idm::from_str(
+        let w: crate::World = idm::from_str(
             "\
 :terrain
   0 0 0

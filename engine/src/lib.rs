@@ -71,8 +71,8 @@ pub use tile::Tile;
 mod time;
 pub use time::Instant;
 
-mod worldfile;
-pub use worldfile::Worldfile;
+mod world;
+pub use world::World;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub fn err<T>(msg: impl AsRef<str>) -> Result<T> {
