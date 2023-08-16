@@ -2,16 +2,13 @@ use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, GameRng};
 
-use crate::{
-    ecs::*, prelude::*, Fov, Placement, Quest, Result, Terrain, Worldfile,
-};
+use crate::{ecs::*, prelude::*, Fov, Placement, Result, Terrain, Worldfile};
 
 /// Game runtime main engine data container.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Runtime {
     now: Instant,
-    pub(crate) quest: Option<Quest>,
     pub(crate) player: Option<Entity>,
     pub(crate) terrain: Terrain,
     pub(crate) fov: Fov,
@@ -24,7 +21,6 @@ impl Default for Runtime {
     fn default() -> Self {
         Runtime {
             now: Default::default(),
-            quest: Default::default(),
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
             terrain: Default::default(),
@@ -42,8 +38,6 @@ impl Runtime {
         // Start placing spawns when the world is finished so they can react
         // to the terrain properly (eg. for initial FOV calculation).
         let mut spawns = Vec::new();
-
-        ret.quest = w.quest;
 
         for (loc, c) in w.terrain.iter() {
             if c == '@' {
@@ -322,25 +316,11 @@ impl Runtime {
     /// Return whether the overall game scenario is still going or if it has
     /// ended in victory or defeat.
     pub fn scenario_status(&self) -> ScenarioStatus {
-        match self.quest {
-            _ if self.player().is_none() => return ScenarioStatus::Lost,
-            None => {}
-            Some(Quest::KillEveryone) => {
-                if !self
-                    .live_entities()
-                    .any(|e| e.is_mob(self) && !e.is_player_aligned(self))
-                {
-                    return ScenarioStatus::Won;
-                }
-            }
-            Some(Quest::ReachExit) => {
-                if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
-                    if loc.tile(self) == Tile::Exit {
-                        return ScenarioStatus::Won;
-                    }
-                }
-            }
+        if self.player().is_none() {
+            return ScenarioStatus::Lost;
         }
+
+        // TODO win condition
         ScenarioStatus::Ongoing
     }
 }

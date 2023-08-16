@@ -79,13 +79,6 @@ pub fn err<T>(msg: impl AsRef<str>) -> Result<T> {
     Err(msg.as_ref().into())
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Quest {
-    KillEveryone,
-    ReachExit,
-}
-
 pub enum ScenarioStatus {
     Ongoing,
     Won,
