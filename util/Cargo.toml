@@ -6,6 +6,7 @@ edition = "2021"
 description = "Miscellaneous low-level utilities"
 
 [dependencies]
+derive_deref = "1"
 glam = { version = "0.24", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }

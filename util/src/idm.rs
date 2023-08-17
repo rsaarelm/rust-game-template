@@ -1,9 +1,13 @@
 use std::{
+    borrow::Borrow,
     error::Error,
     fs::{self, File},
     io::{self, prelude::*},
     path::Path,
 };
+
+use derive_deref::Deref;
+use serde::{Deserialize, Serialize};
 
 /// Dump a directory tree into a single IDM expression.
 pub fn directory_to_idm(
@@ -70,4 +74,57 @@ pub fn directory_to_idm(
     }
 
     Ok(ret)
+}
+
+/// A wrapper type that converts underscores in serialization to spaces at
+/// runtime.
+///
+/// This allows embedding strings with spaces in space-separate inline IDM
+/// data.
+///
+/// ```notrust
+/// wand_of_death  10  20
+/// ```
+///
+/// Deserializes into
+///
+/// ```notrust
+/// ("wand of death", 10, 20): (UnderscoreString, i32, i32)
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd, Deref)]
+pub struct UnderscoreString(pub String);
+
+impl Borrow<str> for UnderscoreString {
+    fn borrow(&self) -> &str {
+        self.0.borrow()
+    }
+}
+
+impl Serialize for UnderscoreString {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let escaped: String = self
+            .0
+            .chars()
+            .map(|c| if c.is_whitespace() { '_' } else { c })
+            .collect();
+        escaped.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for UnderscoreString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let escaped = String::deserialize(deserializer)?;
+        Ok(UnderscoreString(
+            escaped
+                .chars()
+                .map(|c| if c == '_' { ' ' } else { c })
+                .collect(),
+        ))
+    }
 }
