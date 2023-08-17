@@ -62,9 +62,6 @@ pub use placement::Placement;
 
 pub mod prelude;
 
-mod prototypes;
-pub use prototypes::Prototypes;
-
 mod runtime;
 pub use runtime::Runtime;
 
