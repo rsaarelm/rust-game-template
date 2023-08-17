@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use crate::{prelude::*, Atlas, Prototypes};
 
+/// Data that specifies the contents of an initial game world.
 #[derive(Clone, Default, Deserialize)]
 #[serde(default)]
 pub struct World {
