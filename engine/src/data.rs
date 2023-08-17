@@ -2,16 +2,16 @@ use std::{str::FromStr, sync::LazyLock};
 
 use anyhow::bail;
 use serde::Deserialize;
-use util::{IndexMap, UnderscoreString};
+use util::{IndexMap, _String};
 
 use crate::{ecs::*, item::ItemKind, prelude::*, Patch};
 
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
-    pub bestiary: IndexMap<UnderscoreString, Monster>,
-    pub armory: IndexMap<UnderscoreString, Item>,
-    pub vaults: IndexMap<UnderscoreString, Patch>,
+    pub bestiary: IndexMap<_String, Monster>,
+    pub armory: IndexMap<_String, Item>,
+    pub vaults: IndexMap<_String, Patch>,
 }
 
 // Custom loader that initializes the global static gamedata from the data

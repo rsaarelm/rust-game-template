@@ -92,15 +92,15 @@ pub fn directory_to_idm(
 /// ("wand of death", 10, 20): (UnderscoreString, i32, i32)
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd, Deref)]
-pub struct UnderscoreString(pub String);
+pub struct _String(pub String);
 
-impl Borrow<str> for UnderscoreString {
+impl Borrow<str> for _String {
     fn borrow(&self) -> &str {
         self.0.borrow()
     }
 }
 
-impl Serialize for UnderscoreString {
+impl Serialize for _String {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -114,13 +114,13 @@ impl Serialize for UnderscoreString {
     }
 }
 
-impl<'de> Deserialize<'de> for UnderscoreString {
+impl<'de> Deserialize<'de> for _String {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         let escaped = String::deserialize(deserializer)?;
-        Ok(UnderscoreString(
+        Ok(_String(
             escaped
                 .chars()
                 .map(|c| if c == '_' { ' ' } else { c })
