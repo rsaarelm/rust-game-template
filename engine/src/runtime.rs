@@ -35,61 +35,12 @@ impl Runtime {
     pub fn new(w: &World) -> Result<Self> {
         let mut ret = Runtime::default();
 
-        // Start placing spawns when the world is finished so they can react
-        // to the terrain properly (eg. for initial FOV calculation).
-        let mut spawns = Vec::new();
-
-        for (loc, c) in w.terrain.iter() {
-            if c == '@' {
-                ret.terrain.insert(loc, Tile::Ground);
-                if ret.player.is_some() {
-                    // Ignore subsequent player entrances.
-                    // Could do stuff with them like collecting all and
-                    // randomly choosing between one.
-                    continue;
-                }
-                // Player entrance
-                // TODO Bring player data in from outside Worldfile in API
-                let player = Entity(ret.ecs.spawn((
-                    Name("Player".into()),
-                    Icon('H'),
-                    Speed(4),
-                    Level(5),
-                    IsMob(true),
-                    IsFriendly(true),
-                    Stats {
-                        hit: 4,
-                        ev: 2,
-                        dmg: 4,
-                    },
-                )));
-                spawns.push((player, loc));
-                ret.player = Some(player);
-            } else if let Some(spawn) = w.legend.get(&c) {
-                // Entity spawn.
-                let Some(prototype) = w.lexicon.get(spawn) else {
-                    return err(format!("Bad spawn {spawn:?}"));
-                };
-
-                let e = ret.spawn(prototype);
-                spawns.push((e, loc));
-
-                // Create a sensible terrain type under it.
-                let t = e.preferred_tile(&ret);
-                ret.terrain.insert(loc, t);
-            } else if let Ok(t) = Tile::try_from(c) {
-                ret.terrain.insert(loc, t);
-            } else {
-                return err(format!("Bad worldfile tile {c:?}"));
-            }
+        for (&loc, patch) in w.iter() {
+            patch.apply(&mut ret, loc);
         }
 
         if ret.player.is_none() {
             return err("Worldfile does not specify player entry point");
-        }
-
-        for (e, loc) in spawns {
-            e.place(&mut ret, loc);
         }
 
         // Start time from an above-zero value so that zero time values can
@@ -119,6 +70,31 @@ impl Runtime {
 
     pub fn spawn(&mut self, loadout: impl hecs::DynamicBundle) -> Entity {
         Entity(self.ecs.spawn(loadout))
+    }
+
+    /// Spawns a new player entity if there isn't currently a player.
+    pub fn spawn_player(&mut self, loc: Location) {
+        if self.player.is_some() {
+            return;
+        }
+
+        let player = Entity(self.ecs.spawn((
+            Name("Player".into()),
+            Icon('H'),
+            Speed(4),
+            Level(5),
+            IsMob(true),
+            IsFriendly(true),
+            Stats {
+                hit: 4,
+                ev: 2,
+                dmg: 4,
+            },
+        )));
+
+        player.place(self, loc);
+
+        self.player = Some(player);
     }
 
     pub fn player(&self) -> Option<Entity> {

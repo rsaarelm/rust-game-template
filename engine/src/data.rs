@@ -4,7 +4,7 @@ use anyhow::bail;
 use serde::Deserialize;
 use util::{IndexMap, UnderscoreString};
 
-use crate::{item::ItemKind, prelude::*, Patch};
+use crate::{ecs::*, item::ItemKind, prelude::*, Patch};
 
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
@@ -43,13 +43,24 @@ impl Data {
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Monster {
+    pub icon: char,
     pub power: i32,
     pub min_depth: i32,
 }
 
-impl<'a> Germ for Monster {
+impl Germ for Monster {
     fn spawn(&self, r: &mut Runtime) -> Entity {
-        todo!()
+        Entity(r.ecs.spawn((
+            Icon(self.icon),
+            Speed(3),
+            Level(self.power),
+            IsMob(true),
+            Stats {
+                hit: self.power,
+                ev: self.power / 2,
+                dmg: self.power,
+            },
+        )))
     }
 }
 
@@ -60,7 +71,7 @@ pub struct Item {
     pub kind: ItemKind,
 }
 
-impl<'a> Germ for Item {
+impl Germ for Item {
     fn spawn(&self, r: &mut Runtime) -> Entity {
         todo!()
     }
@@ -95,5 +106,17 @@ impl FromStr for &'static (dyn Germ + Sync + 'static) {
         }
 
         bail!("Unknown germ {s:?}")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn load_data() {
+        // This test will crash if the static gamedata won't deserialize
+        // cleanly.
+        assert!(!Data::get().bestiary.is_empty());
     }
 }

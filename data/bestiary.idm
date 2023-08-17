@@ -1,6 +1,6 @@
---  name  power  min-depth
-bat      1  1
-snake    2  1
-goblin   4  1
-orc      6  3
-troll   10  6
+--   icon power min-depth
+bat     b   1  1
+snake   s   2  1
+goblin  g   4  1
+orc     o   6  3
+troll   T  10  6

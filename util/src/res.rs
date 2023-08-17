@@ -1,6 +1,7 @@
 use std::{fmt, ops::Deref, str::FromStr, sync::OnceLock};
 
 use serde::Deserialize;
+use serde_with::SerializeDisplay;
 
 /// Lazily initialized resource handle.
 ///
@@ -9,8 +10,14 @@ use serde::Deserialize;
 /// fully before resource loading starts.
 ///
 /// Failing to parse the resource causes a runtime panic.
-#[derive(Clone)]
+#[derive(Clone, SerializeDisplay)]
 pub struct Res<T>(String, OnceLock<T>);
+
+impl<T: FromStr> Res<T> {
+    pub fn new(name: impl Into<String>) -> Self {
+        Res(name.into(), Default::default())
+    }
+}
 
 impl<T: FromStr> Deref for Res<T> {
     type Target = T;
@@ -24,7 +31,19 @@ impl<T: FromStr> Deref for Res<T> {
 
 impl<T> fmt::Debug for Res<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Res({:?})", self.0)
+    }
+}
+
+impl<T> fmt::Display for Res<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl<T> AsRef<str> for Res<T> {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
