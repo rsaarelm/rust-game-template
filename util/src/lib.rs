@@ -24,6 +24,9 @@ pub use mung::{mung, unmung};
 mod path;
 pub use path::{astar_path, dijkstra_map, flood_fill_4, within_range};
 
+mod res;
+pub use res::Res;
+
 mod rng;
 pub use rng::{srng, Odds};
 
