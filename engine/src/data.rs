@@ -4,14 +4,14 @@ use anyhow::bail;
 use serde::Deserialize;
 use util::{IndexMap, UnderscoreString};
 
-use crate::{item::ItemKind, prelude::*};
+use crate::{item::ItemKind, prelude::*, Patch};
 
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
     pub bestiary: IndexMap<UnderscoreString, Monster>,
     pub armory: IndexMap<UnderscoreString, Item>,
-    pub vaults: IndexMap<UnderscoreString, Vault>,
+    pub vaults: IndexMap<UnderscoreString, Patch>,
 }
 
 // Custom loader that initializes the global static gamedata from the data
@@ -47,8 +47,8 @@ pub struct Monster {
     pub min_depth: i32,
 }
 
-impl<'a> Germ for &'a Monster {
-    fn spawn(self, r: &mut Runtime) -> Entity {
+impl<'a> Germ for Monster {
+    fn spawn(&self, r: &mut Runtime) -> Entity {
         todo!()
     }
 }
@@ -60,37 +60,38 @@ pub struct Item {
     pub kind: ItemKind,
 }
 
-impl<'a> Germ for &'a Item {
-    fn spawn(self, r: &mut Runtime) -> Entity {
+impl<'a> Germ for Item {
+    fn spawn(&self, r: &mut Runtime) -> Entity {
         todo!()
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct Vault {
-    // TODO: Smarter types
-    pub map: String,
-    pub legend: IndexMap<char, String>,
-}
-
 /// Values that specify new entities to be created.
-pub(crate) trait Germ {
-    fn spawn(self, r: &mut Runtime) -> Entity;
+pub trait Germ {
+    fn spawn(&self, r: &mut Runtime) -> Entity;
+
+    /// What kind of terrain does this thing like to spawn on.
+    ///
+    /// Usually things spawn on ground, but eg. aquatic monsters might be
+    /// spawning on water instead. Having this lets us do maps where the
+    /// terrain cell is not specified for germ locations.
+    fn preferred_tile(&self) -> Tile {
+        Tile::Ground
+    }
 }
 
-impl FromStr for Box<dyn Germ> {
+impl FromStr for &'static (dyn Germ + Sync + 'static) {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Magic switchboard that trawls the data files looking for named
         // things that can be spawned.
         if let Some(monster) = Data::get().bestiary.get(s) {
-            return Ok(Box::new(monster));
+            return Ok(monster as &'static (dyn Germ + Sync + 'static));
         }
 
         if let Some(item) = Data::get().armory.get(s) {
-            return Ok(Box::new(item));
+            return Ok(item as &'static (dyn Germ + Sync + 'static));
         }
 
         bail!("Unknown germ {s:?}")

@@ -54,6 +54,9 @@ pub use mob::Goal;
 mod msg;
 pub use msg::{send_msg, Msg, Receiver};
 
+mod patch;
+pub use patch::Patch;
+
 mod placement;
 pub use placement::Placement;
 
