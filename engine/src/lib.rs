@@ -31,6 +31,9 @@ pub use action::Action;
 mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
+mod data;
+pub use data::Data;
+
 pub mod ecs;
 
 mod entity;

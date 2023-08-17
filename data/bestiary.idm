@@ -1,0 +1,6 @@
+--  name  power  min-depth
+bat      1  1
+snake    2  1
+goblin   4  1
+orc      6  3
+troll   10  6
