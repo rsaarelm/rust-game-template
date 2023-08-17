@@ -16,7 +16,7 @@ mod grid;
 pub use grid::Grid;
 
 mod idm;
-pub use idm::{_String, directory_to_idm};
+pub use idm::{_String, dash_option, directory_to_idm};
 
 mod mung;
 pub use mung::{mung, unmung};
