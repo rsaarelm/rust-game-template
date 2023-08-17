@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::BTreeMap, fmt};
 
 use anyhow::bail;
 use serde::{Deserialize, Serialize, Serializer};
@@ -7,17 +7,11 @@ use util::Res;
 use crate::{data::StaticGerm, prelude::*};
 
 /// Specification for a 2D patch of the game world.
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
     pub terrain: HashMap<IVec2, Tile>,
     pub spawns: HashMap<IVec2, Res<StaticGerm>>,
     pub entrance: Option<IVec2>,
-}
-
-impl fmt::Debug for Patch {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Patch TODO print")
-    }
 }
 
 impl Patch {
@@ -74,7 +68,7 @@ impl Patch {
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct PatchData {
     pub map: String,
-    pub legend: IndexMap<char, Res<StaticGerm>>,
+    pub legend: BTreeMap<char, Res<StaticGerm>>,
 }
 
 impl TryFrom<PatchData> for Patch {
@@ -147,11 +141,11 @@ impl From<&Patch> for PatchData {
             let mut seen_content = false;
             for x in bounds.min()[0]..bounds.max()[0] {
                 let p = ivec2(x, y);
-                if let Some(&t) = value.terrain.get(&p) {
-                    map.push(t.into());
-                    seen_content = true;
-                } else if value.entrance == Some(p) {
+                if value.entrance == Some(p) {
                     map.push('@');
+                    seen_content = true;
+                } else if let Some(&t) = value.terrain.get(&p) {
+                    map.push(t.into());
                     seen_content = true;
                 } else if let Some(s) = value.spawns.get(&p) {
                     if let Some(&c) = legend.get(s.as_ref()) {
@@ -165,7 +159,7 @@ impl From<&Patch> for PatchData {
                             .find(|a| a.is_alphabetic())
                             .unwrap_or('A');
                         if let Some(p) =
-                            legend_alphabet.iter().position(|&c| c == c)
+                            legend_alphabet.iter().position(|&a| a == c)
                         {
                             // We can use the initial.
                             legend_alphabet.swap_remove(p);
@@ -222,5 +216,48 @@ impl Serialize for Patch {
         S: Serializer,
     {
         PatchData::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn patch_roundtrip() {
+        const PATCH: &str = "\
+map
+   ###
+  ##a##
+  #..x#
+  ##@##
+   ###
+legend
+  a archon
+  x xorn";
+
+        let p: Patch = idm::from_str(PATCH).unwrap();
+        let reser = idm::to_string(&p).unwrap();
+        assert_eq!(PATCH, reser.trim_end());
+    }
+
+    #[test]
+    fn legend_assign() {
+        const PATCH: &str = "\
+map
+   ###
+  ##x##
+  #yz.#
+  ##@##
+   ###
+legend
+  x alien-one
+  y alien-two
+  z alien-three";
+
+        let p: Patch = idm::from_str(PATCH).unwrap();
+        let reser = idm::to_string(&p).unwrap();
+        let p2: Patch = idm::from_str(&reser).unwrap();
+        assert_eq!(p, p2);
     }
 }
