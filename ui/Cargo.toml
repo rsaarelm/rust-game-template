@@ -10,3 +10,4 @@ gfx = { path = "../gfx" }
 util = { path = "../util" }
 
 navni = { git = "https://github.com/rsaarelm/navni" }
+rand = "0.8"

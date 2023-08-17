@@ -65,6 +65,10 @@ impl Location {
         ret
     }
 
+    pub fn fold_wide(wide_loc_pos: IVec2) -> Self {
+        Location::fold(wide_loc_pos / ivec2(2, 1))
+    }
+
     pub fn to_vec3(&self) -> IVec3 {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }

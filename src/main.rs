@@ -14,20 +14,21 @@ fn hello(g: &mut Game, b: &mut dyn Backend, _: u32) -> Option<StackOp<Game>> {
 
     // TODO camera.
     let origin = Location::default();
-    for p in Rect::sized([SECTOR_WIDTH, SECTOR_HEIGHT]) {
-        let p = IVec2::from(p);
-        let w = p * ivec2(2, 1);
-        let loc = origin + p;
-        if loc.tile(&g.r) == Tile::Wall {
-            win.write(&mut g.s, w, "#");
-        }
+    let p0 = origin.unfold();
+    for p in Rect::sized([SECTOR_WIDTH * 2, SECTOR_HEIGHT]) {
+        let p_loc = p0 + v2(p);
 
-        if let Some(e) = loc.mob_at(&g.r) {
-            let mut icon = e.icon(&g.r);
-            if g.r.player() == Some(e) {
-                icon = '@';
+        win.put(&mut g.s, p, ui::map_display::terrain_cell(&g.r, p_loc));
+        if p_loc.x % 2 == 0 {
+            let loc = Location::fold(p_loc);
+
+            if let Some(e) = loc.mob_at(&g.r) {
+                let mut icon = e.icon(&g.r);
+                if g.r.player() == Some(e) {
+                    icon = '@';
+                }
+                win.put(&mut g.s, p, CharCell::c(icon));
             }
-            win.write(&mut g.s, w, &format!("{}", icon));
         }
     }
 
