@@ -233,7 +233,7 @@ impl Runtime {
         start: &Location,
         dest: &Location,
     ) -> Option<Vec<Location>> {
-        let dest = dest.fold(self);
+        let dest = dest.follow(self);
 
         // Bail out early if it looks like we need more than one sector
         // transition.
@@ -261,7 +261,7 @@ impl Runtime {
         start: &Location,
         dest: &Location,
     ) -> Option<Vec<Location>> {
-        let dest = dest.fold(self);
+        let dest = dest.follow(self);
 
         if start.sector_dist(&dest) > 1 {
             return None;

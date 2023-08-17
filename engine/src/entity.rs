@@ -248,8 +248,8 @@ impl Entity {
         {
             if *n < start {
                 debug_assert!(best.z == loc.z);
-                let a = loc.to_vec();
-                let b = best.to_vec();
+                let a = loc.unfold();
+                let b = best.unfold();
                 return Some(a.dir4_towards(&b));
             }
         }

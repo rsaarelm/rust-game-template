@@ -33,7 +33,7 @@ impl Entity {
         debug_assert!(dir.taxi_len() == 1);
 
         let Some(loc) = self.loc(r) else { return false };
-        let new_loc = (loc + dir).fold(r);
+        let new_loc = (loc + dir).follow(r);
 
         // Early exit here if the target terrain is unwalkable.
         if !new_loc.is_walkable(r) {

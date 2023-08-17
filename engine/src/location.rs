@@ -28,16 +28,6 @@ pub struct Location {
     pub x: i16,
 }
 
-impl From<IVec2> for Location {
-    fn from(v: IVec2) -> Self {
-        let x = v.x as i16;
-        let y = ((v.y as i64).rem_euclid(0x1_0000) + i16::MIN as i64) as i16;
-        let z = (v.y as i64).div_euclid(0x1_0000) as i16;
-
-        Location { x, y, z }
-    }
-}
-
 impl Location {
     pub fn new(x: i16, y: i16, z: i16) -> Self {
         Location { x, y, z }
@@ -50,17 +40,27 @@ impl Location {
     /// Each location has a unique point on the `IVec2` plane and the original
     /// location can be retrieved by calling `Location::from` on the `IVec2`
     /// value.
-    pub fn to_vec(&self) -> IVec2 {
+    pub fn unfold(&self) -> IVec2 {
         // Maps y: i16::MIN, z: i16::MIN to i32::MIN.
         let y = self.y as i64 + self.z as i64 * 0x1_0000 - i16::MIN as i64;
         ivec2(self.x as i32, y as i32)
     }
 
+    /// Convert an unfolded 2D vector back to a Location.
+    pub fn fold(loc_pos: IVec2) -> Self {
+        let x = loc_pos.x as i16;
+        let y =
+            ((loc_pos.y as i64).rem_euclid(0x1_0000) + i16::MIN as i64) as i16;
+        let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i16;
+
+        Location { x, y, z }
+    }
+
     /// Convenience method that doubles the x coordinate.
     ///
     /// Use for double-width character display.
-    pub fn to_wide_vec(&self) -> IVec2 {
-        let mut ret = self.to_vec();
+    pub fn unfold_wide(&self) -> IVec2 {
+        let mut ret = self.unfold();
         ret.x *= 2;
         ret
     }
@@ -98,7 +98,7 @@ impl Location {
 
     /// Return sector bounding box containing this loc.
     pub fn sector_bounds(&self) -> Rect {
-        let p = self.sector().to_vec();
+        let p = self.sector().unfold();
         Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
     }
 
@@ -118,11 +118,11 @@ impl Location {
 
     /// Return sector bounding box containing this loc centered on this loc.
     pub fn sector_bounds_around(&self) -> Rect {
-        self.sector_bounds() - self.to_vec()
+        self.sector_bounds() - self.unfold()
     }
 
     pub fn expanded_sector_bounds_around(&self) -> Rect {
-        self.expanded_sector_bounds() - self.to_vec()
+        self.expanded_sector_bounds() - self.unfold()
     }
 
     /// Location has been seen by an allied unit at some point.
@@ -169,7 +169,7 @@ impl Location {
 
     /// Same sector plus the facing rims of adjacent sectors.
     pub fn has_same_screen_as(&self, other: &Location) -> bool {
-        self.expanded_sector_bounds().contains(other.to_vec())
+        self.expanded_sector_bounds().contains(other.unfold())
     }
 
     /// Try to reconstruct step towards adjacent other location. Handles
@@ -181,15 +181,15 @@ impl Location {
     ) -> Option<IVec2> {
         // They're on the same Z-plane, just do the normal pointing direction.
         if self.z == other.z {
-            let a = self.to_vec();
-            let b = other.to_vec();
+            let a = self.unfold();
+            let b = other.unfold();
             return Some(a.dir4_towards(&b));
         }
 
         // Otherwise look for immediate fold portals that lead to the other
         // loc.
         for d in DIR_4 {
-            if (*self + d).fold(r) == *other {
+            if (*self + d).follow(r) == *other {
                 return Some(d);
             }
         }
@@ -197,10 +197,9 @@ impl Location {
         None
     }
 
-    /// Fold space. Follow upstairs, downstairs and possible other portals
-    /// until you end up at a non-portaling location starting from this
-    /// location.
-    pub fn fold(&self, r: &Runtime) -> Location {
+    /// Follow upstairs, downstairs and possible other portals until you end
+    /// up at a non-portaling location starting from this location.
+    pub fn follow(&self, r: &Runtime) -> Location {
         let path = || {
             let mut p = Some(*self);
             std::iter::from_fn(move || {
@@ -288,7 +287,7 @@ impl Location {
         &self,
         r: &'a Runtime,
     ) -> impl Iterator<Item = Location> + 'a {
-        self.neighbors_4().map(move |loc| loc.fold(r))
+        self.neighbors_4().map(move |loc| loc.follow(r))
     }
 
     pub fn astar_heuristic(&self, other: &Location) -> usize {
@@ -307,7 +306,7 @@ impl Location {
             move |loc| {
                 let mut ret = Vec::new();
                 for d in DIR_4 {
-                    let loc = (loc.clone() + d).fold(r);
+                    let loc = (loc.clone() + d).follow(r);
                     if !loc.is_walkable(r) {
                         continue;
                     }
@@ -361,7 +360,7 @@ impl From<Location> for (i16, i16, i16) {
 
 impl From<Location> for IVec2 {
     fn from(val: Location) -> Self {
-        val.to_vec()
+        val.unfold()
     }
 }
 
@@ -564,6 +563,6 @@ mod test {
     #[quickcheck]
     fn location_to_ivec2(loc: Location) -> bool {
         let vec: IVec2 = loc.into();
-        Location::from(vec) == loc
+        Location::fold(vec) == loc
     }
 }
