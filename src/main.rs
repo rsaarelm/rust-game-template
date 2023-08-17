@@ -10,9 +10,6 @@ use engine::Rect;
 mod wasm_getrandom;
 
 fn hello(g: &mut Game, b: &mut dyn Backend, _: u32) -> Option<StackOp<Game>> {
-    g.s.as_mut()[0] =
-        CharCell::new('@', X256Color::FOREGROUND, X256Color::BACKGROUND);
-
     let win = Window::from(&g.s);
 
     // TODO camera.
@@ -24,10 +21,17 @@ fn hello(g: &mut Game, b: &mut dyn Backend, _: u32) -> Option<StackOp<Game>> {
         if loc.tile(&g.r) == Tile::Wall {
             win.write(&mut g.s, w, "#");
         }
+
+        if let Some(e) = loc.mob_at(&g.r) {
+            let mut icon = e.icon(&g.r);
+            if g.r.player() == Some(e) {
+                icon = '@';
+            }
+            win.write(&mut g.s, w, &format!("{}", icon));
+        }
     }
 
-    win.write(&mut g.s, [0, 0], "@");
-    win.write(&mut g.s, [10, 10], "Hello, world!");
+    win.write(&mut g.s, [2, 35], "Hello, world!");
 
     g.draw(b);
 

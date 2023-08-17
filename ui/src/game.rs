@@ -3,8 +3,8 @@ use navni::prelude::*;
 use engine::prelude::*;
 use gfx::prelude::*;
 
-const WIDTH: u32 = 160;
-const HEIGHT: u32 = 48;
+const WIDTH: u32 = 120;
+const HEIGHT: u32 = 36;
 
 /// Toplevel context object for game state.
 pub struct Game {
