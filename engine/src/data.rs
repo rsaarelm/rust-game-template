@@ -91,18 +91,20 @@ pub trait Germ {
     }
 }
 
-impl FromStr for &'static (dyn Germ + Sync + 'static) {
+pub type StaticGerm = &'static (dyn Germ + Sync + 'static);
+
+impl FromStr for StaticGerm {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Magic switchboard that trawls the data files looking for named
         // things that can be spawned.
         if let Some(monster) = Data::get().bestiary.get(s) {
-            return Ok(monster as &'static (dyn Germ + Sync + 'static));
+            return Ok(monster as StaticGerm);
         }
 
         if let Some(item) = Data::get().armory.get(s) {
-            return Ok(item as &'static (dyn Germ + Sync + 'static));
+            return Ok(item as StaticGerm);
         }
 
         bail!("Unknown germ {s:?}")

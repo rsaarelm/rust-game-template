@@ -4,13 +4,13 @@ use anyhow::bail;
 use serde::{Deserialize, Serialize, Serializer};
 use util::Res;
 
-use crate::{data::Germ, prelude::*};
+use crate::{data::StaticGerm, prelude::*};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Default)]
 pub struct Patch {
     pub terrain: HashMap<IVec2, Tile>,
-    pub spawns: HashMap<IVec2, Res<&'static (dyn Germ + Sync + 'static)>>,
+    pub spawns: HashMap<IVec2, Res<StaticGerm>>,
     pub entrance: Option<IVec2>,
 }
 
@@ -74,14 +74,13 @@ impl Patch {
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct PatchData {
     pub map: String,
-    pub legend: IndexMap<char, Res<&'static (dyn Germ + Sync + 'static)>>,
+    pub legend: IndexMap<char, Res<StaticGerm>>,
 }
 
 impl TryFrom<PatchData> for Patch {
     type Error = anyhow::Error;
 
     fn try_from(value: PatchData) -> Result<Self, Self::Error> {
-        eprintln!("Blag!");
         let mut terrain = HashMap::default();
         let mut spawns = HashMap::default();
         let mut entrance = None;
@@ -97,11 +96,12 @@ impl TryFrom<PatchData> for Patch {
                     // Assume that player always stands on regular ground.
                     terrain.insert(p, Tile::Ground);
                 } else if let Some(s) = value.legend.get(&c) {
-                    // XXX: Can't do this here since patches are loaded during
-                    // initial data deserialization and other data must not be
-                    // touched through res handles yet... Have to punt it to
-                    // applying the patch.
-                    //terrain.insert(p, s.preferred_tile());
+                    // XXX: It would be nice to put the preferred terrain for
+                    // the spawn thing down at this point, but vault patches
+                    // are loaded during initial static gamedata
+                    // initialization when the data isn't available yet.
+                    // Terrain setting needs to be punted into the point where
+                    // the patch is applied to a runtime then.
                     spawns.insert(p, s.clone());
                 } else if let Ok(t) = Tile::try_from(c) {
                     terrain.insert(p, t);
