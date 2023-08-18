@@ -2,8 +2,6 @@
 #![feature(int_roundings)]
 #![feature(lazy_cell)]
 
-use serde::{Deserialize, Serialize};
-
 pub const SECTOR_WIDTH: i32 = 52;
 pub const SECTOR_HEIGHT: i32 = 39;
 

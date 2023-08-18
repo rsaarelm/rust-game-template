@@ -1,8 +1,8 @@
-use std::{collections::BTreeMap, fmt};
+use std::collections::BTreeMap;
 
 use anyhow::bail;
+use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
-use util::Res;
 
 use crate::{data::StaticGerm, prelude::*};
 
@@ -10,7 +10,7 @@ use crate::{data::StaticGerm, prelude::*};
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
     pub terrain: HashMap<IVec2, Tile>,
-    pub spawns: HashMap<IVec2, Res<StaticGerm>>,
+    pub spawns: HashMap<IVec2, Spawn>,
     pub entrance: Option<IVec2>,
 }
 
@@ -43,23 +43,16 @@ impl Patch {
         // Set all the spawn tiles before spawning things so spawns will have
         // maximally complete patch to show up in.
         for (&p, s) in &self.spawns {
-            let loc = origin + p;
-            loc.set_tile(r, s.preferred_tile());
+            s.prepare_terrain(r, origin + p);
         }
 
         for (&p, s) in &self.spawns {
-            let loc = origin + p;
-            let e = s.spawn(r);
-            // XXX: Names aren't stored in the germ data so they are set here.
-            // This should probably be fixed.
-            e.set(r, crate::ecs::Name(s.to_string()));
-            e.place(r, loc);
+            s.spawn(r, origin + p);
         }
 
         if let Some(p) = self.entrance {
-            let loc = origin + p;
             // spawn_player is assumed to be a no-op if player already exists.
-            r.spawn_player(loc);
+            r.spawn_player(origin + p);
         }
     }
 }
@@ -68,7 +61,7 @@ impl Patch {
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct PatchData {
     pub map: String,
-    pub legend: BTreeMap<char, Res<StaticGerm>>,
+    pub legend: BTreeMap<char, Spawn>,
 }
 
 impl TryFrom<PatchData> for Patch {
@@ -148,13 +141,12 @@ impl From<&Patch> for PatchData {
                     map.push(t.into());
                     seen_content = true;
                 } else if let Some(s) = value.spawns.get(&p) {
-                    if let Some(&c) = legend.get(s.as_ref()) {
+                    if let Some(&c) = legend.get(&s.0) {
                         // Already established a legend char, reuse.
                         map.push(c);
                     } else {
                         // Assign a new legend char.
                         let mut c = s
-                            .as_ref()
                             .chars()
                             .find(|a| a.is_alphabetic())
                             .unwrap_or('A');
@@ -169,7 +161,7 @@ impl From<&Patch> for PatchData {
                                 "patch generator ran out of legend chars",
                             );
                         }
-                        legend.insert(s.as_ref().to_owned(), c);
+                        legend.insert(s.to_string(), c);
 
                         map.push(c);
                     }
@@ -193,8 +185,7 @@ impl From<&Patch> for PatchData {
         }
 
         // Reverse legend
-        let legend =
-            legend.into_iter().map(|(n, c)| (c, Res::new(n))).collect();
+        let legend = legend.into_iter().map(|(n, c)| (c, Spawn(n))).collect();
 
         PatchData { map, legend }
     }
@@ -216,6 +207,42 @@ impl Serialize for Patch {
         S: Serializer,
     {
         PatchData::from(self).serialize(serializer)
+    }
+}
+
+#[derive(
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Deref,
+    Serialize,
+    Deserialize,
+)]
+pub struct Spawn(String);
+
+impl Spawn {
+    pub fn prepare_terrain(&self, r: &mut Runtime, loc: Location) {
+        let germ: StaticGerm = self.0.parse().unwrap();
+
+        if loc.tile(r) == Tile::default() {
+            loc.set_tile(r, germ.preferred_tile());
+        }
+    }
+
+    pub fn spawn(&self, r: &mut Runtime, loc: Location) -> Entity {
+        let germ: StaticGerm = self.0.parse().unwrap();
+        let e = germ.build(r);
+
+        // Names are map keys so they're not stored in the germ, assign the
+        // name here.
+        e.set(r, crate::ecs::Name(self.0.clone()));
+        e.place(r, loc);
+
+        e
     }
 }
 

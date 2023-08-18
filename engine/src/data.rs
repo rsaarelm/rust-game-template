@@ -49,7 +49,7 @@ pub struct Monster {
 }
 
 impl Germ for Monster {
-    fn spawn(&self, r: &mut Runtime) -> Entity {
+    fn build(&self, r: &mut Runtime) -> Entity {
         Entity(r.ecs.spawn((
             Icon(self.icon),
             Speed(3),
@@ -75,14 +75,14 @@ pub struct Item {
 }
 
 impl Germ for Item {
-    fn spawn(&self, r: &mut Runtime) -> Entity {
+    fn build(&self, r: &mut Runtime) -> Entity {
         todo!()
     }
 }
 
 /// Values that specify new entities to be created.
 pub trait Germ {
-    fn spawn(&self, r: &mut Runtime) -> Entity;
+    fn build(&self, r: &mut Runtime) -> Entity;
 
     /// What kind of terrain does this thing like to spawn on.
     ///
