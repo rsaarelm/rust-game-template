@@ -14,13 +14,13 @@ fn hello(g: &mut Game, b: &mut dyn Backend, _: u32) -> Option<StackOp<Game>> {
 
     // TODO camera.
     let origin = Location::default();
-    let p0 = origin.unfold();
+    let p0 = origin.unfold_wide();
     for p in Rect::sized([SECTOR_WIDTH * 2, SECTOR_HEIGHT]) {
         let p_loc = p0 + v2(p);
 
         win.put(&mut g.s, p, ui::map_display::terrain_cell(&g.r, p_loc));
         if p_loc.x % 2 == 0 {
-            let loc = Location::fold(p_loc);
+            let loc = Location::fold_wide(p_loc);
 
             if let Some(e) = loc.mob_at(&g.r) {
                 let mut icon = e.icon(&g.r);
