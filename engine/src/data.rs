@@ -69,6 +69,9 @@ impl Germ for Monster {
 pub struct Item {
     pub power: i32,
     pub kind: ItemKind,
+
+    #[serde(with = "util::dash_option")]
+    pub effect: Option<String>,
 }
 
 impl Germ for Item {

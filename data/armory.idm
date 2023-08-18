@@ -1,9 +1,9 @@
 --                power  kind
-dagger                4  melee-weapon
-sword                 8  melee-weapon
-leather_armor         2  armor
-chain_mail            5  armor
-scroll_of_lightning  10  scroll
-magic_map             0  scroll
-scroll_of_confusion   4  scroll
-scroll_of_fireball    8  scroll
+dagger                4  melee-weapon  -
+sword                 8  melee-weapon  -
+leather_armor         2  armor         -
+chain_mail            5  armor         -
+scroll_of_lightning  10  scroll        lightning-bolt
+magic_map             0  scroll        magic-mapping
+scroll_of_confusion   4  scroll        confusion
+scroll_of_fireball    8  scroll        fireball
