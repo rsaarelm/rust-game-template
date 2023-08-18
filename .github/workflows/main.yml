@@ -1,0 +1,34 @@
+# NB. Set Actions permissions / Workflow permissions to "Read and write" for
+# publishing the gh-pages branch to work.
+on: push
+name: Build and deploy web page with WASM version
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: true
+      - name: Build and deploy WASM binary
+        run: |
+          cargo +nightly build --target=wasm32-unknown-unknown --profile=release-lto
+          cp target/wasm32-unknown-unknown/release-lto/gametemplate.wasm web/
+      - name: Publish static website
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          cd web/
+          git init --initial-branch=master
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions-bot@users.noreply.github.com"
+          git add .
+
+          git commit -m "Deploy ${GITHUB_REPOSITORY} to ${GITHUB_REPOSITORY}:gh-pages"
+          git push --force "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" master:gh-pages
+          echo "Deploy complete"
