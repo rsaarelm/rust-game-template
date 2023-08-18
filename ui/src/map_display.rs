@@ -42,10 +42,13 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
         return None;
     }
 
-    let open: Vec<bool> =
-        DIR_8.iter().map(|&v| !tile(r, p + v).is_edge()).collect();
+    // Low walls block other low walls but not high walls.
+    // High walls block everything else.
+    let self_height = tile(r, p).self_height();
+    let blocks =
+        |h: usize, a: usize| tile(r, p + DIR_8[a % 8]).edge_height() >= h;
 
-    if !open.iter().any(|&a| a) {
+    if (0..8).all(|a| blocks(self_height, a)) {
         // Entirely within wall mass, do not draw.
         return None;
     }
@@ -56,9 +59,12 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
 
     // Go through the 4 neighbors.
     for a in [0, 2, 4, 6] {
-        if n(a + 6).is_edge()
-            && n(a + 7).is_edge()
-            && n(a + 1).is_edge() & n(a + 2).is_edge()
+        let h = tile(r, p + DIR_8[a]).self_height();
+
+        if blocks(h, a + 6)
+            && blocks(h, a + 7)
+            && blocks(h, a + 1)
+            && blocks(h, a + 2)
         {
             // Neighbor is fully merged in edge mass, does not get drawn. Do
             // not shape towards it.
@@ -106,7 +112,7 @@ pub fn terrain_cell(r: &Runtime, wide_loc_pos: IVec2) -> CharCell {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(CROSSED[i])
             } else {
-                CharCell::c(' ')
+                CharCell::c('+')
             }
         }
         Tile::Water => CharCell::c(if is_centered { '~' } else { ' ' })
