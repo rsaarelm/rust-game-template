@@ -139,10 +139,7 @@ impl Location {
     }
 
     pub fn mob_at(&self, r: &Runtime) -> Option<Entity> {
-        r.placement
-            .entities_at(*self)
-            .filter(|e| e.is_mob(r))
-            .next()
+        r.placement.entities_at(*self).find(|e| e.is_mob(r))
     }
 
     /// Return entities at cell sorted to draw order.
@@ -153,10 +150,7 @@ impl Location {
     }
 
     pub fn item_at(&self, r: &Runtime) -> Option<Entity> {
-        r.placement
-            .entities_at(*self)
-            .filter(|e| e.is_item(r))
-            .next()
+        r.placement.entities_at(*self).find(|e| e.is_item(r))
     }
 
     pub fn vec_towards(&self, other: &Location) -> Option<IVec2> {
@@ -310,7 +304,7 @@ impl Location {
             move |loc| {
                 let mut ret = Vec::new();
                 for d in DIR_4 {
-                    let loc = (loc.clone() + d).follow(r);
+                    let loc = (*loc + d).follow(r);
                     if !loc.is_walkable(r) {
                         continue;
                     }

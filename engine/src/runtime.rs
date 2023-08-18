@@ -178,7 +178,6 @@ impl Runtime {
         util::dijkstra_map(
             move |&loc| {
                 loc.neighbors_4()
-                    .into_iter()
                     .filter(|loc2| {
                         (!loc2.is_explored(self) || loc2.is_walkable(self))
                             && loc2.sector() == loc.sector()
@@ -197,7 +196,6 @@ impl Runtime {
         util::dijkstra_map(
             move |&loc| {
                 loc.neighbors_4()
-                    .into_iter()
                     .filter(|loc2| {
                         loc2.is_walkable(self) && loc2.sector() == loc.sector()
                     })

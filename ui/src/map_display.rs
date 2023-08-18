@@ -55,7 +55,7 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
 
     let mut ret = 0;
 
-    let n = |a| tile(r, p + DIR_8[(a % 8) as usize]);
+    let n = |a| tile(r, p + DIR_8[a % 8]);
 
     // Go through the 4 neighbors.
     for a in [0, 2, 4, 6] {

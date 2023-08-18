@@ -182,7 +182,7 @@ impl Entity {
     pub fn decide(&self, r: &Runtime, goal: Goal) -> Option<Action> {
         let mut dest;
 
-        let Some(loc) = self.loc(r) else { return None };
+        let loc = self.loc(r)?;
 
         match goal {
             Goal::None => return Some(Action::Pass),
@@ -471,7 +471,7 @@ impl Entity {
         let s2 = other.stats(r);
 
         if s1.dmg == 0 {
-            return -1;
+            -1
         } else {
             (other.max_wounds(r) as f32 * Odds(s1.hit - s2.ev).prob()
                 / s1.dmg as f32)
@@ -516,8 +516,7 @@ impl Entity {
     pub fn first_visible_enemy(&self, r: &Runtime) -> Option<Entity> {
         self.fov_mobs(r, FOV_RADIUS)
             .into_iter()
-            .filter(|e| e.is_enemy(r, self))
-            .next()
+            .find(|e| e.is_enemy(r, self))
     }
 
     pub(crate) fn scan_fov(&self, r: &mut Runtime) {
