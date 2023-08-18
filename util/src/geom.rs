@@ -7,6 +7,7 @@ use std::{
 use glam::{ivec2, vec2, IVec2, IVec3, Vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
+/// 8 directions, clock face order.
 pub const DIR_8: [IVec2; 8] = [
     IVec2::from_array([0, -1]),
     IVec2::from_array([1, -1]),
@@ -18,6 +19,7 @@ pub const DIR_8: [IVec2; 8] = [
     IVec2::from_array([-1, -1]),
 ];
 
+/// 4 directions, clock face order.
 pub const DIR_4: [IVec2; 4] = [
     IVec2::from_array([0, -1]),
     IVec2::from_array([1, 0]),

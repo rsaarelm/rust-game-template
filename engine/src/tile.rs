@@ -39,6 +39,12 @@ impl Tile {
         matches!(self, Wall | LowWall | Door)
     }
 
+    /// Special method for wallforming, high walls should form up behind doors
+    /// or low walls.
+    pub fn is_edge(self) -> bool {
+        matches!(self, Wall)
+    }
+
     /// Return the type of terrain that should show up in between two types of
     /// terrain on a double-width map.
     ///
