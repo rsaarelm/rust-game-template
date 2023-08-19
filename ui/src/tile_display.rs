@@ -78,6 +78,8 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
     Some(ret)
 }
 
+/// Show the interpolated and shaped map terrain cell in the given wide
+/// unfolded coordinate position.
 pub fn terrain_cell(r: &Runtime, wide_loc_pos: IVec2) -> CharCell {
     let is_centered = wide_loc_pos.x % 2 == 0;
 
