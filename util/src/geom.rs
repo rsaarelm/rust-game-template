@@ -169,10 +169,10 @@ pub fn bresenham_line(
 /// let mut bounds = ivec2(0, 0);
 ///
 /// for _ in 0..52 {
-///     let x = pt.sample();
+///     let x = pt.as_ivec2();
 ///     bounds = bounds.max(x + ivec2(1, 1));
 ///     samples.insert(x);
-///     *pt += d;
+///     pt += d;
 /// }
 ///
 /// let mut s = String::new();
@@ -186,26 +186,26 @@ pub fn bresenham_line(
 ///     }
 ///     s.push('\n');
 /// }
+///
 /// assert_eq!(s.trim(), "\
-/// *...........
-/// .**.........
-/// ...***......
+/// **..........
+/// ..**........
+/// ....**......
 /// ......**....
 /// ........**..
 /// ..........**");
-///
 /// ```
 #[derive(Copy, Clone, Default, Debug)]
 pub struct PlottedPoint {
     inner: Vec2,
-    grid_pos: Vec2,
+    delta: Vec2,
 }
 
 impl From<Vec2> for PlottedPoint {
     fn from(p: Vec2) -> Self {
         PlottedPoint {
             inner: p,
-            grid_pos: p.round(),
+            delta: Default::default(),
         }
     }
 }
@@ -218,42 +218,20 @@ impl std::ops::Deref for PlottedPoint {
     }
 }
 
-impl std::ops::DerefMut for PlottedPoint {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
+impl std::ops::AddAssign<Vec2> for PlottedPoint {
+    fn add_assign(&mut self, delta: Vec2) {
+        self.delta += delta;
 
-impl PlottedPoint {
-    /// Get the pixel grid position of the point.
-    pub fn sample(&mut self) -> IVec2 {
-        // Problem: Naive sampling of cells causes points to move in an
-        // awkward zig-zag pattern when moving in a diagonal-ish direction. To
-        // solve this, delay updating the sampled position until we are
-        // reasonably sure the point won't end up in a diagonal neighbor cell.
-        //
-        // Use radius of a circle going through side centers of neighboring
-        // cells as the sampling threshold.
-        //
-        //    |     | :
-        //    +-----+--x--+
-        //    |     |   :
-        //    |  o  |   :
-        //    |     |   :
-        //    +-----+--x--+
-        //    |     | :
-        //
-        // sqrt(0.5^2 + 1^2) = sqrt(1.25)
+        // Only change the actual position when the largest component of the
+        // accumulated delta would change the rounded position component.
 
-        const UPDATE_DIST: f32 = 1.25;
+        // Index of largest accumulated delta component.
+        let i = if self.delta[0] > self.delta[1] { 0 } else { 1 };
 
-        let d = self.inner - self.grid_pos;
-
-        if d.dot(d) >= UPDATE_DIST {
-            self.grid_pos = self.inner.round();
+        if self.inner[i].round() != (self.inner[i] + self.delta[i]).round() {
+            self.inner += self.delta;
+            self.delta = Default::default();
         }
-
-        self.grid_pos.as_ivec2()
     }
 }
 
