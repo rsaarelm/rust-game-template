@@ -25,6 +25,7 @@ pub trait Element:
     + Div<Output = Self>
     + Zero
     + One
+    + Debug
 {
 }
 
@@ -37,6 +38,7 @@ impl<T> Element for T where
         + Div<Output = Self>
         + Zero
         + One
+        + Debug
 {
 }
 
@@ -320,7 +322,11 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
         let mut p = p.into();
         for i in 0..N {
             p[i] = p[i] - self.p0[i];
-            p[i] = p[i].rem_euclid(&(self.p1[i] - self.p0[i]));
+            if self.p1[i] != self.p0[i] {
+                p[i] = p[i].rem_euclid(&(self.p1[i] - self.p0[i]));
+            } else {
+                p[i] = self.p1[i];
+            }
             p[i] = p[i] + self.p0[i];
         }
         E::from(p)
