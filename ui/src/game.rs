@@ -2,6 +2,9 @@ use navni::prelude::*;
 
 use engine::prelude::*;
 use gfx::prelude::*;
+use util::Layout;
+
+use crate::InputMap;
 
 const WIDTH: u32 = 120;
 const HEIGHT: u32 = 36;
@@ -12,13 +15,18 @@ pub struct Game {
     pub r: Runtime,
     /// Display buffer.
     pub s: Buffer<CharCell>,
+
+    pub input_map: InputMap,
 }
 
 impl Default for Game {
     fn default() -> Self {
+        let input_map = InputMap::for_layout(Layout::system_layout());
+
         Game {
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
+            input_map,
         }
     }
 }
