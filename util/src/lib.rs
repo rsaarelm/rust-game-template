@@ -18,6 +18,9 @@ pub use grid::Grid;
 mod idm;
 pub use idm::{_String, dash_option, directory_to_idm};
 
+mod keyboard_layout;
+pub use keyboard_layout::Layout;
+
 mod mung;
 pub use mung::{mung, unmung};
 
