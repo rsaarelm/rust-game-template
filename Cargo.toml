@@ -33,6 +33,7 @@ gfx = { path = "gfx" }
 ui = { path = "ui" }
 util = { path = "util" }
 
+log = "0.4.20"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
 

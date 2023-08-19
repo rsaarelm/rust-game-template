@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, Debug, Default, Eq, PartialEq, Hash, Serialize, Deserialize,
+)]
 pub enum Layout {
     #[default]
     Qwerty,

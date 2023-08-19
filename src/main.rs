@@ -7,13 +7,17 @@ use ui::Game;
 mod game_screen;
 mod wasm_getrandom;
 
+const GAME_NAME: &str = "gametemplate";
+
 fn main() {
+    navni::logger::start(GAME_NAME);
+
     let world: World = rand::thread_rng().gen();
     let game = Game::new(Runtime::new(&world).unwrap());
 
     run(
         &Config {
-            window_title: "gametemplate".to_string(),
+            window_title: GAME_NAME.to_string(),
             ..Default::default()
         },
         game,

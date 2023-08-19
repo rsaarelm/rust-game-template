@@ -11,6 +11,7 @@ pub fn run(
     b: &mut dyn Backend,
     _n: u32,
 ) -> Option<StackOp<Game>> {
+    // DISPLAY
     let win = Window::from(&g.s);
     let (panel, main) = win.split_left(26);
 
@@ -18,6 +19,21 @@ pub fn run(
     draw_main(g, &main);
 
     g.draw(b);
+
+    // INPUT
+    if let Some(e) = g.input_map.get(&b.keypress()) {
+        use ui::InputAction::*;
+        let player = g.r.player().unwrap();
+        match e {
+            North => player.execute(&mut g.r, Action::Bump(DIR_4[0])),
+            East => player.execute(&mut g.r, Action::Bump(DIR_4[1])),
+            South => player.execute(&mut g.r, Action::Bump(DIR_4[2])),
+            West => player.execute(&mut g.r, Action::Bump(DIR_4[3])),
+            QuitGame => return Some(StackOp::Pop),
+            _ => {}
+        }
+    }
+
     None
 }
 

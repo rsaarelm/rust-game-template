@@ -24,6 +24,8 @@ pub struct Game {
 
 impl Default for Game {
     fn default() -> Self {
+        let layout = Layout::system_layout();
+        log::info!("detected {layout:?} keyboard layout");
         let input_map = InputMap::for_layout(Layout::system_layout());
 
         Game {

@@ -10,6 +10,7 @@ gfx = { path = "../gfx" }
 util = { path = "../util" }
 
 derive_deref = "1"
+log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
