@@ -16,7 +16,14 @@ pub fn run(
     // TODO: Handle missing player entity.
     let player = g.r.player().unwrap();
     let loc = player.loc(&g.r).unwrap();
-    draw_map(g, &win, loc);
+
+    let sector_bounds = wide_unfolded_sector_bounds(loc);
+    let offset =
+        util::scroll_offset(&win.area(), loc.unfold_wide(), &sector_bounds);
+
+    win.fill(&mut g.s, CharCell::c('█').col(X::BROWN));
+    let sector_win = win.sub(sector_bounds - offset);
+    draw_map(g, &sector_win, v2(sector_bounds.min()).max(offset));
 
     win.write(&mut g.s, [2, 35], "Hello, world!");
 
@@ -25,17 +32,9 @@ pub fn run(
     None
 }
 
-fn draw_map(g: &mut Game, win: &Window, loc: Location) {
-    let sector_bounds = wide_unfolded_sector_bounds(loc);
-    let offset =
-        util::scroll_offset(&win.area(), loc.unfold_wide(), &sector_bounds);
-
+fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
     for draw_pos in win.area().into_iter().map(v2) {
         let p = draw_pos + offset;
-        if !sector_bounds.contains(p) {
-            win.put(&mut g.s, draw_pos, CharCell::c('█').col(X::BROWN));
-            continue;
-        }
 
         win.put(&mut g.s, draw_pos, ui::terrain_cell(&g.r, p));
 
