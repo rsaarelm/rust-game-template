@@ -12,14 +12,31 @@ pub fn run(
     _n: u32,
 ) -> Option<StackOp<Game>> {
     let win = Window::from(&g.s);
+    let (panel, main) = win.split_left(26);
 
-    // TODO: Handle missing player entity.
-    let player = g.r.player().unwrap();
-    let loc = player.loc(&g.r).unwrap();
+    draw_panel(g, &panel);
+    draw_main(g, &main);
 
-    let sector_bounds = wide_unfolded_sector_bounds(loc);
-    let offset =
-        util::scroll_offset(&win.area(), loc.unfold_wide(), &sector_bounds);
+    g.draw(b);
+    None
+}
+
+fn draw_panel(g: &mut Game, win: &Window) {
+    win.write(&mut g.s, [0, 0], "Hello, world!");
+}
+
+/// Draw main game area.
+fn draw_main(g: &mut Game, win: &Window) {
+    if let Some(loc) = g.r.player().and_then(|p| p.loc(&g.r)) {
+        g.camera = loc;
+    }
+
+    let sector_bounds = wide_unfolded_sector_bounds(g.camera);
+    let offset = util::scroll_offset(
+        &win.area(),
+        g.camera.unfold_wide(),
+        &sector_bounds,
+    );
 
     // Solid background for off-sector extra space.
     win.fill(&mut g.s, CharCell::c('█').col(X::BROWN));
@@ -29,12 +46,6 @@ pub fn run(
     let offset = v2(sector_bounds.min()).max(offset);
     draw_map(g, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
-
-    win.write(&mut g.s, [2, 35], "Hello, world!");
-
-    g.draw(b);
-
-    None
 }
 
 fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {

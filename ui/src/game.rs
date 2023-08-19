@@ -16,6 +16,9 @@ pub struct Game {
     /// Display buffer.
     pub s: Buffer<CharCell>,
 
+    /// Current viewpoint
+    pub camera: Location,
+
     pub input_map: InputMap,
 }
 
@@ -26,6 +29,7 @@ impl Default for Game {
         Game {
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
+            camera: Default::default(),
             input_map,
         }
     }
