@@ -4,7 +4,7 @@ use anyhow::bail;
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::{data::StaticGerm, prelude::*};
+use crate::{data::StaticGerm, prelude::*, Rect};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

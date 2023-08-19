@@ -2,7 +2,7 @@ use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{prelude::*, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 /// Absolute locations in the game world.
 #[derive(
