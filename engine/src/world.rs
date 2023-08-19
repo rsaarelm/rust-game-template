@@ -6,7 +6,6 @@ use crate::{prelude::*, Data, Patch};
 
 /// Data that specifies the contents of an initial game world.
 #[derive(Clone, Default, Deref, Deserialize, Serialize)]
-#[serde(default)]
 pub struct World(IndexMap<Location, Patch>);
 
 impl Distribution<World> for Standard {
