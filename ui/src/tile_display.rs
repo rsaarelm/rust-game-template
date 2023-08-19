@@ -80,7 +80,9 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
 
 /// Show the interpolated and shaped map terrain cell in the given wide
 /// unfolded coordinate position.
-pub fn terrain_cell(r: &Runtime, wide_loc_pos: IVec2) -> CharCell {
+pub fn terrain_cell(r: &Runtime, wide_loc_pos: impl Into<IVec2>) -> CharCell {
+    let wide_loc_pos = wide_loc_pos.into();
+
     let is_centered = wide_loc_pos.x % 2 == 0;
 
     match tile(r, wide_loc_pos) {
@@ -155,10 +157,11 @@ fn tile(r: &Runtime, wide_loc_pos: IVec2) -> Tile {
     let p = wide_loc_pos;
 
     if p.x % 2 == 0 {
-        Location::fold_wide(p).tile(r)
+        Location::fold_wide(p).unwrap().tile(r)
     } else {
         Location::fold_wide(p - ivec2(1, 0))
+            .unwrap()
             .tile(r)
-            .mix(Location::fold_wide(p + ivec2(1, 0)).tile(r))
+            .mix(Location::fold_wide(p + ivec2(1, 0)).unwrap().tile(r))
     }
 }

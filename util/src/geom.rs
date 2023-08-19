@@ -156,13 +156,8 @@ pub fn bresenham_line(
     })
 }
 
-/// Compute an offset to displace map rectangle when it's drawn inside the
-/// canvas rectangle.
-///
-/// The origin of map rectangle is assumed to be at the preferred screen
-/// center. Map rectangle is expected to be in the same coordinate space as
-/// canvas rectangle (widen map rectangle if using double-width cell display
-/// on canvas).
+/// Compute an offset to add to canvas rectangle points to show map rectangle
+/// points.
 ///
 /// Offsetting will try to ensure maximum amount of map is shown on canvas. If
 /// the map center is near map rectangle's edge, map rectangle will be offset
@@ -170,32 +165,33 @@ pub fn bresenham_line(
 /// rectangle is smaller than the canvas rectangle along either dimension, it
 /// can't fill the canvas rectangle and will be centered on the canvas
 /// rectangle instead along that dimension.
-pub fn scroll_offset(canvas_rect: &Rect<i32>, map_rect: &Rect<i32>) -> IVec2 {
-    // Translation for wide_area_rect's origin to center of canvas rect.
-    let mut offset = canvas_rect.center();
+pub fn scroll_offset(
+    canvas_rect: &Rect<i32>,
+    view_pos: IVec2,
+    map_rect: &Rect<i32>,
+) -> IVec2 {
+    // Starting point, snap to the center of the canvas.
+    let mut offset = view_pos - IVec2::from(canvas_rect.center());
 
-    // Snap to canvas edges if location ends up so close to the edge that we'd
-    // otherwise scroll past the area edge.
+    let offset_rect = *map_rect - offset;
 
-    let offset_rect = *map_rect + offset;
-
-    // Do each axis individually.
+    // Check each axis
     for d in 0..2 {
         if offset_rect.dim()[d] < canvas_rect.dim()[d] {
             // Canvas is big enough (along this axis) to fit the whole arena.
             // Just center the arena rect then.
-            offset[d] = canvas_rect.min()[d] - map_rect.min()[d]
-                + (canvas_rect.dim()[d] - offset_rect.dim()[d]) / 2;
+            offset[d] = map_rect.min()[d] - canvas_rect.min()[d]
+                + (map_rect.dim()[d] - canvas_rect.dim()[d]) / 2;
         } else if offset_rect.min()[d] > canvas_rect.min()[d] {
             // Snap inside inner edge of the canvas_rect.
-            offset[d] -= offset_rect.min()[d] - canvas_rect.min()[d];
+            offset[d] += offset_rect.min()[d] - canvas_rect.min()[d];
         } else if offset_rect.max()[d] < canvas_rect.max()[d] {
             // Snap inside outer edge of the canvas_rect.
-            offset[d] += canvas_rect.max()[d] - offset_rect.max()[d];
+            offset[d] -= canvas_rect.max()[d] - offset_rect.max()[d];
         }
     }
 
-    offset.into()
+    offset
 }
 
 /// Floating-point valued point that plots a nice-looking line when repeatedly

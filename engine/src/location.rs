@@ -65,8 +65,12 @@ impl Location {
         ret
     }
 
-    pub fn fold_wide(wide_loc_pos: IVec2) -> Self {
-        Location::fold(wide_loc_pos / ivec2(2, 1))
+    pub fn fold_wide(wide_loc_pos: IVec2) -> Option<Self> {
+        if wide_loc_pos.x % 2 == 0 {
+            Some(Location::fold(wide_loc_pos / ivec2(2, 1)))
+        } else {
+            None
+        }
     }
 
     pub fn to_vec3(&self) -> IVec3 {
@@ -118,15 +122,6 @@ impl Location {
     /// Return sector bounds extended for the adjacent sector rim.
     pub fn expanded_sector_bounds(&self) -> Rect {
         self.sector_bounds().grow([1, 1], [1, 1])
-    }
-
-    /// Return sector bounding box containing this loc centered on this loc.
-    pub fn sector_bounds_around(&self) -> Rect {
-        self.sector_bounds() - self.unfold()
-    }
-
-    pub fn expanded_sector_bounds_around(&self) -> Rect {
-        self.expanded_sector_bounds() - self.unfold()
     }
 
     /// Location has been seen by an allied unit at some point.
