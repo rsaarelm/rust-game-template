@@ -10,7 +10,9 @@ pub use bits::{
 };
 
 mod geom;
-pub use geom::{bresenham_line, PlottedPoint, VecExt, DIR_4, DIR_8};
+pub use geom::{
+    bresenham_line, scroll_offset, PlottedPoint, VecExt, DIR_4, DIR_8,
+};
 
 mod grid;
 pub use grid::Grid;
