@@ -690,7 +690,7 @@ dependencies = [
 [[package]]
 name = "navni"
 version = "0.1.0"
-source = "git+https://github.com/rsaarelm/navni#7e84be4f171e77b3f5a5778bc9d535ef5562ed0d"
+source = "git+https://github.com/rsaarelm/navni#f099f32d00596d5124923611107b738d7e03dedd"
 dependencies = [
  "anyhow",
  "crossterm",
