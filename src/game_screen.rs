@@ -11,6 +11,8 @@ pub fn run(
     b: &mut dyn Backend,
     _n: u32,
 ) -> Option<StackOp<Game>> {
+    g.tick(b);
+
     // DISPLAY
     let win = Window::from(&g.s);
     let (panel, main) = win.split_left(26);

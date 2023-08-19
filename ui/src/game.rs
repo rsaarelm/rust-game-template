@@ -6,6 +6,7 @@ use util::Layout;
 
 use crate::InputMap;
 
+// Target size, looks nice on a 1080p display.
 const WIDTH: u32 = 120;
 const HEIGHT: u32 = 36;
 
@@ -42,6 +43,21 @@ impl Game {
         Game {
             r: runtime,
             ..Default::default()
+        }
+    }
+
+    pub fn tick(&mut self, b: &dyn navni::Backend) {
+        let (mut w, mut h) = b.char_resolution();
+        if b.is_gui() {
+            // Don't go too tiny compared to target size.
+            while w > WIDTH || h > HEIGHT {
+                w /= 2;
+                h /= 2;
+            }
+        }
+
+        if self.s.width() != w as i32 || self.s.height() != h as i32 {
+            self.s = Buffer::new(w, h);
         }
     }
 
