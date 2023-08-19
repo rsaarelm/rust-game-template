@@ -108,6 +108,8 @@ pub fn terrain_cell(r: &Runtime, wide_loc_pos: impl Into<IVec2>) -> CharCell {
         Tile::LowWall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(SHARP_CORNERS[i])
+            } else if is_centered {
+                CharCell::c('∙')
             } else {
                 CharCell::c(' ')
             }
