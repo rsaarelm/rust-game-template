@@ -3,7 +3,6 @@ use std::{fmt, hash::Hash};
 
 use rand::{distributions::Standard, prelude::*};
 use rand_xorshift::XorShiftRng;
-use rustc_hash::FxHasher;
 use serde::{Deserialize, Serialize};
 
 /// Construct a throwaway random number generator seeded by a noise value.
@@ -11,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// Good for short-term use in immutable contexts given a varying source of
 /// noise like map position coordinates.
 pub fn srng(seed: &impl Hash) -> XorShiftRng {
-    let mut h = FxHasher::default();
+    let mut h = crate::FastHasher::default();
     seed.hash(&mut h);
     XorShiftRng::seed_from_u64(h.finish())
 }

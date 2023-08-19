@@ -40,15 +40,25 @@ pub use sys::KeyboardLayout;
 
 pub mod text;
 
+pub type FastHasher = rustc_hash::FxHasher;
+
+/// Map with an efficient hash function.
 pub use rustc_hash::FxHashMap as HashMap;
+
+/// Set with an efficient hash function.
 pub use rustc_hash::FxHashSet as HashSet;
-pub type IndexSet<V> =
-    indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
-pub type IndexMap<K, V> = indexmap::IndexMap<
-    K,
-    V,
-    std::hash::BuildHasherDefault<rustc_hash::FxHasher>,
->;
+
+type DefaultHashBuilder = std::hash::BuildHasherDefault<rustc_hash::FxHasher>;
+
+/// Insertion order preserving map with an efficient hash function.
+pub type IndexMap<K, V> = indexmap::IndexMap<K, V, DefaultHashBuilder>;
+
+/// Insertion order preserving set with an efficient hash function.
+pub type IndexSet<V> = indexmap::IndexSet<V, DefaultHashBuilder>;
+
+pub mod hash_map {
+    pub type Entry<'a, A, B> = std::collections::hash_map::Entry<'a, A, B>;
+}
 
 /// The "I don't care, just make it work" error type.
 pub type Error = Box<dyn std::error::Error>;

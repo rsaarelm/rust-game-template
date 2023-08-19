@@ -1,12 +1,11 @@
 use std::{
-    collections::hash_map::Entry,
     str::FromStr,
     sync::{LazyLock, Mutex},
 };
 
 use glam::{ivec2, IVec2};
 use navni::Rgba;
-use util::HashMap;
+use util::{hash_map::Entry, HashMap};
 
 use crate::{Image, Pixel, Rect};
 
