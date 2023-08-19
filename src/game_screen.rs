@@ -21,9 +21,14 @@ pub fn run(
     let offset =
         util::scroll_offset(&win.area(), loc.unfold_wide(), &sector_bounds);
 
+    // Solid background for off-sector extra space.
     win.fill(&mut g.s, CharCell::c('█').col(X::BROWN));
+    // Constrain sub-window to current sector only.
     let sector_win = win.sub(sector_bounds - offset);
-    draw_map(g, &sector_win, v2(sector_bounds.min()).max(offset));
+    // Adjust offset for sub-window position.
+    let offset = v2(sector_bounds.min()).max(offset);
+    draw_map(g, &sector_win, offset);
+    draw_fog(g, &sector_win, offset);
 
     win.write(&mut g.s, [2, 35], "Hello, world!");
 
@@ -45,6 +50,32 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                     icon = '@';
                 }
                 win.put(&mut g.s, draw_pos, CharCell::c(icon));
+            }
+        }
+    }
+}
+
+fn draw_fog(g: &mut Game, win: &Window, offset: IVec2) {
+    for draw_pos in win.area().into_iter().map(v2) {
+        let p = draw_pos + offset;
+
+        if let Some(loc) = Location::fold_wide(p) {
+            if !loc.is_explored(&g.r) {
+                win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
+            }
+        } else {
+            let c1 = Location::fold_wide(p - ivec2(1, 0)).unwrap();
+            let c2 = Location::fold_wide(p + ivec2(1, 0)).unwrap();
+
+            if c1.is_explored(&g.r) && c2.is_explored(&g.r) {
+                continue;
+            }
+
+            // Fog sticks to itself and walls
+            if (!c1.is_explored(&g.r) || c1.tile(&g.r).is_wall())
+                && (!c2.is_explored(&g.r) || c2.tile(&g.r).is_wall())
+            {
+                win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
             }
         }
     }
