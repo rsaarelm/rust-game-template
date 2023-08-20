@@ -105,8 +105,8 @@ impl Runtime {
         self.placement.all_entities()
     }
 
-    /// Update the crate state by one second.
-    pub fn update(&mut self) {
+    /// Update the crate state by one tick.
+    pub fn tick(&mut self) {
         // Tick every entity every frame
         let all: Vec<Entity> = self.live_entities().collect();
         for e in all {

@@ -47,6 +47,7 @@ impl Game {
     }
 
     pub fn tick(&mut self, b: &dyn navni::Backend) {
+        // Check for window resize
         let (mut w, mut h) = b.char_resolution();
         if w == 0 || h == 0 {
             // Out of focus window probably, do nothing.
@@ -62,6 +63,15 @@ impl Game {
             if self.s.width() != w as i32 || self.s.height() != h as i32 {
                 self.s = Buffer::new(w, h);
             }
+        }
+
+        // Player is not waiting for input, update the world.
+        if !self
+            .r
+            .player()
+            .map_or(false, |p| p.acts_this_frame(&self.r))
+        {
+            self.r.tick();
         }
     }
 

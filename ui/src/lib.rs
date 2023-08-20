@@ -1,3 +1,5 @@
+//! Game user interface machinery
+
 mod game;
 pub use game::Game;
 
