@@ -88,26 +88,8 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
 
 fn draw_fog(g: &mut Game, win: &Window, offset: IVec2) {
     for draw_pos in win.area().into_iter().map(v2) {
-        let p = draw_pos + offset;
-
-        if let Some(loc) = Location::fold_wide(p) {
-            if !loc.is_explored(&g.r) {
-                win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
-            }
-        } else {
-            let c1 = Location::fold_wide(p - ivec2(1, 0)).unwrap();
-            let c2 = Location::fold_wide(p + ivec2(1, 0)).unwrap();
-
-            if c1.is_explored(&g.r) && c2.is_explored(&g.r) {
-                continue;
-            }
-
-            // Fog sticks to itself and walls
-            if (!c1.is_explored(&g.r) || c1.tile(&g.r).is_wall())
-                && (!c2.is_explored(&g.r) || c2.tile(&g.r).is_wall())
-            {
-                win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
-            }
+        if g.r.wide_pos_is_shrouded(draw_pos + offset) {
+            win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
         }
     }
 }

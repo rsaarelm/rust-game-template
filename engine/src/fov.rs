@@ -96,4 +96,24 @@ impl Runtime {
         fov::Square::new(FovState::new(loc, self, radius))
             .map(|(v, s)| (v, s.origin + v))
     }
+
+    /// Return whether fog of war should be drawn at the given wide coordinate
+    /// position.
+    pub fn wide_pos_is_shrouded(&self, wide_loc_pos: IVec2) -> bool {
+        let p = wide_loc_pos;
+        if let Some(loc) = Location::fold_wide(p) {
+            !loc.is_explored(self)
+        } else {
+            let c1 = Location::fold_wide(p - ivec2(1, 0)).unwrap();
+            let c2 = Location::fold_wide(p + ivec2(1, 0)).unwrap();
+
+            if c1.is_explored(self) && c2.is_explored(self) {
+                return false;
+            }
+
+            // Fog sticks to itself and walls
+            (!c1.is_explored(self) || c1.tile(self).is_wall())
+                && (!c2.is_explored(self) || c2.tile(self).is_wall())
+        }
+    }
 }
