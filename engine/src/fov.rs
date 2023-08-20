@@ -1,3 +1,5 @@
+//! Logic for revealing unexplored game terrain
+
 use derive_deref::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
 

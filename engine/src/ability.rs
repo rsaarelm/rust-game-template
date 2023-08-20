@@ -1,3 +1,5 @@
+//! Special powers entities can use
+
 use serde::{Deserialize, Serialize};
 
 use crate::{

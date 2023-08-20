@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
+/// Absolute place in the game world, either in a location or inside another
+/// entity.
 #[derive(
     Copy,
     Clone,

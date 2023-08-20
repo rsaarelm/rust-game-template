@@ -1,3 +1,5 @@
+//! Entities doing things
+
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 

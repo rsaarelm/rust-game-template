@@ -1,3 +1,5 @@
+//! Static game data
+
 use std::{str::FromStr, sync::LazyLock};
 
 use anyhow::bail;

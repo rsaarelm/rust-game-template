@@ -1,4 +1,5 @@
 //! Entity logic for usable items.
+
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 

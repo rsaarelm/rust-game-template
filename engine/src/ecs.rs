@@ -1,5 +1,4 @@
-// Most of this file is just for HECS interop and serialization purposes.
-// The component type definitions are the only game logic relevant part.
+//! Entity component system boilerplate for saving games etc.
 
 use std::{cell::RefCell, collections::BTreeMap, fmt};
 

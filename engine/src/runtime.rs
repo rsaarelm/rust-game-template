@@ -4,7 +4,7 @@ use util::{flood_fill_4, GameRng};
 
 use crate::{ecs::*, prelude::*, Fov, Placement, Result, Terrain, World};
 
-/// Game runtime main engine data container.
+/// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Runtime {
