@@ -690,7 +690,7 @@ dependencies = [
 [[package]]
 name = "navni"
 version = "0.1.0"
-source = "git+https://github.com/rsaarelm/navni#f2048281c33777976373dc5305fed83ae10b1f8e"
+source = "git+https://github.com/rsaarelm/navni#92de57fdb37a203eb8798f1e8b89b77c43f1e2e5"
 dependencies = [
  "anyhow",
  "crossterm",
@@ -1295,6 +1295,7 @@ dependencies = [
  "derive_deref",
  "engine",
  "gfx",
+ "glam",
  "log",
  "navni",
  "rand",

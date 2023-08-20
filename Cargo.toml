@@ -27,15 +27,14 @@ codegen-units = 1
 members = ["fov", "engine", "gfx", "ui", "util"]
 
 [dependencies]
-fov = { path = "fov" }
 engine = { path = "engine" }
+fov = { path = "fov" }
 gfx = { path = "gfx" }
-ui = { path = "ui" }
-util = { path = "util" }
-
 log = "0.4.20"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
+ui = { path = "ui" }
+util = { path = "util" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["custom"] }

@@ -6,11 +6,7 @@ use ui::Game;
 
 use navni::X256Color as X;
 
-pub fn run(
-    g: &mut Game,
-    b: &mut dyn Backend,
-    _n: u32,
-) -> Option<StackOp<Game>> {
+pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     g.tick(b);
 
     // DISPLAY
@@ -18,7 +14,7 @@ pub fn run(
     let (panel, main) = win.split_left(26);
 
     draw_panel(g, &panel);
-    draw_main(g, &main);
+    draw_main(g, n, &main);
 
     // TODO cursoring
     for (y, m) in g.msg.iter().enumerate() {
@@ -49,7 +45,7 @@ fn draw_panel(g: &mut Game, win: &Window) {
 }
 
 /// Draw main game area.
-fn draw_main(g: &mut Game, win: &Window) {
+fn draw_main(g: &mut Game, n_updates: u32, win: &Window) {
     if let Some(loc) = g.r.player().and_then(|p| p.loc(&g.r)) {
         g.camera = loc;
     }
@@ -68,6 +64,7 @@ fn draw_main(g: &mut Game, win: &Window) {
     // Adjust offset for sub-window position.
     let offset = v2(sector_bounds.min()).max(offset);
     draw_map(g, &sector_win, offset);
+    g.draw_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
 }
 

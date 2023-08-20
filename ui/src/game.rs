@@ -1,10 +1,12 @@
 use navni::prelude::*;
 
+use crate::{prelude::*, Particle};
 use engine::prelude::*;
-use gfx::prelude::*;
 use util::Layout;
 
-use crate::InputMap;
+use navni::X256Color as X;
+
+use crate::{Anim, InputMap};
 
 // Target size, looks nice on a 1080p display.
 const WIDTH: u32 = 120;
@@ -15,7 +17,7 @@ pub struct Game {
     /// Logic level data.
     pub r: Runtime,
     /// Display buffer.
-    pub s: Buffer<CharCell>,
+    pub s: Buffer,
 
     /// Current viewpoint.
     pub camera: Location,
@@ -23,6 +25,8 @@ pub struct Game {
     /// Receiver for engine events.
     recv: Receiver,
     pub msg: Vec<String>,
+
+    anims: Vec<Box<dyn Anim>>,
 
     pub input_map: InputMap,
 }
@@ -39,6 +43,7 @@ impl Default for Game {
             camera: Default::default(),
             recv: Default::default(),
             msg: Default::default(),
+            anims: Default::default(),
             input_map,
         }
     }
@@ -87,25 +92,61 @@ impl Game {
 
         // Pump messages from world
         while let Ok(msg) = self.recv.try_recv() {
+            use Msg::*;
             match msg {
-                Msg::Message(text) => {
+                Message(text) => {
                     self.msg.push(text);
                 }
-                Msg::Fire(_e, _dir) => {
-                    // TODO: Fire animation
+                Fire(e, dir) => {
+                    self.add_anim(Box::new(
+                        Particle::new(e, 10).offset(dir).c(dir.to_char()),
+                    ));
                 }
-                Msg::Hurt(_e) => {
-                    // TODO: Hurt particle anim (and drop the msg)
-                    self.msg.push(format!("{} is hit.", _e.Name(&self.r)));
+                Hurt(e) => {
+                    self.add_anim(Box::new(
+                        Particle::new(e, 10).c('*').col(X::RED),
+                    ));
                 }
-                Msg::Miss(_e) => {
-                    // TODO: Particle anim for a blink on the mob
+                Miss(e) => {
+                    self.add_anim(Box::new(Particle::new(e, 3).c('·')));
                 }
-                Msg::Death(_loc) => {
-                    // TODO: Particle explosion at location.
+                Death(loc) => {
+                    for d in DIR_8 {
+                        self.add_anim(Box::new(
+                            Particle::new(loc, 10)
+                                .c('*')
+                                .col(X::YELLOW)
+                                .v(0.5 * d.as_vec2().normalize()),
+                        ));
+                    }
                 }
             }
         }
+    }
+
+    pub fn draw_anims(
+        &mut self,
+        n_updates: u32,
+        win: &Window,
+        draw_offset: IVec2,
+    ) {
+        for i in (0..self.anims.len()).rev() {
+            // Iterate anims backwards so when we swap-remove expired
+            // animations this doesn't affect upcoming elements.
+            if !self.anims[i].render(
+                &self.r,
+                &mut self.s,
+                n_updates,
+                win,
+                draw_offset,
+            ) {
+                self.anims.swap_remove(i);
+            }
+        }
+    }
+
+    pub fn add_anim(&mut self, anim: Box<dyn Anim>) {
+        self.anims.push(anim);
     }
 
     pub fn draw(&self, b: &mut dyn navni::Backend) {

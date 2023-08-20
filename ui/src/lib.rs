@@ -1,5 +1,8 @@
 //! Game user interface machinery
 
+mod anim;
+pub use anim::{Anim, Particle};
+
 mod game;
 pub use game::Game;
 
