@@ -282,10 +282,11 @@ impl Entity {
 
     pub fn die(&self, r: &mut Runtime) {
         if let Some(loc) = self.loc(r) {
+            // Effects.
+            msg!("{} dies.", self.Name(r));
             send_msg(Msg::Death(loc));
-        }
-        // TODO 2023-01-17 Visual effect for mob death
-        if let Some(loc) = self.loc(r) {
+
+            // Ground splatter.
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
@@ -295,7 +296,7 @@ impl Entity {
         self.destroy(r);
 
         if r.player == Some(*self) {
-            // Field promote a minion.
+            // Player entity has died, try to field-promote a minion.
             let npc = r.live_entities().find(|e| e.is_player_aligned(r));
             if let Some(npc) = npc {
                 r.player = Some(npc);

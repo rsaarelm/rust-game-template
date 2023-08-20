@@ -20,6 +20,11 @@ pub fn run(
     draw_panel(g, &panel);
     draw_main(g, &main);
 
+    // TODO cursoring
+    for (y, m) in g.msg.iter().enumerate() {
+        main.write(&mut g.s, [0, y as i32], m);
+    }
+
     g.draw(b);
 
     // INPUT
