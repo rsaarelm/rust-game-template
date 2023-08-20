@@ -26,12 +26,16 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     // INPUT
     if let Some(e) = g.input_map.get(&b.keypress()) {
         use ui::InputAction::*;
-        let player = g.r.player().unwrap();
+        if let Some(player) = g.r.player() {
+            match e {
+                North => player.execute(&mut g.r, Action::Bump(DIR_4[0])),
+                East => player.execute(&mut g.r, Action::Bump(DIR_4[1])),
+                South => player.execute(&mut g.r, Action::Bump(DIR_4[2])),
+                West => player.execute(&mut g.r, Action::Bump(DIR_4[3])),
+                _ => {}
+            }
+        }
         match e {
-            North => player.execute(&mut g.r, Action::Bump(DIR_4[0])),
-            East => player.execute(&mut g.r, Action::Bump(DIR_4[1])),
-            South => player.execute(&mut g.r, Action::Bump(DIR_4[2])),
-            West => player.execute(&mut g.r, Action::Bump(DIR_4[3])),
             QuitGame => return Some(StackOp::Pop),
             _ => {}
         }
