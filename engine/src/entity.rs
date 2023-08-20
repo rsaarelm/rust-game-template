@@ -179,7 +179,11 @@ impl Entity {
     pub fn Name(&self, r: &Runtime) -> String {
         let name = self.name(r);
         // XXX: ASCII only
-        name[..1].to_uppercase() + &name[1..]
+        if !name.is_empty() {
+            name[..1].to_uppercase() + &name[1..]
+        } else {
+            name
+        }
     }
 
     pub fn name(&self, r: &Runtime) -> String {
