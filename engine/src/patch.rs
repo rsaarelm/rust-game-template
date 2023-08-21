@@ -40,14 +40,16 @@ impl Patch {
             loc.set_tile(r, t);
         }
 
-        // Set all the spawn tiles before spawning things so spawns will have
-        // maximally complete patch to show up in.
         for (&p, s) in &self.spawns {
-            s.prepare_terrain(r, origin + p);
-        }
+            let loc = origin + p;
 
-        for (&p, s) in &self.spawns {
-            s.spawn(r, origin + p);
+            // If it wants to spawn on weird terrain, set that.
+            let t = s.preferred_tile();
+            if t != Tile::Ground {
+                loc.set_tile(r, t);
+            }
+
+            s.spawn(r, loc);
         }
 
         if let Some(p) = self.entrance {
@@ -83,13 +85,15 @@ impl TryFrom<PatchData> for Patch {
                     // Assume that player always stands on regular ground.
                     terrain.insert(p, Tile::Ground);
                 } else if let Some(s) = value.legend.get(&c) {
-                    // XXX: It would be nice to put the preferred terrain for
-                    // the spawn thing down at this point, but vault patches
-                    // are loaded during initial static gamedata
-                    // initialization when the data isn't available yet.
-                    // Terrain setting needs to be punted into the point where
-                    // the patch is applied to a runtime then.
                     spawns.insert(p, s.clone());
+                    // NB. Spawn data can't be safely accessed at the point
+                    // where patches are being instantiated, because both are
+                    // found in the static gamedata. At this point assume that
+                    // all spawns will have regular ground under them, and
+                    // rewrite the terrain in patch applying stage if the
+                    // concrete spawn turns out to want something weird
+                    // instead.
+                    terrain.insert(p, Tile::Ground);
                 } else if let Ok(t) = Tile::try_from(c) {
                     terrain.insert(p, t);
                 } else {
@@ -139,9 +143,6 @@ impl From<&Patch> for PatchData {
                 if value.entrance == Some(p) {
                     map.push('@');
                     seen_content = true;
-                } else if let Some(&t) = value.terrain.get(&p) {
-                    map.push(t.into());
-                    seen_content = true;
                 } else if let Some(s) = value.spawns.get(&p) {
                     if let Some(&c) = legend.get(&s.0) {
                         // Already established a legend char, reuse.
@@ -167,6 +168,9 @@ impl From<&Patch> for PatchData {
 
                         map.push(c);
                     }
+                    seen_content = true;
+                } else if let Some(&t) = value.terrain.get(&p) {
+                    map.push(t.into());
                     seen_content = true;
                 } else if !seen_content {
                     // Push NBSP to make initial space not look like
@@ -227,12 +231,8 @@ impl Serialize for Patch {
 pub struct Spawn(String);
 
 impl Spawn {
-    pub fn prepare_terrain(&self, r: &mut Runtime, loc: Location) {
-        let germ: StaticGerm = self.0.parse().unwrap();
-
-        if loc.tile(r) == Tile::default() {
-            loc.set_tile(r, germ.preferred_tile());
-        }
+    pub fn preferred_tile(&self) -> Tile {
+        self.0.parse::<StaticGerm>().unwrap().preferred_tile()
     }
 
     pub fn spawn(&self, r: &mut Runtime, loc: Location) -> Entity {
