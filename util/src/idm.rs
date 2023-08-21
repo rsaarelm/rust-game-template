@@ -21,7 +21,9 @@ pub fn directory_to_idm(
     }
 
     let mut ret = String::new();
-    for e in walkdir::WalkDir::new(path) {
+    for e in walkdir::WalkDir::new(path)
+        .sort_by_key(|a| a.file_name().to_ascii_lowercase())
+    {
         let e = e.expect("read_path failed");
         let depth = e.depth();
         if depth == 0 {
