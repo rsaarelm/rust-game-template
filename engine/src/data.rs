@@ -47,7 +47,7 @@ impl Data {
 pub struct Monster {
     pub icon: char,
     pub power: i32,
-    pub min_depth: i32,
+    pub min_depth: u32,
 }
 
 impl Germ for Monster {
@@ -63,6 +63,10 @@ impl Germ for Monster {
                 dmg: self.power,
             },
         )))
+    }
+
+    fn min_depth(&self) -> u32 {
+        self.min_depth
     }
 }
 

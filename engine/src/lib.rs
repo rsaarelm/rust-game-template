@@ -46,6 +46,8 @@ pub use item::EquippedAt;
 mod location;
 pub use location::{Location, SectorDir};
 
+mod mapgen;
+
 mod mob;
 pub use mob::Goal;
 

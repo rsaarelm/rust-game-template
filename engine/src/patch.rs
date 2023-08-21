@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt};
 
 use anyhow::bail;
 use derive_deref::Deref;
@@ -51,13 +51,41 @@ impl Patch {
         self.terrain.get(&pos).map_or(true, |&t| t == Tile::Wall)
     }
 
-    fn is_tunnel(&self, pos: IVec2) -> bool {
-        self.is_solid(pos + ivec2(-1, -1))
-            && self.is_solid(pos + ivec2(1, -1))
-            && self.is_solid(pos + ivec2(-1, 1))
-            && self.is_solid(pos + ivec2(1, 1))
+    fn has_tunnel_support(&self, pos: IVec2) -> bool {
+        //  #..
+        //  #@.
+        //  ###
+        //
+        // The forbidden tunneling position, digging at @ will open an
+        // un-tunnely 4-cell square.
+
+        for d in [0, 2, 4, 6] {
+            if (d..d + 3).all(|a| !self.is_solid(pos + DIR_8[a % 8])) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn is_tunnel(&self, pos: IVec2) -> bool {
+        self.has_tunnel_support(pos)
             && self.spawns.get(&pos).is_none()
             && self.terrain.get(&pos) == Some(&Tile::Ground)
+    }
+
+    pub fn can_tunnel(&self, pos: IVec2) -> bool {
+        match self.terrain.get(&pos) {
+            // Already open, pass through
+            Some(t) if t.is_walkable() => true,
+            None if self.has_tunnel_support(pos) => true,
+            _ => false,
+        }
+    }
+
+    pub fn open_area(&self) -> impl Iterator<Item = IVec2> + '_ {
+        self.terrain
+            .iter()
+            .filter_map(|(p, t)| t.is_walkable().then_some(*p))
     }
 
     pub fn downstairs_pos(&self) -> Option<IVec2> {
@@ -74,7 +102,7 @@ impl Patch {
         // taken from open edge.
         for (&p, &t) in &other.terrain {
             // Cell isn't defined locally yet, good to go.
-            let Some(&current) = self.terrain.get(&(p - offset)) else {
+            let Some(&current) = self.terrain.get(&(p + offset)) else {
                 continue;
             };
 
@@ -84,7 +112,7 @@ impl Patch {
             }
 
             // You can drop walkable tiles on top of a tunnel.
-            if self.is_tunnel(p - offset) && t.is_walkable() {
+            if self.is_tunnel(p + offset) && t.is_walkable() {
                 continue;
             }
 
@@ -259,6 +287,12 @@ impl From<&Patch> for PatchData {
         let legend = legend.into_iter().map(|(n, c)| (c, Spawn(n))).collect();
 
         PatchData { map, legend }
+    }
+}
+
+impl fmt::Display for PatchData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", idm::to_string(self).unwrap())
     }
 }
 
