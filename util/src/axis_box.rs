@@ -2,7 +2,7 @@
 
 use std::{
     fmt::Debug,
-    ops::{Add, Div, Neg, Sub},
+    ops::{Add, AddAssign, Div, Neg, Sub, SubAssign},
 };
 
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, One, Zero};
@@ -584,14 +584,23 @@ where
 {
     type Output = AxisBox<T, N>;
 
-    fn add(self, rhs: E) -> Self::Output {
+    fn add(mut self, rhs: E) -> Self::Output {
+        self += rhs;
+        self
+    }
+}
+
+impl<E, T, const N: usize> AddAssign<E> for AxisBox<T, N>
+where
+    E: Into<[T; N]>,
+    T: Element,
+{
+    fn add_assign(&mut self, rhs: E) {
         let rhs = rhs.into();
-        let mut ret = self;
         for i in 0..N {
-            ret.p0[i] = ret.p0[i] + rhs[i];
-            ret.p1[i] = ret.p1[i] + rhs[i];
+            self.p0[i] = self.p0[i] + rhs[i];
+            self.p1[i] = self.p1[i] + rhs[i];
         }
-        ret
     }
 }
 
@@ -602,14 +611,23 @@ where
 {
     type Output = AxisBox<T, N>;
 
-    fn sub(self, rhs: E) -> Self::Output {
+    fn sub(mut self, rhs: E) -> Self::Output {
+        self -= rhs;
+        self
+    }
+}
+
+impl<E, T, const N: usize> SubAssign<E> for AxisBox<T, N>
+where
+    E: Into<[T; N]>,
+    T: Element,
+{
+    fn sub_assign(&mut self, rhs: E) {
         let rhs = rhs.into();
-        let mut ret = self;
         for i in 0..N {
-            ret.p0[i] = ret.p0[i] - rhs[i];
-            ret.p1[i] = ret.p1[i] - rhs[i];
+            self.p0[i] = self.p0[i] - rhs[i];
+            self.p1[i] = self.p1[i] - rhs[i];
         }
-        ret
     }
 }
 
