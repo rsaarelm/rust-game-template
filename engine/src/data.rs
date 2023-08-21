@@ -94,6 +94,14 @@ pub trait Germ {
     fn preferred_tile(&self) -> Tile {
         Tile::Ground
     }
+
+    fn commonness(&self) -> u32 {
+        1
+    }
+
+    fn min_depth(&self) -> u32 {
+        0
+    }
 }
 
 pub type StaticGerm = &'static (dyn Germ + Sync + 'static);

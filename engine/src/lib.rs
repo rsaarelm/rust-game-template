@@ -30,7 +30,7 @@ mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
 mod data;
-pub use data::Data;
+pub use data::{Data, Germ};
 
 pub mod ecs;
 
@@ -53,7 +53,7 @@ mod msg;
 pub use msg::{send_msg, Msg, Receiver};
 
 mod patch;
-pub use patch::Patch;
+pub use patch::{Patch, Spawn};
 
 mod placement;
 pub use placement::Placement;
