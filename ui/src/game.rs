@@ -111,10 +111,10 @@ impl Game {
                 Death(loc) => {
                     for d in DIR_8 {
                         self.add_anim(Box::new(
-                            Particle::new(loc, 10)
+                            Particle::new(loc, 15)
                                 .c('*')
                                 .col(X::YELLOW)
-                                .v(0.5 * d.as_vec2().normalize()),
+                                .v(0.25 * d.as_vec2().normalize()),
                         ));
                     }
                 }
