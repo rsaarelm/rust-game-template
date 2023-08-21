@@ -3,14 +3,15 @@ use std::collections::BTreeMap;
 use anyhow::bail;
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
+use util::_String;
 
 use crate::{data::StaticGerm, prelude::*, Rect};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
-    pub terrain: HashMap<IVec2, Tile>,
-    pub spawns: HashMap<IVec2, Spawn>,
+    pub terrain: IndexMap<IVec2, Tile>,
+    pub spawns: IndexMap<IVec2, Spawn>,
     pub entrance: Option<IVec2>,
 }
 
@@ -28,6 +29,70 @@ impl Patch {
         if self.entrance.is_none() {
             self.entrance = other.entrance.map(|p| p + offset);
         }
+    }
+
+    pub fn set_terrain(&mut self, pos: impl Into<IVec2>, t: Tile) {
+        self.terrain.insert(pos.into(), t);
+    }
+
+    pub fn add_spawn(&mut self, pos: impl Into<IVec2>, spawn: Spawn) {
+        self.spawns.insert(pos.into(), spawn);
+    }
+
+    pub fn bounds(&self) -> Rect {
+        Rect::from_points_inclusive(
+            self.terrain
+                .iter()
+                .filter_map(|(&p, &t)| (t != Tile::Wall).then_some(p)),
+        )
+    }
+
+    fn is_solid(&self, pos: IVec2) -> bool {
+        self.terrain.get(&pos).map_or(true, |&t| t == Tile::Wall)
+    }
+
+    fn is_tunnel(&self, pos: IVec2) -> bool {
+        self.is_solid(pos + ivec2(-1, -1))
+            && self.is_solid(pos + ivec2(1, -1))
+            && self.is_solid(pos + ivec2(-1, 1))
+            && self.is_solid(pos + ivec2(1, 1))
+            && self.spawns.get(&pos).is_none()
+            && self.terrain.get(&pos) == Some(&Tile::Ground)
+    }
+
+    pub fn downstairs_pos(&self) -> Option<IVec2> {
+        self.terrain
+            .iter()
+            .find(|(_, &t)| t == Tile::Downstairs)
+            .map(|(&p, _)| p)
+    }
+
+    // See if the patch can be placed in given offset without clobbering
+    // existing area.
+    pub fn can_place(&self, offset: IVec2, other: &Patch) -> bool {
+        // TODO: avoid placements where more than one consecutive chunk is
+        // taken from open edge.
+        for (&p, &t) in &other.terrain {
+            // Cell isn't defined locally yet, good to go.
+            let Some(&current) = self.terrain.get(&(p - offset)) else {
+                continue;
+            };
+
+            // Both cells are defined, but both are wall. Walls can merge.
+            if current == Tile::Wall && t == Tile::Wall {
+                continue;
+            }
+
+            // You can drop walkable tiles on top of a tunnel.
+            if self.is_tunnel(p - offset) && t.is_walkable() {
+                continue;
+            }
+
+            // Otherwise it's a clash, bail out.
+            return false;
+        }
+
+        true
     }
 
     /// Apply patch to world.
@@ -70,8 +135,8 @@ impl TryFrom<PatchData> for Patch {
     type Error = anyhow::Error;
 
     fn try_from(value: PatchData) -> Result<Self, Self::Error> {
-        let mut terrain = HashMap::default();
-        let mut spawns = HashMap::default();
+        let mut terrain = IndexMap::default();
+        let mut spawns = IndexMap::default();
         let mut entrance = None;
         for (y, line) in value.map.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
@@ -245,6 +310,12 @@ impl Spawn {
         e.place(r, loc);
 
         e
+    }
+}
+
+impl From<&_String> for Spawn {
+    fn from(value: &_String) -> Self {
+        Spawn((**value).clone())
     }
 }
 

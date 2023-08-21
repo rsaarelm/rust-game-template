@@ -27,6 +27,10 @@ impl Tile {
         matches!(self, Wall | Door)
     }
 
+    pub fn is_walkable(self) -> bool {
+        !self.blocks_movement()
+    }
+
     pub fn blocks_movement(self) -> bool {
         matches!(self, Wall | LowWall | Water | Magma)
     }
