@@ -1,8 +1,7 @@
 use engine::prelude::*;
-use gfx::v2;
 use navni::prelude::*;
 use ui::prelude::*;
-use ui::Game;
+use util::v2;
 
 use navni::X256Color as X;
 

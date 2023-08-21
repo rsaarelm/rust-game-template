@@ -6,9 +6,9 @@ use std::{
 use glam::IVec2;
 use navni::Rgba;
 use regex::Regex;
-use util::HashMap;
+use util::{v2, HashMap};
 
-use crate::{v2, Buffer, Pixel, Rect};
+use crate::{Buffer, Pixel, Rect};
 
 pub trait Field<P> {
     fn get(&self, pos: [i32; 2]) -> P;

@@ -1,1 +1,1 @@
-pub use crate::{v2, Buffer, Font, Image, Pixel, Rect, SubImage, Window};
+pub use crate::{Buffer, Font, Image, Pixel, Rect, SubImage, Window};

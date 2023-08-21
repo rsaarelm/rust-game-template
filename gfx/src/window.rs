@@ -1,7 +1,8 @@
 use glam::IVec2;
 use navni::prelude::*;
+use util::v2;
 
-use crate::{v2, Buffer, Field, Font, Image, Pixel, Rect};
+use crate::{Buffer, Field, Font, Image, Pixel, Rect};
 
 /// A view structure through which things can be drawn on a buffer.
 #[derive(Copy, Clone, Default)]

@@ -18,7 +18,3 @@ mod window;
 pub use window::Window;
 
 pub type Rect = util::Rect<i32>;
-
-pub fn v2(a: impl Into<glam::IVec2>) -> glam::IVec2 {
-    a.into()
-}

@@ -29,6 +29,11 @@ pub const DIR_4: [IVec2; 4] = [
     IVec2::from_array([-1, 0]),
 ];
 
+/// Helper function for very concise IVec2 initialization.
+pub fn v2(a: impl Into<glam::IVec2>) -> glam::IVec2 {
+    a.into()
+}
+
 pub trait VecExt: Sized + Default {
     /// Absolute size of vector in taxicab metric.
     fn taxi_len(&self) -> i32;

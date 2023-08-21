@@ -11,7 +11,7 @@ pub use bits::{
 
 mod geom;
 pub use geom::{
-    bresenham_line, scroll_offset, PlottedPoint, VecExt, DIR_4, DIR_8,
+    bresenham_line, scroll_offset, v2, PlottedPoint, VecExt, DIR_4, DIR_8,
 };
 
 mod grid;
