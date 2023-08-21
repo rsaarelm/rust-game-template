@@ -108,14 +108,16 @@ impl TryFrom<PatchData> for Patch {
 
 impl From<&Patch> for PatchData {
     fn from(value: &Patch) -> Self {
-        let mut legend_alphabet: Vec<char> =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÀÁÂÃÄÅÆÇÈÉÊË\
-            ÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎ\
-            ďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏ\
-            ŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſƀƁƂƃƄƅƆƇƈƉƊƋƌƍ"
-                .chars()
-                .rev()
-                .collect();
+        const LEGEND_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                                       abcdefghijklmnopqrstuvwxyz\
+                                       αβγδεζηθικλμξπρστφχψω\
+                                       ΓΔΛΞΠΣΦΨΩ\
+                                       БГҐДЂЃЄЖЗЙЛЉЊПЎФЦЧЏШЩЪЭЮЯ\
+                                       àèòùáêõýþâìúãíäîåæçéóëïðñôûöøüÿ\
+                                       ÀÈÒÙÁÊÕÝÞÂÌÚÃÉÓÄÍÅÆÇËÎÔÏÐÑÖØÛßÜ";
+
+        let mut extra_letters: Vec<char> =
+            LEGEND_ALPHABET.chars().rev().collect();
 
         let mut legend: HashMap<String, char> = Default::default();
 
@@ -151,13 +153,13 @@ impl From<&Patch> for PatchData {
                             .find(|a| a.is_alphabetic())
                             .unwrap_or('A');
                         if let Some(p) =
-                            legend_alphabet.iter().position(|&a| a == c)
+                            extra_letters.iter().position(|&a| a == c)
                         {
                             // We can use the initial.
-                            legend_alphabet.swap_remove(p);
+                            extra_letters.swap_remove(p);
                         } else {
                             // It's already in use, let's use a random letter.
-                            c = legend_alphabet.pop().expect(
+                            c = extra_letters.pop().expect(
                                 "patch generator ran out of legend chars",
                             );
                         }
