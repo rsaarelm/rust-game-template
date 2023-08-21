@@ -33,7 +33,7 @@ mod res;
 pub use res::Res;
 
 mod rng;
-pub use rng::{srng, Odds};
+pub use rng::{srng, Odds, RngExt};
 
 mod sys;
 pub use sys::KeyboardLayout;

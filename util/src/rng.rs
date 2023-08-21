@@ -71,3 +71,16 @@ impl std::ops::Sub for Odds {
         Odds(self.0 - rhs.0)
     }
 }
+
+pub trait RngExt {
+    fn one_chance_in(&mut self, n: usize) -> bool;
+}
+
+impl<T: Rng + ?Sized> RngExt for T {
+    fn one_chance_in(&mut self, n: usize) -> bool {
+        if n == 0 {
+            return false;
+        }
+        self.gen_range(0..n) == 0
+    }
+}
