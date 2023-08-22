@@ -2,14 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ecs::{
-        Abilities, Icon, IsFriendly, IsMob, Level, Name, Nickname, Speed,
-        Stats, Voice,
-    },
-    prelude::*,
-    Goal,
-};
+use crate::{ecs::Abilities, prelude::*};
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
@@ -31,10 +24,10 @@ impl Ability {
 
     pub fn invoke(
         self,
-        r: &mut Runtime,
-        loc: Location,
-        v: IVec2,
-        perp: Option<Entity>,
+        _r: &mut Runtime,
+        _loc: Location,
+        _v: IVec2,
+        _perp: Option<Entity>,
     ) {
         match self {
             BerserkRage => todo!(),

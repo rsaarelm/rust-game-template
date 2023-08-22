@@ -8,9 +8,9 @@ pub struct Level {
     /// Dungeon depth, greater depth has more powerful monsters and items.
     depth: u32,
     /// Upstairs position to generate into the map.
-    upstairs: Option<IVec2>,
+    _upstairs: Option<IVec2>,
     /// True if map should include a downstairs exit.
-    generate_downstairs: bool,
+    _generate_downstairs: bool,
 }
 
 impl Level {
@@ -21,13 +21,13 @@ impl Level {
         }
     }
 
-    pub fn upstairs_at(mut self, pos: IVec2) -> Self {
-        self.upstairs = Some(pos);
+    pub fn _upstairs_at(mut self, pos: IVec2) -> Self {
+        self._upstairs = Some(pos);
         self
     }
 
-    pub fn with_downstairs(mut self) -> Self {
-        self.generate_downstairs = true;
+    pub fn _with_downstairs(mut self) -> Self {
+        self._generate_downstairs = true;
         self
     }
 

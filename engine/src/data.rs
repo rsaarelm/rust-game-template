@@ -81,7 +81,7 @@ pub struct Item {
 }
 
 impl Germ for Item {
-    fn build(&self, r: &mut Runtime) -> Entity {
+    fn build(&self, _r: &mut Runtime) -> Entity {
         todo!()
     }
 }
