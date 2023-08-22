@@ -12,7 +12,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     let win = Window::from(&g.s);
     let (panel, main) = win.split_left(26);
 
-    draw_panel(g, &panel);
+    draw_panel(g, b, &panel);
     draw_main(g, n, &main);
 
     // TODO cursoring
@@ -23,28 +23,87 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     g.draw(b);
 
     // INPUT
-    if let Some(e) = g.input_map.get(&b.keypress()) {
+    if let Some(&a) = g.input_map.get(&b.keypress()) {
         use ui::InputAction::*;
-        if let Some(player) = g.r.player() {
-            match e {
-                North => player.execute(&mut g.r, Action::Bump(DIR_4[0])),
-                East => player.execute(&mut g.r, Action::Bump(DIR_4[1])),
-                South => player.execute(&mut g.r, Action::Bump(DIR_4[2])),
-                West => player.execute(&mut g.r, Action::Bump(DIR_4[3])),
-                _ => {}
-            }
-        }
-        match e {
-            QuitGame => return Some(StackOp::Pop),
-            _ => {}
+        g.process_action(a);
+
+        if a == QuitGame {
+            return Some(StackOp::Pop);
         }
     }
 
     None
 }
 
-fn draw_panel(g: &mut Game, win: &Window) {
-    win.write(&mut g.s, [0, 0], "Hello, world!");
+fn draw_panel(g: &mut Game, b: &mut dyn Backend, win: &Window) {
+    use InputAction::*;
+
+    win.clear(&mut g.s);
+    let mut cur = ivec2(0, 0);
+
+    // Print help for a key, also have it act as a button that dispatches the
+    // action when clicked.
+    let command_key = |g: &mut Game, cur: &mut IVec2, action| {
+        let s = if let Some(k) = g.input_map.key_for(action) {
+            // These are supposed to always be single-char, snip to one
+            // character here just in case they're something weird
+            let k = k.to_string();
+            if k.len() == 1 {
+                format!("[{k}]")
+            } else {
+                format!("[?]")
+            }
+        } else {
+            format!("[ ]")
+        };
+        if win.print_button(&mut g.s, cur, &b.mouse_state(), &s) {
+            g.process_action(action);
+        }
+    };
+
+    if let Some(player) = g.r.player() {
+        win.println(&mut g.s, &mut cur, &format!("{}", player.name(&g.r)));
+        let max_hp = player.max_wounds(&g.r);
+        let hp = max_hp - player.wounds(&g.r).min(max_hp);
+        win.println(&mut g.s, &mut cur, &format!("{hp} / {max_hp}"));
+        cur.y += 1;
+    } else {
+        cur.y += 3;
+    }
+
+    win.println(&mut g.s, &mut cur, "Controls");
+    win.println(&mut g.s, &mut cur, "--------");
+
+    win.println(&mut g.s, &mut cur, "    LMB        RMB");
+
+    win.print(&mut g.s, &mut cur, "    ");
+    command_key(g, &mut cur, North);
+    win.print(&mut g.s, &mut cur, "        ");
+    command_key(g, &mut cur, FireNorth);
+    win.println(&mut g.s, &mut cur, "");
+
+    win.print(&mut g.s, &mut cur, " ");
+    command_key(g, &mut cur, West);
+    command_key(g, &mut cur, South);
+    command_key(g, &mut cur, East);
+    win.print(&mut g.s, &mut cur, "  ");
+    command_key(g, &mut cur, FireWest);
+    command_key(g, &mut cur, FireSouth);
+    command_key(g, &mut cur, FireEast);
+    win.println(&mut g.s, &mut cur, "");
+    win.println(&mut g.s, &mut cur, "    run        gun");
+    win.println(&mut g.s, &mut cur, "");
+
+    win.println(&mut g.s, &mut cur, "");
+    win.println(&mut g.s, &mut cur, "Ctrl-C) quit");
+    // TODO: Command help formatter
+    //  - Highlight letter if possible, d)rop, d(r)op, x) drop
+    //  - Make the whole word clickable
+
+    // TODO selection helps
+    // LMB) select NPC
+    // Tab) cycle NPCs
+    // Esc) clear selection
 }
 
 /// Draw main game area.

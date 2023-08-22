@@ -154,4 +154,45 @@ impl Game {
             self.s.as_ref(),
         );
     }
+
+    pub fn process_action(&mut self, action: InputAction) {
+        let mut act = |a| {
+            if let Some(player) = self.r.player() {
+                player.execute(&mut self.r, a);
+            }
+        };
+
+        use InputAction::*;
+        match action {
+            North => act(Action::Bump(DIR_4[0])),
+            East => act(Action::Bump(DIR_4[1])),
+            South => act(Action::Bump(DIR_4[2])),
+            West => act(Action::Bump(DIR_4[3])),
+            FireNorth => {}
+            FireEast => {}
+            FireSouth => {}
+            FireWest => {}
+            SouthEast => {}
+            SouthWest => {}
+            NorthWest => {}
+            NorthEast => {}
+            ClimbUp => {}
+            ClimbDown => {}
+            LongMove => {}
+            Cycle => {}
+            Pass => act(Action::Pass),
+            Inventory => {}
+            Abilities => {}
+            Equip => {}
+            Unequip => {}
+            Drop => {}
+            Throw => {}
+            Use => {}
+            QuitGame => {}
+            Cancel => {}
+            Autoexplore => {}
+            Quicksave => {}
+            Quickload => {}
+        }
+    }
 }

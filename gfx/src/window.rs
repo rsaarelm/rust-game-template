@@ -185,6 +185,48 @@ impl<P: Pixel> Window<P> {
         self.sub(self.area().shrink([2, self.font.height() - 1], [2, 2]))
     }
 
+    /// Write text with an updating cursor position.
+    pub fn print(&self, c: &mut Buffer<P>, pos: &mut IVec2, text: &str) {
+        for (i, line) in text.lines().enumerate() {
+            // Newlines
+            if i > 0 {
+                pos.y += 1;
+                pos.x = 0;
+            }
+            *pos = self.write(c, *pos, line);
+        }
+    }
+
+    pub fn println(&self, c: &mut Buffer<P>, pos: &mut IVec2, text: &str) {
+        self.print(c, pos, text);
+        pos.y += 1;
+        pos.x = 0;
+    }
+
+    pub fn print_button(
+        &self,
+        c: &mut Buffer<P>,
+        pos: &mut IVec2,
+        mouse: &MouseState,
+        text: &str,
+    ) -> bool {
+        debug_assert!(
+            !text.chars().any(|c| c == '\n'),
+            "print_button: only single line supported"
+        );
+        let w = text.chars().count() as i32;
+        // Move to next line if line would go past right edge.
+        if self.width() - pos.x < w {
+            pos.x = 0;
+            pos.y += 1;
+        }
+        let bounds = Rect::new(*pos, *pos + v2([w, 1]));
+        // TODO: Make the colors different if hovering (bold) or pressed
+        // (invert) with the mouse.
+        self.print(c, pos, text);
+        self.clicked_on(mouse, &bounds)
+    }
+
     pub fn line(
         &self,
         c: &mut Buffer<P>,
@@ -263,6 +305,10 @@ impl<P: Pixel> Window<P> {
     }
 
     fn clicked(&self, mouse: &MouseState) -> bool {
+        self.clicked_on(mouse, &self.area())
+    }
+
+    fn clicked_on(&self, mouse: &MouseState, bounds: &Rect) -> bool {
         if let MouseState::Released(
             current_pos,
             MousePress {
@@ -271,7 +317,7 @@ impl<P: Pixel> Window<P> {
             },
         ) = mouse
         {
-            self.bounds.contains(*pos) && self.bounds.contains(*current_pos)
+            bounds.contains(*pos) && bounds.contains(*current_pos)
         } else {
             false
         }
