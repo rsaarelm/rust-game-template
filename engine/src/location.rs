@@ -181,13 +181,7 @@ impl Location {
 
         // Otherwise look for immediate fold portals that lead to the other
         // loc.
-        for d in DIR_4 {
-            if (*self + d).follow(r) == *other {
-                return Some(d);
-            }
-        }
-
-        None
+        DIR_4.into_iter().find(|&d| (*self + d).follow(r) == *other)
     }
 
     /// Follow upstairs, downstairs and possible other portals until you end

@@ -106,17 +106,16 @@ impl Entity {
             return;
         }
 
-        let slot;
-        if kind == ItemKind::RangedWeapon
+        let slot = if kind == ItemKind::RangedWeapon
             && slots.contains(&EquippedAt::GunHand)
         {
             // Always start by equipping a ranged weapon in gun hand even if
             // run hand is also free.
-            slot = EquippedAt::GunHand;
+            EquippedAt::GunHand
         } else {
             // Guaranteed to work since we already covered slots.is_empty.
-            slot = slots[0];
-        }
+            slots[0]
+        };
 
         msg!("Equipped {}.", item.name(r));
         item.set(r, slot);

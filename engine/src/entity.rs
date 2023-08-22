@@ -194,7 +194,7 @@ impl Entity {
         if !nickname.is_empty() {
             if is_proper {
                 // Fully rename proper-named entities.
-                format!("{}", nickname)
+                nickname.to_string()
             } else {
                 format!("{} the {}", nickname, name)
             }
