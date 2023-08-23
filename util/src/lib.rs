@@ -41,6 +41,8 @@ pub use sys::KeyboardLayout;
 
 pub mod text;
 
+mod unchecked_write;
+
 pub type FastHasher = rustc_hash::FxHasher;
 
 /// Map with an efficient hash function.

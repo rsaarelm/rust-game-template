@@ -3,6 +3,9 @@
 mod buffer;
 pub use buffer::Buffer;
 
+mod cursor;
+pub use cursor::Cursor;
+
 mod pixel;
 pub use pixel::Pixel;
 

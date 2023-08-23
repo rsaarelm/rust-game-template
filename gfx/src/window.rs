@@ -308,7 +308,7 @@ impl<P: Pixel> Window<P> {
         self.clicked_on(mouse, &self.area())
     }
 
-    fn clicked_on(&self, mouse: &MouseState, bounds: &Rect) -> bool {
+    pub(crate) fn clicked_on(&self, mouse: &MouseState, bounds: &Rect) -> bool {
         if let MouseState::Released(
             current_pos,
             MousePress {
