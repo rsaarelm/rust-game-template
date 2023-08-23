@@ -17,9 +17,9 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     draw_panel(g, b, &panel);
     draw_main(g, n, &main);
 
-    // TODO cursoring
-    for (y, m) in g.msg.iter().enumerate() {
-        main.write(&mut g.s, [0, y as i32], m);
+    let mut cur = Cursor::new(&mut g.s, main);
+    for m in g.msg.iter() {
+        writeln!(cur, "{m}");
     }
 
     g.draw(b);
