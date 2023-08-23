@@ -1,7 +1,9 @@
+use std::fmt::Write;
+
 use engine::prelude::*;
 use navni::prelude::*;
 use ui::prelude::*;
-use util::v2;
+use util::{v2, write, writeln};
 
 use navni::X256Color as X;
 
@@ -35,15 +37,16 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     None
 }
 
-fn draw_panel(g: &mut Game, b: &mut dyn Backend, win: &Window) {
+fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
     use InputAction::*;
 
     win.clear(&mut g.s);
-    let mut cur = ivec2(0, 0);
+    let mut cur = Cursor::new(&mut g.s, *win);
+    let mut actions = Vec::new();
 
     // Print help for a key, also have it act as a button that dispatches the
     // action when clicked.
-    let command_key = |g: &mut Game, cur: &mut IVec2, action| {
+    let mut command_key = |cur: &mut Cursor<'_>, action| {
         let s = if let Some(k) = g.input_map.key_for(action) {
             // These are supposed to always be single-char, snip to one
             // character here just in case they're something weird
@@ -56,46 +59,44 @@ fn draw_panel(g: &mut Game, b: &mut dyn Backend, win: &Window) {
         } else {
             format!("[ ]")
         };
-        if win.print_button(&mut g.s, cur, &b.mouse_state(), &s) {
-            g.process_action(action);
+        if cur.print_button(&b.mouse_state(), &s) {
+            actions.push(action);
         }
     };
 
     if let Some(player) = g.r.player() {
-        win.println(&mut g.s, &mut cur, &format!("{}", player.name(&g.r)));
+        writeln!(cur, "{}", player.name(&g.r));
         let max_hp = player.max_wounds(&g.r);
         let hp = max_hp - player.wounds(&g.r).min(max_hp);
-        win.println(&mut g.s, &mut cur, &format!("{hp} / {max_hp}"));
-        cur.y += 1;
+        writeln!(cur, "{hp} / {max_hp}");
     } else {
-        cur.y += 3;
+        writeln!(cur, "\n\n");
     }
 
-    win.println(&mut g.s, &mut cur, "Controls");
-    win.println(&mut g.s, &mut cur, "--------");
+    writeln!(cur, "Controls");
+    writeln!(cur, "--------");
 
-    win.println(&mut g.s, &mut cur, "    LMB        RMB");
+    writeln!(cur, "    LMB        RMB");
+    write!(cur, "    ");
+    command_key(&mut cur, North);
+    write!(cur, "        ");
+    command_key(&mut cur, FireNorth);
+    writeln!(cur, "");
 
-    win.print(&mut g.s, &mut cur, "    ");
-    command_key(g, &mut cur, North);
-    win.print(&mut g.s, &mut cur, "        ");
-    command_key(g, &mut cur, FireNorth);
-    win.println(&mut g.s, &mut cur, "");
+    write!(cur, " ");
+    command_key(&mut cur, West);
+    command_key(&mut cur, South);
+    command_key(&mut cur, East);
+    write!(cur, "  ");
+    command_key(&mut cur, FireWest);
+    command_key(&mut cur, FireSouth);
+    command_key(&mut cur, FireEast);
+    writeln!(cur, "");
+    writeln!(cur, "    run        gun");
+    writeln!(cur, "");
 
-    win.print(&mut g.s, &mut cur, " ");
-    command_key(g, &mut cur, West);
-    command_key(g, &mut cur, South);
-    command_key(g, &mut cur, East);
-    win.print(&mut g.s, &mut cur, "  ");
-    command_key(g, &mut cur, FireWest);
-    command_key(g, &mut cur, FireSouth);
-    command_key(g, &mut cur, FireEast);
-    win.println(&mut g.s, &mut cur, "");
-    win.println(&mut g.s, &mut cur, "    run        gun");
-    win.println(&mut g.s, &mut cur, "");
-
-    win.println(&mut g.s, &mut cur, "");
-    win.println(&mut g.s, &mut cur, "Ctrl-C) quit");
+    writeln!(cur, "");
+    writeln!(cur, "Ctrl-C) quit");
     // TODO: Command help formatter
     //  - Highlight letter if possible, d)rop, d(r)op, x) drop
     //  - Make the whole word clickable
@@ -104,6 +105,10 @@ fn draw_panel(g: &mut Game, b: &mut dyn Backend, win: &Window) {
     // LMB) select NPC
     // Tab) cycle NPCs
     // Esc) clear selection
+
+    for a in actions {
+        g.process_action(a);
+    }
 }
 
 /// Draw main game area.
