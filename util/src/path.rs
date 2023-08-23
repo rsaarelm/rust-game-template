@@ -1,7 +1,7 @@
 use glam::IVec2;
 use num_traits::{One, Zero};
 
-use crate::{HashSet, DIR_4};
+use crate::{s4, HashSet};
 use std::{collections::VecDeque, hash::Hash, ops::Add};
 
 /// Generate a shortest paths map on a grid according to a neighbors function.
@@ -80,7 +80,7 @@ where
     crate::dijkstra_map(
         move |n| {
             let mut ret = Vec::new();
-            for d in DIR_4 {
+            for d in s4::DIR {
                 let n = n.clone() + d;
                 if is_valid(&n) {
                     ret.push(n);

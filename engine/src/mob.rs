@@ -1,6 +1,7 @@
 //! Entity logic for active creatures.
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+use util::s4;
 
 use crate::{
     ecs::{ActsNext, IsFriendly, IsMob, Momentum, Speed, Stats},
@@ -226,6 +227,8 @@ impl Entity {
                     // branch off to neighboring sectors.
                     if start {
                         use crate::SectorDir::*;
+                        // Direction list set up to do a boustrophedon on a
+                        // big flat open sector-plane.
                         for sector_dir in [East, West, South, North, Down, Up] {
                             if let Some(dest) = loc
                                 .path_dest_to_neighboring_sector(r, sector_dir)
@@ -354,7 +357,7 @@ impl Entity {
 
             // Blocked by an undisplaceable mob, try to go around.
             let mut other_dirs: Vec<_> =
-                DIR_4.into_iter().filter(|&d| d != dir).collect();
+                s4::DIR.into_iter().filter(|&d| d != dir).collect();
             other_dirs.shuffle(&mut util::srng(&loc));
             for d in other_dirs {
                 if self.can_step(r, d) {
@@ -569,8 +572,9 @@ pub enum Goal {
 
     /// Special state at start of autoexploration
     ///
-    /// Will go through some conditions that would cause an ongoing
-    /// autoexplore to halt.
+    /// If the current sector is fully explored and ongoing autoexploration
+    /// would end, `StartAutoexplore` will instead look for unexplored
+    /// adjacent sectors and plot a way to one if found.
     StartAutoexplore,
 
     /// Autoexplore the current sector.

@@ -1,6 +1,7 @@
 use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+use util::s4;
 
 use crate::{prelude::*, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -181,7 +182,9 @@ impl Location {
 
         // Otherwise look for immediate fold portals that lead to the other
         // loc.
-        DIR_4.into_iter().find(|&d| (*self + d).follow(r) == *other)
+        s4::DIR
+            .into_iter()
+            .find(|&d| (*self + d).follow(r) == *other)
     }
 
     /// Follow upstairs, downstairs and possible other portals until you end
@@ -239,7 +242,7 @@ impl Location {
     pub fn perturbed_neighbors_4(&self) -> Vec<Location> {
         let mut rng = util::srng(self);
         let mut dirs: Vec<Location> =
-            DIR_4.iter().map(|&d| *self + d).collect();
+            s4::DIR.iter().map(|&d| *self + d).collect();
         dirs.shuffle(&mut rng);
         dirs
     }
@@ -292,7 +295,7 @@ impl Location {
         for (loc, _) in util::dijkstra_map(
             move |loc| {
                 let mut ret = Vec::new();
-                for d in DIR_4 {
+                for d in s4::DIR {
                     let loc = (*loc + d).follow(r);
                     if !loc.is_walkable(r) {
                         continue;
@@ -464,10 +467,10 @@ impl std::ops::AddAssign<SectorDir> for Location {
     Deserialize,
 )]
 pub enum SectorDir {
+    North,
     East,
     South,
     West,
-    North,
     Up,
     Down,
 }
@@ -483,7 +486,7 @@ impl TryFrom<IVec2> for SectorDir {
         if value == IVec2::ZERO {
             Err(())
         } else {
-            for (a, b) in DIR_4.iter().zip([East, South, West, North]) {
+            for (a, b) in s4::DIR.iter().zip([North, East, South, West]) {
                 if *a == value {
                     return Ok(b);
                 }

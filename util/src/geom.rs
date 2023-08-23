@@ -9,33 +9,338 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::Rect;
 
-/// 8 directions, clock face order.
-pub const DIR_8: [IVec2; 8] = [
-    IVec2::from_array([0, -1]),
-    IVec2::from_array([1, -1]),
-    IVec2::from_array([1, 0]),
-    IVec2::from_array([1, 1]),
-    IVec2::from_array([0, 1]),
-    IVec2::from_array([-1, 1]),
-    IVec2::from_array([-1, 0]),
-    IVec2::from_array([-1, -1]),
-];
+/// 4-directional grid space using taxicab metric.
+pub mod s4 {
+    use glam::IVec2;
+    use serde::{Deserialize, Serialize};
 
-/// 4 directions, clock face order.
-pub const DIR_4: [IVec2; 4] = [
-    IVec2::from_array([0, -1]),
-    IVec2::from_array([1, 0]),
-    IVec2::from_array([0, 1]),
-    IVec2::from_array([-1, 0]),
-];
+    use crate::VecExt;
+
+    /// 4-dirs in clock face order.
+    pub const DIR: [IVec2; 4] = [
+        IVec2::from_array([0, -1]),
+        IVec2::from_array([1, 0]),
+        IVec2::from_array([0, 1]),
+        IVec2::from_array([-1, 0]),
+    ];
+
+    /// Taxicab distance metric.
+    pub fn d(a: &IVec2, b: &IVec2) -> i32 {
+        let c = (*a - *b).abs();
+        c.x + c.y
+    }
+
+    /// 4-neighbors of given point.
+    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
+        DIR.iter().map(move |d| p + *d)
+    }
+
+    #[derive(
+        Copy,
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        Ord,
+        PartialOrd,
+        Hash,
+        Serialize,
+        Deserialize,
+    )]
+    pub enum Dir {
+        North,
+        East,
+        South,
+        West,
+    }
+
+    impl Dir {
+        pub fn new(at: IVec2, towards: IVec2) -> Self {
+            let (dx, dy) = (towards[0] - at[0], towards[1] - at[1]);
+            let (adx, ady) = (dx.abs(), dy.abs());
+
+            // if adx == ady alternate between horizontal and vertical dirs on
+            // different starting positions to generate pseudo-diagonal movement.
+            if ady > adx || (adx == ady && !at.prefer_horizontals_here()) {
+                if dy < 0 {
+                    Dir::North
+                } else {
+                    Dir::South
+                }
+            } else if dx < 0 {
+                Dir::West
+            } else {
+                Dir::East
+            }
+        }
+    }
+
+    impl From<IVec2> for Dir {
+        fn from(value: IVec2) -> Self {
+            Dir::new(Default::default(), value)
+        }
+    }
+
+    impl From<Dir> for IVec2 {
+        fn from(value: Dir) -> Self {
+            DIR[value as usize]
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use glam::{ivec2, IVec2};
+
+        #[test]
+        fn dirs() {
+            eprintln!("s4 test picture");
+            for y in -5..=5 {
+                for x in -5..=5 {
+                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                }
+                eprintln!()
+            }
+
+            for d in DIR {
+                assert_eq!(IVec2::from(Dir::from(d)), d);
+            }
+        }
+    }
+}
+
+/// Hex coordinate space.
+pub mod s6 {
+    use std::f32::consts::TAU;
+
+    use glam::IVec2;
+    use serde::{Deserialize, Serialize};
+
+    /// 6-dirs.
+    ///
+    /// These are in clock face order when projected on screen to a flat-top
+    /// hex display where the [-1, -1] axis points up and the [1, 0] axis
+    /// points up and right.
+    pub const DIR: [IVec2; 6] = [
+        IVec2::from_array([-1, -1]),
+        IVec2::from_array([0, -1]),
+        IVec2::from_array([1, 0]),
+        IVec2::from_array([1, 1]),
+        IVec2::from_array([0, 1]),
+        IVec2::from_array([-1, 0]),
+    ];
+
+    /// Hex distance metric.
+    pub fn d(a: &IVec2, b: &IVec2) -> i32 {
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        (dx.abs() + dy.abs() + (dx + dy).abs()) / 2
+    }
+
+    /// 6-neighbors of given point.
+    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
+        DIR.iter().map(move |d| p + *d)
+    }
+
+    #[derive(
+        Copy,
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        Ord,
+        PartialOrd,
+        Hash,
+        Serialize,
+        Deserialize,
+    )]
+    pub enum Dir {
+        North,
+        Northeast,
+        Southeast,
+        South,
+        Southwest,
+        Northwest,
+    }
+
+    impl From<IVec2> for Dir {
+        /// Convert a vector into the closest hex direction.
+        ///
+        /// ```notrust
+        ///        *0*       *1*
+        ///           \ 14 15 | 00 01
+        ///           13\     |      02
+        ///               \   |
+        ///         12      \ |        03
+        ///     *5* ----------O-X------- *2*
+        ///         11        Y \      04
+        ///                   |   \
+        ///           10      |     \05
+        ///             09 08 | 07 06 \
+        ///                  *4*       *3*
+        ///
+        /// The hexadecants (00 to 15) and the hex
+        /// directions (*0* to *5*) around the origin.
+        /// ```
+        ///
+        /// Vectors that are in a space between two hex direction vectors are
+        /// rounded to a hexadecant, then assigned the hex direction whose vector
+        /// is nearest to that hexadecant.
+        fn from(value: IVec2) -> Self {
+            let hexadecant = {
+                let width = TAU / 16.0;
+                let mut radian = (value.x as f32).atan2(-value.y as f32);
+                if radian < 0.0 {
+                    radian += TAU
+                }
+                (radian / width).floor() as i32
+            };
+
+            match hexadecant {
+                13 | 14 => Dir::North,
+                15 | 0 | 1 => Dir::Northeast,
+                2 | 3 | 4 => Dir::Southeast,
+                5 | 6 => Dir::South,
+                7 | 8 | 9 => Dir::Southwest,
+                10 | 11 | 12 => Dir::Northwest,
+                _ => panic!("Bad hexadecant"),
+            }
+        }
+    }
+
+    impl From<Dir> for IVec2 {
+        fn from(value: Dir) -> Self {
+            DIR[value as usize]
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use glam::{ivec2, IVec2};
+
+        #[test]
+        fn dirs() {
+            eprintln!("s6 test picture");
+            for y in -5..=5 {
+                for x in -5..=5 {
+                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                }
+                eprintln!()
+            }
+
+            for d in DIR {
+                assert_eq!(IVec2::from(Dir::from(d)), d);
+            }
+        }
+    }
+}
+
+/// 8-directional grid space using chessboard metric.
+pub mod s8 {
+    use std::f32::consts::TAU;
+
+    use glam::IVec2;
+    use serde::{Deserialize, Serialize};
+
+    /// 8-dirs in clock face order.
+    pub const DIR: [IVec2; 8] = [
+        IVec2::from_array([0, -1]),
+        IVec2::from_array([1, -1]),
+        IVec2::from_array([1, 0]),
+        IVec2::from_array([1, 1]),
+        IVec2::from_array([0, 1]),
+        IVec2::from_array([-1, 1]),
+        IVec2::from_array([-1, 0]),
+        IVec2::from_array([-1, -1]),
+    ];
+
+    /// Chessboard distance metric.
+    pub fn d(a: &IVec2, b: &IVec2) -> i32 {
+        let c = (*a - *b).abs();
+        c.x.max(c.y)
+    }
+
+    /// 8-neighbors of given point.
+    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
+        DIR.iter().map(move |d| p + *d)
+    }
+
+    #[derive(
+        Copy,
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        Ord,
+        PartialOrd,
+        Hash,
+        Serialize,
+        Deserialize,
+    )]
+    pub enum Dir {
+        North,
+        Northeast,
+        East,
+        Southeast,
+        South,
+        Southwest,
+        West,
+        Northwest,
+    }
+
+    impl From<IVec2> for Dir {
+        fn from(value: IVec2) -> Self {
+            use Dir::*;
+            let a = ((value.x as f32).atan2(-value.y as f32) / TAU
+                + 1.0 / 16.0)
+                .rem_euclid(1.0);
+
+            match (a * 8.0) as usize {
+                0 => North,
+                1 => Northeast,
+                2 => East,
+                3 => Southeast,
+                4 => South,
+                5 => Southwest,
+                6 => West,
+                7 => Northwest,
+                _ => panic!("bad angle"),
+            }
+        }
+    }
+
+    impl From<Dir> for IVec2 {
+        fn from(value: Dir) -> Self {
+            DIR[value as usize]
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use glam::{ivec2, IVec2};
+
+        #[test]
+        fn dirs() {
+            eprintln!("s8 test picture");
+            for y in -5..=5 {
+                for x in -5..=5 {
+                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                }
+                eprintln!()
+            }
+
+            for d in DIR {
+                assert_eq!(IVec2::from(Dir::from(d)), d);
+            }
+        }
+    }
+}
 
 /// Helper function for very concise IVec2 initialization.
 pub fn v2(a: impl Into<glam::IVec2>) -> glam::IVec2 {
     a.into()
-}
-
-pub fn taxi_metric(a: &IVec2, b: &IVec2) -> i32 {
-    (*a - *b).taxi_len()
 }
 
 pub trait VecExt: Sized + Default {

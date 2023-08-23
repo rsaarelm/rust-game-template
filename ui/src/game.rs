@@ -1,6 +1,6 @@
 use crate::{prelude::*, Particle};
 use engine::prelude::*;
-use util::Layout;
+use util::{s4, s8, Layout};
 
 use navni::X256Color as X;
 
@@ -109,7 +109,7 @@ impl Game {
                     self.add_anim(Box::new(Particle::new(e, 3).c('·')));
                 }
                 Death(loc) => {
-                    for d in DIR_8 {
+                    for d in s8::DIR {
                         self.add_anim(Box::new(
                             Particle::new(loc, 15)
                                 .c('*')
@@ -164,10 +164,10 @@ impl Game {
 
         use InputAction::*;
         match action {
-            North => act(Action::Bump(DIR_4[0])),
-            East => act(Action::Bump(DIR_4[1])),
-            South => act(Action::Bump(DIR_4[2])),
-            West => act(Action::Bump(DIR_4[3])),
+            North => act(Action::Bump(s4::DIR[0])),
+            East => act(Action::Bump(s4::DIR[1])),
+            South => act(Action::Bump(s4::DIR[2])),
+            West => act(Action::Bump(s4::DIR[3])),
             FireNorth => {}
             FireEast => {}
             FireSouth => {}

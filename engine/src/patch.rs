@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, fmt};
 use anyhow::bail;
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
-use util::_String;
+use util::{_String, s8};
 
 use crate::{data::StaticGerm, prelude::*, Rect};
 
@@ -60,7 +60,7 @@ impl Patch {
         // un-tunnely 4-cell square.
 
         for d in [0, 2, 4, 6] {
-            if (d..d + 3).all(|a| !self.is_solid(pos + DIR_8[a % 8])) {
+            if (d..d + 3).all(|a| !self.is_solid(pos + s8::DIR[a % 8])) {
                 return false;
             }
         }

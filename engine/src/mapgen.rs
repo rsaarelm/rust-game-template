@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use util::{astar_path, taxi_metric, RngExt};
+use util::{astar_path, s4, RngExt};
 
 use crate::{prelude::*, Data, Germ, Patch, Rect, Spawn};
 
@@ -106,15 +106,13 @@ impl Distribution<Patch> for Level {
                             |&a| {
                                 let ret = &ret;
                                 let new_room = &new_room;
-                                DIR_4.into_iter().filter_map(move |d| {
-                                    let a: IVec2 = a + d;
-                                    (new_room.can_tunnel(a)
+                                s4::ns(a).filter(|&a| {
+                                    new_room.can_tunnel(a)
                                         && ret.can_tunnel(a - p)
-                                        && (level_area - p).contains(a))
-                                    .then_some(a)
+                                        && (level_area - p).contains(a)
                                 })
                             },
-                            taxi_metric,
+                            s4::d,
                         ) else {
                             break 'placement;
                         };

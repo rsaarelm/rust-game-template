@@ -1,7 +1,7 @@
 use engine::prelude::*;
 use navni::prelude::*;
 use rand::Rng;
-use util::srng;
+use util::{s8, srng};
 
 use navni::X256Color as X;
 
@@ -46,7 +46,7 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
     // High walls block everything else.
     let self_height = tile(r, p).self_height();
     let blocks =
-        |h: usize, a: usize| tile(r, p + DIR_8[a % 8]).edge_height() >= h;
+        |h: usize, a: usize| tile(r, p + s8::DIR[a % 8]).edge_height() >= h;
 
     if (0..8).all(|a| blocks(self_height, a)) {
         // Entirely within wall mass, do not draw.
@@ -55,11 +55,11 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
 
     let mut ret = 0;
 
-    let n = |a| tile(r, p + DIR_8[a % 8]);
+    let n = |a| tile(r, p + s8::DIR[a % 8]);
 
     // Go through the 4 neighbors.
     for a in [0, 2, 4, 6] {
-        let h = tile(r, p + DIR_8[a]).self_height();
+        let h = tile(r, p + s8::DIR[a]).self_height();
 
         if blocks(h, a + 6)
             && blocks(h, a + 7)
