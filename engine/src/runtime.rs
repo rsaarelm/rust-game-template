@@ -92,9 +92,8 @@ impl Runtime {
             },
         )));
 
-        player.place(self, loc);
-
         self.player = Some(player);
+        player.place(self, loc);
     }
 
     pub fn player(&self) -> Option<Entity> {
