@@ -74,12 +74,11 @@ impl Game {
             }
         }
 
-        // Player is not waiting for input, update the world.
-        if !self
-            .r
-            .player()
-            .map_or(false, |p| p.acts_this_frame(&self.r))
-        {
+        // If player doesn't exist, player is not acting this frame or player
+        // is executing a goal, run in real time.
+        if self.r.player().map_or(true, |p| {
+            !p.acts_this_frame(&self.r) || p.goal(&self.r).is_some()
+        }) {
             self.r.tick();
         }
 
@@ -156,18 +155,21 @@ impl Game {
     }
 
     pub fn process_action(&mut self, action: InputAction) {
-        let mut act = |a| {
-            if let Some(player) = self.r.player() {
-                player.execute(&mut self.r, a);
+        let r = &mut self.r;
+
+        let act = |r: &mut Runtime, a| {
+            if let Some(player) = r.player() {
+                player.clear_goal(r);
+                player.execute(r, a);
             }
         };
 
         use InputAction::*;
         match action {
-            North => act(Action::Bump(s4::DIR[0])),
-            East => act(Action::Bump(s4::DIR[1])),
-            South => act(Action::Bump(s4::DIR[2])),
-            West => act(Action::Bump(s4::DIR[3])),
+            North => act(r, Action::Bump(s4::DIR[0])),
+            East => act(r, Action::Bump(s4::DIR[1])),
+            South => act(r, Action::Bump(s4::DIR[2])),
+            West => act(r, Action::Bump(s4::DIR[3])),
             FireNorth => {}
             FireEast => {}
             FireSouth => {}
@@ -180,7 +182,7 @@ impl Game {
             ClimbDown => {}
             LongMove => {}
             Cycle => {}
-            Pass => act(Action::Pass),
+            Pass => act(r, Action::Pass),
             Inventory => {}
             Abilities => {}
             Equip => {}
@@ -189,8 +191,24 @@ impl Game {
             Throw => {}
             Use => {}
             QuitGame => {}
-            Cancel => {}
-            Autoexplore => {}
+            Cancel => {
+                if let Some(p) = r.player() {
+                    p.clear_goal(r);
+                }
+            }
+            Autoexplore => {
+                if let Some(p) = r.player() {
+                    if let Some(enemy) = p.first_visible_enemy(r) {
+                        // Autofight instead of autoexploring when there are
+                        // visible enemies.
+                        if let Some(atk) = p.decide(r, Goal::Attack(enemy)) {
+                            act(r, atk);
+                        }
+                    } else {
+                        p.set_goal(r, Goal::StartAutoexplore);
+                    }
+                }
+            }
             Quicksave => {}
             Quickload => {}
         }

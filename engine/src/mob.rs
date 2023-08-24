@@ -216,9 +216,12 @@ impl Entity {
             Goal::Autoexplore | Goal::StartAutoexplore => {
                 let start = matches!(goal, Goal::StartAutoexplore);
 
-                if let Some(e) = self.first_visible_enemy(r) {
-                    // Fight when enemies sighted.
-                    return self.decide(r, Goal::Attack(e));
+                if !self.is_player(r) {
+                    // Non-players fight when they run into enemies when
+                    // exploring.
+                    if let Some(e) = self.first_visible_enemy(r) {
+                        return self.decide(r, Goal::Attack(e));
+                    }
                 }
 
                 let explore_map = r.autoexplore_map(loc);
@@ -522,6 +525,25 @@ impl Entity {
             .find(|e| e.is_enemy(r, self))
     }
 
+    pub fn is_threatened(&self, r: &Runtime) -> bool {
+        self.first_visible_enemy(r).is_some()
+    }
+
+    /// Return if there are threatening mobs in the given direction.
+    pub fn is_threatened_from(&self, r: &Runtime, dir: IVec2) -> bool {
+        debug_assert_eq!(s4::norm(dir), dir);
+        self.fov_mobs(r, FOV_RADIUS)
+            .into_iter()
+            .filter(|&e| e.is_enemy(r, self))
+            .any(|e| {
+                if let Some(v) = self.vec_towards(r, &e) {
+                    s4::norm(v) == dir
+                } else {
+                    false
+                }
+            })
+    }
+
     pub(crate) fn scan_fov(&self, r: &mut Runtime) {
         let Some(loc) = self.loc(r) else { return };
 
@@ -611,4 +633,10 @@ pub enum Goal {
     /// cause the mob to stand around without working towards completing the
     /// goal.)
     Escort(Entity),
+}
+
+impl Goal {
+    pub fn is_some(&self) -> bool {
+        !matches!(self, Goal::None)
+    }
 }

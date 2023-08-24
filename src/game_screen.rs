@@ -3,7 +3,7 @@ use std::fmt::Write;
 use engine::prelude::*;
 use navni::prelude::*;
 use ui::prelude::*;
-use util::{v2, write, writeln};
+use util::{text, v2, write, writeln};
 
 use navni::X256Color as X;
 
@@ -42,7 +42,10 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
 
     win.clear(&mut g.s);
     let mut cur = Cursor::new(&mut g.s, *win);
+    // Two of these just so that both closures below get one to borrow.
+    // They all get merged into one output at the end.
     let mut actions = Vec::new();
+    let mut actions2 = Vec::new();
 
     // Print help for a key, also have it act as a button that dispatches the
     // action when clicked.
@@ -64,6 +67,19 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
         }
     };
 
+    // Print a named command for key, also have the text act as a button.
+    let mut command_help = |cur: &mut Cursor<'_>, action, name| {
+        let s = if let Some(k) = g.input_map.key_for(action) {
+            text::input_help_string(&k.to_string(), name)
+        } else {
+            format!("n/a: {name}")
+        };
+        if cur.print_button(&b.mouse_state(), &s) {
+            actions2.push(action);
+        }
+        writeln!(cur);
+    };
+
     if let Some(player) = g.r.player() {
         writeln!(cur, "{}", player.name(&g.r));
         let max_hp = player.max_wounds(&g.r);
@@ -81,7 +97,7 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
     command_key(&mut cur, North);
     write!(cur, "        ");
     command_key(&mut cur, FireNorth);
-    writeln!(cur, "");
+    writeln!(cur);
 
     write!(cur, " ");
     command_key(&mut cur, West);
@@ -93,9 +109,15 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
     command_key(&mut cur, FireEast);
     writeln!(cur, "");
     writeln!(cur, "    run        gun");
-    writeln!(cur, "");
+    writeln!(cur);
 
-    writeln!(cur, "");
+    writeln!(cur);
+    command_help(&mut cur, Cancel, "cancel orders");
+    if !g.r.player().map_or(false, |p| p.is_threatened(&g.r)) {
+        command_help(&mut cur, Autoexplore, "autoexplore");
+    } else {
+        command_help(&mut cur, Autoexplore, "autofight");
+    }
     writeln!(cur, "Ctrl-C) quit");
     // TODO: Command help formatter
     //  - Highlight letter if possible, d)rop, d(r)op, x) drop
@@ -106,7 +128,7 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
     // Tab) cycle NPCs
     // Esc) clear selection
 
-    for a in actions {
+    for a in actions.into_iter().chain(actions2) {
         g.process_action(a);
     }
 }
