@@ -89,13 +89,13 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
         writeln!(cur, "\n\n");
     }
 
-    writeln!(cur, "Controls");
-    writeln!(cur, "--------");
+    writeln!(cur);
+    writeln!(cur, "------- Controls -------");
 
-    writeln!(cur, "    LMB        RMB");
+    writeln!(cur, "    LMB          RMB");
     write!(cur, "    ");
     command_key(&mut cur, North);
-    write!(cur, "        ");
+    write!(cur, "          ");
     command_key(&mut cur, FireNorth);
     writeln!(cur);
 
@@ -103,12 +103,12 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
     command_key(&mut cur, West);
     command_key(&mut cur, South);
     command_key(&mut cur, East);
-    write!(cur, "  ");
+    write!(cur, "    ");
     command_key(&mut cur, FireWest);
     command_key(&mut cur, FireSouth);
     command_key(&mut cur, FireEast);
-    writeln!(cur, "");
-    writeln!(cur, "    run        gun");
+    writeln!(cur);
+    writeln!(cur, "    run          gun");
     writeln!(cur);
 
     writeln!(cur);
