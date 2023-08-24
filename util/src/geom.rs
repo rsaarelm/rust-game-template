@@ -11,8 +11,7 @@ use crate::Rect;
 
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
-    use glam::IVec2;
-    use serde::{Deserialize, Serialize};
+    use glam::{ivec2, IVec2};
 
     use crate::VecExt;
 
@@ -35,75 +34,56 @@ pub mod s4 {
         DIR.iter().map(move |d| p + *d)
     }
 
-    #[derive(
-        Copy,
-        Clone,
-        Debug,
-        Eq,
-        PartialEq,
-        Ord,
-        PartialOrd,
-        Hash,
-        Serialize,
-        Deserialize,
-    )]
-    pub enum Dir {
-        North,
-        East,
-        South,
-        West,
+    /// Normalize vector to a 4-dir.
+    pub fn norm(v: IVec2) -> IVec2 {
+        norm_at(ivec2(0, 0), v)
     }
 
-    impl Dir {
-        pub fn new(at: IVec2, towards: IVec2) -> Self {
-            let (dx, dy) = (towards[0] - at[0], towards[1] - at[1]);
-            let (adx, ady) = (dx.abs(), dy.abs());
+    /// Normalize vector from p1 to p2.
+    ///
+    /// Perfectly diagonal vectors will alternate between vertical and
+    /// horizontal normalizations based on the starting point.
+    pub fn norm_at(p1: IVec2, p2: IVec2) -> IVec2 {
+        let (dx, dy) = (p2[0] - p1[0], p2[1] - p1[1]);
+        let (adx, ady) = (dx.abs(), dy.abs());
 
-            // if adx == ady alternate between horizontal and vertical dirs on
-            // different starting positions to generate pseudo-diagonal movement.
-            if ady > adx || (adx == ady && !at.prefer_horizontals_here()) {
-                if dy < 0 {
-                    Dir::North
-                } else {
-                    Dir::South
-                }
-            } else if dx < 0 {
-                Dir::West
+        // if adx == ady alternate between horizontal and vertical dirs on
+        // different starting positions to generate pseudo-diagonal movement.
+        if ady > adx || (adx == ady && !p1.prefer_horizontals_here()) {
+            if dy < 0 {
+                DIR[0]
             } else {
-                Dir::East
+                DIR[2]
             }
-        }
-    }
-
-    impl From<IVec2> for Dir {
-        fn from(value: IVec2) -> Self {
-            Dir::new(Default::default(), value)
-        }
-    }
-
-    impl From<Dir> for IVec2 {
-        fn from(value: Dir) -> Self {
-            DIR[value as usize]
+        } else if dx < 0 {
+            DIR[3]
+        } else {
+            DIR[1]
         }
     }
 
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::{ivec2, IVec2};
+        use glam::ivec2;
 
         #[test]
         fn dirs() {
             eprintln!("s4 test picture");
             for y in -5..=5 {
                 for x in -5..=5 {
-                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                    eprint!(
+                        "{} ",
+                        DIR.iter()
+                            .position(|&a| a == norm(ivec2(x, y)))
+                            .unwrap()
+                    );
                 }
                 eprintln!()
             }
 
             for d in DIR {
-                assert_eq!(IVec2::from(Dir::from(d)), d);
+                assert_eq!(norm(d), d);
             }
         }
     }
@@ -163,74 +143,71 @@ pub mod s6 {
         Northwest,
     }
 
-    impl From<IVec2> for Dir {
-        /// Convert a vector into the closest hex direction.
-        ///
-        /// ```notrust
-        ///        *0*       *1*
-        ///           \ 14 15 | 00 01
-        ///           13\     |      02
-        ///               \   |
-        ///         12      \ |        03
-        ///     *5* ----------O-X------- *2*
-        ///         11        Y \      04
-        ///                   |   \
-        ///           10      |     \05
-        ///             09 08 | 07 06 \
-        ///                  *4*       *3*
-        ///
-        /// The hexadecants (00 to 15) and the hex
-        /// directions (*0* to *5*) around the origin.
-        /// ```
-        ///
-        /// Vectors that are in a space between two hex direction vectors are
-        /// rounded to a hexadecant, then assigned the hex direction whose vector
-        /// is nearest to that hexadecant.
-        fn from(value: IVec2) -> Self {
-            let hexadecant = {
-                let width = TAU / 16.0;
-                let mut radian = (value.x as f32).atan2(-value.y as f32);
-                if radian < 0.0 {
-                    radian += TAU
-                }
-                (radian / width).floor() as i32
-            };
-
-            match hexadecant {
-                13 | 14 => Dir::North,
-                15 | 0 | 1 => Dir::Northeast,
-                2 | 3 | 4 => Dir::Southeast,
-                5 | 6 => Dir::South,
-                7 | 8 | 9 => Dir::Southwest,
-                10 | 11 | 12 => Dir::Northwest,
-                _ => panic!("Bad hexadecant"),
+    /// Normalize a vector to a hex dir.
+    ///
+    /// ```notrust
+    ///        *0*       *1*
+    ///           \ 14 15 | 00 01
+    ///           13\     |      02
+    ///               \   |
+    ///         12      \ |        03
+    ///     *5* ----------O-X------- *2*
+    ///         11        Y \      04
+    ///                   |   \
+    ///           10      |     \05
+    ///             09 08 | 07 06 \
+    ///                  *4*       *3*
+    ///
+    /// The hexadecants (00 to 15) and the hex
+    /// directions (*0* to *5*) around the origin.
+    /// ```
+    ///
+    /// Vectors that are in a space between two hex direction vectors are
+    /// rounded to a hexadecant, then assigned the hex direction whose vector
+    /// is nearest to that hexadecant.
+    pub fn norm(v: IVec2) -> IVec2 {
+        let hexadecant = {
+            let width = TAU / 16.0;
+            let mut radian = (v.x as f32).atan2(-v.y as f32);
+            if radian < 0.0 {
+                radian += TAU
             }
-        }
-    }
+            (radian / width).floor() as i32
+        };
 
-    impl From<Dir> for IVec2 {
-        fn from(value: Dir) -> Self {
-            DIR[value as usize]
+        match hexadecant {
+            13 | 14 => DIR[0],
+            15 | 0 | 1 => DIR[1],
+            2..=4 => DIR[2],
+            5 | 6 => DIR[3],
+            7..=9 => DIR[4],
+            10..=12 => DIR[5],
+            _ => panic!("Bad hexadecant"),
         }
     }
 
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::{ivec2, IVec2};
+        use glam::ivec2;
 
         #[test]
         fn dirs() {
             eprintln!("s6 test picture");
             for y in -5..=5 {
                 for x in -5..=5 {
-                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                    eprint!(
+                        "{} ",
+                        DIR.iter()
+                            .position(|&a| a == norm(ivec2(x, y)))
+                            .unwrap()
+                    );
                 }
                 eprintln!()
             }
 
             for d in DIR {
-                assert_eq!(IVec2::from(Dir::from(d)), d);
+                assert_eq!(norm(d), d);
             }
         }
     }
@@ -241,7 +218,6 @@ pub mod s8 {
     use std::f32::consts::TAU;
 
     use glam::IVec2;
-    use serde::{Deserialize, Serialize};
 
     /// 8-dirs in clock face order.
     pub const DIR: [IVec2; 8] = [
@@ -266,73 +242,36 @@ pub mod s8 {
         DIR.iter().map(move |d| p + *d)
     }
 
-    #[derive(
-        Copy,
-        Clone,
-        Debug,
-        Eq,
-        PartialEq,
-        Ord,
-        PartialOrd,
-        Hash,
-        Serialize,
-        Deserialize,
-    )]
-    pub enum Dir {
-        North,
-        Northeast,
-        East,
-        Southeast,
-        South,
-        Southwest,
-        West,
-        Northwest,
-    }
-
-    impl From<IVec2> for Dir {
-        fn from(value: IVec2) -> Self {
-            use Dir::*;
-            let a = ((value.x as f32).atan2(-value.y as f32) / TAU
-                + 1.0 / 16.0)
-                .rem_euclid(1.0);
-
-            match (a * 8.0) as usize {
-                0 => North,
-                1 => Northeast,
-                2 => East,
-                3 => Southeast,
-                4 => South,
-                5 => Southwest,
-                6 => West,
-                7 => Northwest,
-                _ => panic!("bad angle"),
-            }
-        }
-    }
-
-    impl From<Dir> for IVec2 {
-        fn from(value: Dir) -> Self {
-            DIR[value as usize]
-        }
+    /// Normalize vector to a 8-dir.
+    pub fn norm(v: IVec2) -> IVec2 {
+        let a = ((v.x as f32).atan2(-v.y as f32) / TAU + 1.0 / 16.0)
+            .rem_euclid(1.0)
+            * 8.0;
+        DIR[a as usize]
     }
 
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::{ivec2, IVec2};
+        use glam::ivec2;
 
         #[test]
         fn dirs() {
             eprintln!("s8 test picture");
             for y in -5..=5 {
                 for x in -5..=5 {
-                    eprint!("{} ", Dir::from(ivec2(x, y)) as usize);
+                    eprint!(
+                        "{} ",
+                        DIR.iter()
+                            .position(|&a| a == norm(ivec2(x, y)))
+                            .unwrap()
+                    );
                 }
                 eprintln!()
             }
 
             for d in DIR {
-                assert_eq!(IVec2::from(Dir::from(d)), d);
+                assert_eq!(norm(d), d);
             }
         }
     }
