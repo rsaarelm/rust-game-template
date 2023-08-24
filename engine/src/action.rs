@@ -76,7 +76,7 @@ impl Entity {
 
     /// Attack if running into enemy.
     fn attack_step(&self, r: &mut Runtime, dir: IVec2) -> bool {
-        if let Some(mob) = self.attack_target(r, dir, EquippedAt::RunHand) {
+        if let Some(mob) = self.target_for_attack(r, dir, EquippedAt::RunHand) {
             self.attack(r, mob);
             return true;
         }
@@ -85,7 +85,7 @@ impl Entity {
     }
 
     fn shoot(&self, r: &mut Runtime, dir: IVec2) {
-        if let Some(mob) = self.attack_target(r, dir, EquippedAt::GunHand) {
+        if let Some(mob) = self.target_for_attack(r, dir, EquippedAt::GunHand) {
             self.attack(r, mob);
         }
     }

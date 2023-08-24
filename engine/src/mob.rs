@@ -437,7 +437,7 @@ impl Entity {
         None
     }
 
-    pub fn attack_target(
+    pub fn target_for_attack(
         &self,
         r: &Runtime,
         dir: IVec2,
