@@ -63,7 +63,7 @@ impl Level {
 
         for p in Rect::sized([w, h]) {
             ret.set_terrain(p, Tile::Ground);
-            if rng.one_chance_in(60) {
+            if rng.one_chance_in(60) && Some(p.into()) != ret.entrance {
                 ret.add_spawn(p, self.creature(rng));
             }
         }
