@@ -132,7 +132,7 @@ impl Entity {
 
     pub fn can_be_commanded(&self, r: &Runtime) -> bool {
         // NPCs can be commanded up to one full turn into the future.
-        self.is_alive(r) && self.acts_next(r).elapsed(r) < PHASES_IN_TURN
+        self.is_alive(r) && self.acts_next(r) - r.now() < PHASES_IN_TURN
     }
 
     /// Special method to immediately run goals on a NPC.
