@@ -12,9 +12,15 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
 
     // DISPLAY
     let win = Window::from(&g.s);
-    let (panel, main) = win.split_left(26);
+    // Only show sidebar if there's an active player.
+    let main = if let Some(player) = g.current_active() {
+        let (panel, main) = win.split_left(26);
+        draw_panel(g, b, &panel, player);
+        main
+    } else {
+        win
+    };
 
-    draw_panel(g, b, &panel);
     draw_main(g, n, &main);
 
     let mut cur = Cursor::new(&mut g.s, main);
@@ -37,7 +43,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     None
 }
 
-fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
+fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     use InputAction::*;
 
     win.clear(&mut g.s);
@@ -80,14 +86,10 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
         writeln!(cur);
     };
 
-    if let Some(player) = g.r.player() {
-        writeln!(cur, "{}", player.name(&g.r));
-        let max_hp = player.max_wounds(&g.r);
-        let hp = max_hp - player.wounds(&g.r).min(max_hp);
-        writeln!(cur, "{hp} / {max_hp}");
-    } else {
-        writeln!(cur, "\n\n");
-    }
+    writeln!(cur, "{}", player.name(&g.r));
+    let max_hp = player.max_wounds(&g.r);
+    let hp = max_hp - player.wounds(&g.r).min(max_hp);
+    writeln!(cur, "{hp} / {max_hp}");
 
     writeln!(cur);
     writeln!(cur, "------- Controls -------");
@@ -113,7 +115,8 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
 
     writeln!(cur);
     command_help(&mut cur, Cancel, "cancel orders");
-    if !g.r.player().map_or(false, |p| p.is_threatened(&g.r)) {
+    command_help(&mut cur, Cycle, "cycle NPCs");
+    if !player.is_threatened(&g.r) {
         command_help(&mut cur, Autoexplore, "autoexplore");
     } else {
         command_help(&mut cur, Autoexplore, "autofight");
@@ -135,7 +138,7 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window) {
 
 /// Draw main game area.
 fn draw_main(g: &mut Game, n_updates: u32, win: &Window) {
-    if let Some(loc) = g.r.player().and_then(|p| p.loc(&g.r)) {
+    if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
         g.camera = loc;
     }
 
@@ -165,11 +168,29 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
 
         if let Some(loc) = Location::fold_wide(p) {
             if let Some(e) = loc.mob_at(&g.r) {
-                let mut icon = e.icon(&g.r);
-                if g.r.player() == Some(e) {
-                    icon = '@';
+                let mut cell = CharCell::c(e.icon(&g.r));
+                if e.is_player_aligned(&g.r) {
+                    if g.current_active() == Some(e) {
+                        cell = cell.inv();
+                    }
+
+                    if g.r.player() == Some(e) {
+                        cell.set_c('@');
+                    } else if !e.can_be_commanded(&g.r) {
+                        // Friendly mob out of moves.
+                        cell = cell.col(X::GRAY);
+                    } else if e.goal(&g.r) != Goal::FollowPlayer {
+                        // Frindly mob out on a mission.
+                        cell = cell.col(X::GREEN);
+                    } else if e.acts_before_next_player_frame(&g.r) {
+                        // Friendly mob ready for next command
+                        cell = cell.col(X::AQUA);
+                    } else {
+                        // Friendly mob still building up it's actions.
+                        cell = cell.col(X::TEAL);
+                    }
                 }
-                win.put(&mut g.s, draw_pos, CharCell::c(icon));
+                win.put(&mut g.s, draw_pos, cell);
             }
         }
     }

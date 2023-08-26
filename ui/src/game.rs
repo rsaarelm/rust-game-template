@@ -20,6 +20,8 @@ pub struct Game {
     /// Current viewpoint.
     pub camera: Location,
 
+    selection: Vec<Entity>,
+
     /// Receiver for engine events.
     recv: Receiver,
     pub msg: Vec<String>,
@@ -39,6 +41,7 @@ impl Default for Game {
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
             camera: Default::default(),
+            selection: Default::default(),
             recv: Default::default(),
             msg: Default::default(),
             anims: Default::default(),
@@ -121,6 +124,53 @@ impl Game {
         }
     }
 
+    /// Cycle selection to next commandable NPC.
+    /// If at the end of the cycle, return selection to player.
+    pub fn select_next_commandable(&mut self, skip_mobs_on_mission: bool) {
+        let r = &self.r;
+        let mut seen = 0;
+        for mob in r
+            .live_entities()
+            .filter(|e| e.is_player_aligned(r) && !e.is_player(r))
+        {
+            let is_valid = if skip_mobs_on_mission {
+                mob.is_waiting_commands(r)
+            } else {
+                mob.can_be_commanded(r)
+            };
+
+            // Past all items in current selection, pick this one.
+            if seen == self.selection.len() && is_valid {
+                self.selection = vec![mob];
+                return;
+            }
+
+            // Otherwise keep tracking currently selected mobs until all are
+            // accounted for.
+            if self.selection.contains(&mob) {
+                seen += 1;
+            }
+        }
+
+        // No more commandable mobs found, go back to player.
+        self.selection.clear();
+    }
+
+    pub fn current_active(&self) -> Option<Entity> {
+        let p = self.r.player();
+
+        if self.selection.is_empty()
+            || self.selection.iter().find(|&&a| Some(a) == p).is_some()
+        {
+            // No selection means that player is active.
+            // If the selection contains the player, always pick player.
+            self.r.player()
+        } else {
+            // Just pick the first mob from a non-player selection.
+            Some(self.selection[0])
+        }
+    }
+
     pub fn draw_anims(
         &mut self,
         n_updates: u32,
@@ -154,22 +204,64 @@ impl Game {
         );
     }
 
-    pub fn process_action(&mut self, action: InputAction) {
-        let r = &mut self.r;
+    pub fn act(&mut self, cmd: impl Into<Command>) {
+        match (cmd.into(), self.current_active()) {
+            (Command::Direct(act), Some(p)) => {
+                let r = &mut self.r;
 
-        let act = |r: &mut Runtime, a| {
-            if let Some(player) = r.player() {
-                player.clear_goal(r);
-                player.execute(r, a);
+                if p.is_player(r) {
+                    // Player gets goals cleared by default.
+                    p.clear_goal(r);
+                } else {
+                    // NPCs follow player by default, so switch to that.
+                    p.set_goal(r, Goal::FollowPlayer);
+                }
+
+                if p.is_player(r) {
+                    // Main player just does the thing.
+                    p.execute(r, act);
+                } else if p.can_be_commanded(r) {
+                    // It's a NPC that still has actions left. Executing the
+                    // action won't advance clock.
+                    p.execute(r, act);
+
+                    // If this action exhausted the actions, automatically
+                    // cycle to the next NPC.
+                    if !p.can_be_commanded(r) {
+                        self.select_next_commandable(true);
+                    }
+                } else {
+                    // Commanding a NPC past its actions makes it become the
+                    // new main player.
+                    p.become_player(r);
+                    p.execute(r, act);
+                }
             }
-        };
+            (Command::Indirect(goal), Some(p)) => {
+                let mut units = self.selection.clone();
+                if units.is_empty() {
+                    // No explicit selection, it's just the player then.
+                    units.push(p);
+                }
 
+                let r = &mut self.r;
+
+                for p in units {
+                    p.set_goal(r, goal);
+                    p.exhaust_actions(r);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    pub fn process_action(&mut self, action: InputAction) {
         use InputAction::*;
         match action {
-            North => act(r, Action::Bump(s4::DIR[0])),
-            East => act(r, Action::Bump(s4::DIR[1])),
-            South => act(r, Action::Bump(s4::DIR[2])),
-            West => act(r, Action::Bump(s4::DIR[3])),
+            North => self.act(Action::Bump(s4::DIR[0])),
+            East => self.act(Action::Bump(s4::DIR[1])),
+            South => self.act(Action::Bump(s4::DIR[2])),
+            West => self.act(Action::Bump(s4::DIR[3])),
             FireNorth => {}
             FireEast => {}
             FireSouth => {}
@@ -181,8 +273,8 @@ impl Game {
             ClimbUp => {}
             ClimbDown => {}
             LongMove => {}
-            Cycle => {}
-            Pass => act(r, Action::Pass),
+            Cycle => self.select_next_commandable(false),
+            Pass => self.act(Action::Pass),
             Inventory => {}
             Abilities => {}
             Equip => {}
@@ -192,25 +284,49 @@ impl Game {
             Use => {}
             QuitGame => {}
             Cancel => {
-                if let Some(p) = r.player() {
-                    p.clear_goal(r);
+                if let Some(p) = self.current_active() {
+                    if p.is_player(&self.r) {
+                        p.clear_goal(&mut self.r);
+                    } else {
+                        p.set_goal(&mut self.r, Goal::FollowPlayer);
+                    }
                 }
+                self.selection = Default::default();
             }
             Autoexplore => {
-                if let Some(p) = r.player() {
+                let r = &self.r;
+                if let Some(p) = self.current_active() {
                     if let Some(enemy) = p.first_visible_enemy(r) {
                         // Autofight instead of autoexploring when there are
                         // visible enemies.
                         if let Some(atk) = p.decide(r, Goal::Attack(enemy)) {
-                            act(r, atk);
+                            self.act(atk);
                         }
                     } else {
-                        p.set_goal(r, Goal::StartAutoexplore);
+                        self.act(Goal::StartAutoexplore);
                     }
                 }
             }
             Quicksave => {}
             Quickload => {}
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Command {
+    Direct(Action),
+    Indirect(Goal),
+}
+
+impl From<Action> for Command {
+    fn from(value: Action) -> Self {
+        Command::Direct(value)
+    }
+}
+
+impl From<Goal> for Command {
+    fn from(value: Goal) -> Self {
+        Command::Indirect(value)
     }
 }

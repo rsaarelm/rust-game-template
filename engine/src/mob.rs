@@ -135,6 +135,11 @@ impl Entity {
         self.is_alive(r) && self.acts_next(r) - r.now() < PHASES_IN_TURN
     }
 
+    pub fn is_waiting_commands(&self, r: &Runtime) -> bool {
+        self.can_be_commanded(r)
+            && matches!(self.goal(r), Goal::None | Goal::FollowPlayer)
+    }
+
     /// Special method to immediately run goals on a NPC.
     ///
     /// Returns false if there is no goal or the NPC can't be commanded
@@ -163,7 +168,6 @@ impl Entity {
                 self.execute(r, act);
             } else {
                 self.next_goal(r);
-                break;
             }
         }
     }
