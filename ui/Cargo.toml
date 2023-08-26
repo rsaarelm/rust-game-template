@@ -5,6 +5,7 @@ edition = "2021"
 description = "Game display and user interface"
 
 [dependencies]
+anyhow = "1"
 derive_deref = "1"
 engine = { path = "../engine" }
 gfx = { path = "../gfx" }

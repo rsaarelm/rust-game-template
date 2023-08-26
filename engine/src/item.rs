@@ -95,6 +95,10 @@ impl Entity {
         )
     }
 
+    pub fn fits(&self, r: &Runtime, slot: EquippedAt) -> bool {
+        self.get::<ItemKind>(r).fits(slot)
+    }
+
     pub fn equip(&self, r: &mut Runtime, item: &Entity) {
         if !item.can_be_equipped(r) {
             msg!("[One] can't equip that."; self.noun(r));

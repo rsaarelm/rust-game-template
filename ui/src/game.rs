@@ -1,4 +1,4 @@
-use crate::{prelude::*, Particle};
+use crate::{command::Part, prelude::*, Command, CommandState, Particle};
 use engine::prelude::*;
 use util::{s4, s8, Layout};
 
@@ -26,6 +26,8 @@ pub struct Game {
     recv: Receiver,
     pub msg: Vec<String>,
 
+    pub cmd: CommandState,
+
     anims: Vec<Box<dyn Anim>>,
 
     pub input_map: InputMap,
@@ -44,6 +46,7 @@ impl Default for Game {
             selection: Default::default(),
             recv: Default::default(),
             msg: Default::default(),
+            cmd: Default::default(),
             anims: Default::default(),
             input_map,
         }
@@ -352,12 +355,46 @@ impl Game {
             LongMove => {}
             Cycle => self.select_next_commandable(false),
             Pass => self.act(Action::Pass),
-            Inventory => {}
+            Inventory => {
+                if let Some(p) = self.current_active() {
+                    if p.inventory(&self.r).next().is_some() {
+                        self.cmd = CommandState::Partial(Part::ViewInventory);
+                    } else {
+                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                    }
+                }
+            }
             Abilities => {}
-            Equipment => {}
-            Drop => {}
-            Throw => {}
-            Use => {}
+            Equipment => {
+                self.cmd = CommandState::Partial(Part::ViewEquipment);
+            }
+            Drop => {
+                if let Some(p) = self.current_active() {
+                    if p.inventory(&self.r).next().is_some() {
+                        self.cmd = CommandState::Partial(Part::Drop);
+                    } else {
+                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                    }
+                }
+            }
+            Throw => {
+                if let Some(p) = self.current_active() {
+                    if p.inventory(&self.r).next().is_some() {
+                        self.cmd = CommandState::Partial(Part::Throw);
+                    } else {
+                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                    }
+                }
+            }
+            Use => {
+                if let Some(p) = self.current_active() {
+                    if p.inventory(&self.r).next().is_some() {
+                        self.cmd = CommandState::Partial(Part::Use);
+                    } else {
+                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                    }
+                }
+            }
             QuitGame => {}
             Cancel => {
                 if let Some(p) = self.current_active() {
@@ -451,23 +488,5 @@ impl Game {
             let r = idm::from_str(&save).expect("corrupt save file");
             self.r = r;
         }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Command {
-    Direct(Action),
-    Indirect(Goal),
-}
-
-impl From<Action> for Command {
-    fn from(value: Action) -> Self {
-        Command::Direct(value)
-    }
-}
-
-impl From<Goal> for Command {
-    fn from(value: Goal) -> Self {
-        Command::Indirect(value)
     }
 }

@@ -3,25 +3,45 @@ use std::fmt::Write;
 use engine::prelude::*;
 use navni::prelude::*;
 use ui::prelude::*;
-use util::{text, v2, write, writeln};
+use util::{s4, text, v2, write, writeln};
 
 use navni::X256Color as X;
 
 pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
     g.tick(b);
-    let mouse = b.mouse_state();
 
-    // DISPLAY
     let win = Window::from(&g.s);
-    // Only show sidebar if there's an active player.
-    let main = if let Some(player) = g.current_active() {
-        let (panel, main) = win.split_left(26);
-        status_panel(g, b, &panel, player);
-        main
+    if let Some(player) = g.current_active() {
+        // Launch a different UI mode based on what the current partial
+        // command needs next.
+        if g.cmd.needs_item() {
+            inventory_mode(b, n, g, win, player);
+        } else if g.cmd.needs_equipment() {
+            equipment_mode(b, n, g, win, player);
+        } else if g.cmd.needs_direction() {
+            aim_mode(b, n, g, win, player);
+        } else {
+            // No command in progress, default mode.
+            move_mode(b, n, g, win, player);
+        }
     } else {
-        win
-    };
+        // No player can be found, just show the map.
+        attract_mode(b, n, g, win);
+    }
 
+    // Execute completed commands.
+    if let Some(cmd) = g.cmd.pop() {
+        g.act(cmd)
+    }
+
+    g.draw(b);
+}
+
+/// Show when there's no player.
+fn attract_mode(b: &mut dyn Backend, n: u32, g: &mut Game, win: Window) {
+    win.clear(&mut g.s);
+    let main = win;
+    let mouse = b.mouse_state();
     draw_main(g, n, &main, mouse);
 
     let mut cur = Cursor::new(&mut g.s, main);
@@ -29,23 +49,167 @@ pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
         writeln!(cur, "{m}");
     }
 
-    g.draw(b);
+    // INPUT
+    if let Some(&a) = g.input_map.get(&b.keypress()) {
+        use ui::InputAction::*;
+
+        match a {
+            QuitGame => b.quit(),
+            Quickload => g.load(crate::GAME_NAME),
+            _ => {}
+        }
+    }
+}
+
+/// The default mode, player is exploring map with a status panel.
+fn move_mode(
+    b: &mut dyn Backend,
+    n: u32,
+    g: &mut Game,
+    win: Window,
+    player: Entity,
+) {
+    win.clear(&mut g.s);
+    let (panel, main) = win.split_left(26);
+    status_panel(g, b, &panel, player);
+
+    let mouse = b.mouse_state();
+    draw_main(g, n, &main, mouse);
+
+    let mut cur = Cursor::new(&mut g.s, main);
+    for m in g.msg.iter() {
+        writeln!(cur, "{m}");
+    }
 
     // INPUT
     if let Some(&a) = g.input_map.get(&b.keypress()) {
         use ui::InputAction::*;
         g.process_action(a);
 
-        if a == QuitGame {
-            b.quit();
+        match a {
+            QuitGame => b.quit(),
+            Quicksave => g.save(crate::GAME_NAME),
+            Quickload => g.load(crate::GAME_NAME),
+            _ => {}
         }
+    }
+}
 
-        if a == Quicksave {
-            g.save(crate::GAME_NAME);
+/// Status panel shows inventory.
+fn inventory_mode(
+    b: &mut dyn Backend,
+    n: u32,
+    g: &mut Game,
+    win: Window,
+    player: Entity,
+) {
+    win.clear(&mut g.s);
+    let (panel, main) = win.split_left(26);
+
+    let keys = "abcdefghijklmnopqrstuvwxyz";
+    let items: Vec<Entity> = player
+        .contents(&g.r)
+        .filter(|e| !e.is_equipped(&g.r) && g.cmd.matches_item(&g.r, *e))
+        .collect();
+
+    let mouse = b.mouse_state();
+    let mut cur = Cursor::new(&mut g.s, panel);
+
+    for (k, e) in keys.chars().zip(items.into_iter()) {
+        if cur.print_button(&b.mouse_state(), &format!("{k}) {}", e.name(&g.r)))
+            || b.keypress().key() == Key::Char(k)
+        {
+            g.cmd.add_item(&g.r, e);
         }
+    }
 
-        if a == Quickload {
-            g.load(crate::GAME_NAME);
+    // TODO: Disable mouse on main when running modes (maybe draw_main can just return hover coords?)
+    draw_main(g, n, &main, mouse);
+
+    if let Some(&a) = g.input_map.get(&b.keypress()) {
+        use ui::InputAction::*;
+
+        match a {
+            Cancel => g.cmd.reset(),
+            _ => {}
+        }
+    }
+}
+
+/// Status panel shows equipment.
+fn equipment_mode(
+    b: &mut dyn Backend,
+    n: u32,
+    g: &mut Game,
+    win: Window,
+    player: Entity,
+) {
+    win.clear(&mut g.s);
+    let (panel, main) = win.split_left(26);
+
+    // TODO: Show stable set of equipment slots
+    // TODO: Selecting an empty slot prompts for item.
+
+    let keys = "abcdefghijklmnopqrstuvwxyz";
+    let items: Vec<Entity> = player
+        .contents(&g.r)
+        .filter(|e| e.is_equipped(&g.r) && g.cmd.matches_item(&g.r, *e))
+        .collect();
+
+    let mouse = b.mouse_state();
+    let mut cur = Cursor::new(&mut g.s, panel);
+
+    for (k, e) in keys.chars().zip(items.into_iter()) {
+        if cur.print_button(&b.mouse_state(), &format!("{k}) {}", e.name(&g.r)))
+            || b.keypress().key() == Key::Char(k)
+        {
+            g.cmd = Action::Unequip(e).into();
+        }
+    }
+
+    draw_main(g, n, &main, mouse);
+
+    if let Some(&a) = g.input_map.get(&b.keypress()) {
+        use ui::InputAction::*;
+
+        match a {
+            Cancel => g.cmd.reset(),
+            _ => {}
+        }
+    }
+}
+
+/// Player needs to aim.
+fn aim_mode(
+    b: &dyn Backend,
+    n: u32,
+    g: &mut Game,
+    win: Window,
+    player: Entity,
+) {
+    win.clear(&mut g.s);
+
+    let (panel, main) = win.split_left(26);
+    status_panel(g, b, &panel, player);
+
+    let mouse = b.mouse_state();
+    draw_main(g, n, &main, mouse);
+
+    let mut cur = Cursor::new(&mut g.s, main);
+    writeln!(cur, "Direction?");
+
+    // TODO Allow mouse aiming as well.
+
+    if let Some(&a) = g.input_map.get(&b.keypress()) {
+        use ui::InputAction::*;
+
+        match a {
+            North | FireNorth => g.cmd.add_direction(s4::DIR[0]),
+            East | FireEast => g.cmd.add_direction(s4::DIR[1]),
+            South | FireSouth => g.cmd.add_direction(s4::DIR[2]),
+            West | FireWest => g.cmd.add_direction(s4::DIR[3]),
+            Cancel => g.cmd.reset(),
+            _ => {}
         }
     }
 }
@@ -53,7 +217,6 @@ pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
 fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     use InputAction::*;
 
-    win.clear(&mut g.s);
     let mut cur = Cursor::new(&mut g.s, *win);
     // Two of these just so that both closures below get one to borrow.
     // They all get merged into one output at the end.
@@ -130,6 +293,11 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     } else {
         command_help(&mut cur, Autoexplore, "autofight");
     }
+    command_help(&mut cur, Inventory, "open inventory");
+    command_help(&mut cur, Equipment, "open equipment");
+    command_help(&mut cur, Use, "use item");
+    command_help(&mut cur, Drop, "drop item");
+    command_help(&mut cur, Throw, "throw item");
     writeln!(cur);
     writeln!(cur);
     writeln!(cur, "Ctrl-C) quit");
@@ -187,7 +355,7 @@ fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
     g.draw_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
 
-    if win.contains(mouse) {
+    if win.contains(mouse) && g.current_active().is_some() {
         // Only operate within the currently visible sector.
         let sector_bounds = g.camera.expanded_sector_bounds();
 

@@ -3,6 +3,9 @@
 mod anim;
 pub use anim::{Anim, Particle};
 
+mod command;
+use command::{Command, CommandState};
+
 mod game;
 pub use game::Game;
 

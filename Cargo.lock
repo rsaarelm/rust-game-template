@@ -1472,6 +1472,7 @@ dependencies = [
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "derive_deref",
  "engine",
  "gfx",
