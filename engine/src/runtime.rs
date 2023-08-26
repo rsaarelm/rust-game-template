@@ -86,14 +86,37 @@ impl Runtime {
             IsMob(true),
             IsFriendly(true),
             Stats {
-                hit: 4,
-                ev: 2,
+                hit: 6,
+                ev: 4,
                 dmg: 4,
             },
         )));
 
         self.player = Some(player);
         player.place(self, loc);
+
+        let party_spawns: Vec<(_, _)> = ["ranger", "monk", "wizard"]
+            .iter()
+            .zip(self.perturbed_fill_positions(loc).skip(1))
+            .collect();
+
+        for (name, loc) in party_spawns {
+            let npc = Entity(self.ecs.spawn((
+                Name(name.to_string()),
+                Icon('p'),
+                Speed(4),
+                Level(5),
+                IsMob(true),
+                IsFriendly(true),
+                Stats {
+                    hit: 4,
+                    ev: 2,
+                    dmg: 4,
+                },
+            )));
+            npc.place(self, loc);
+            npc.set_goal(self, Goal::FollowPlayer);
+        }
     }
 
     pub fn player(&self) -> Option<Entity> {
