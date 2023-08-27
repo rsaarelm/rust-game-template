@@ -136,7 +136,7 @@ impl Game {
             let is_valid = if skip_mobs_on_mission {
                 mob.is_waiting_commands(r)
             } else {
-                mob.can_be_commanded(r)
+                true
             };
 
             // Past all items in current selection, pick this one.

@@ -80,7 +80,7 @@ impl Runtime {
 
         let player = Entity(self.ecs.spawn((
             Name("Player".into()),
-            Icon('H'),
+            Icon('P'),
             Speed(4),
             Level(5),
             IsMob(true),
@@ -103,7 +103,7 @@ impl Runtime {
         for (name, loc) in party_spawns {
             let npc = Entity(self.ecs.spawn((
                 Name(name.to_string()),
-                Icon('p'),
+                Icon('P'),
                 Speed(4),
                 Level(5),
                 IsMob(true),
