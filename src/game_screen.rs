@@ -115,8 +115,10 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     writeln!(cur);
 
     writeln!(cur);
+    writeln!(cur, "LMB: Select/command");
+    writeln!(cur, "RMB: Switch player/shoot");
     command_help(&mut cur, Cancel, "cancel orders");
-    command_help(&mut cur, Cycle, "cycle NPCs");
+    command_help(&mut cur, Cycle, "cycle commandable");
     if !player.is_threatened(&g.r) {
         command_help(&mut cur, Autoexplore, "autoexplore");
     } else {
