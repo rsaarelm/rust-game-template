@@ -133,15 +133,15 @@ impl Game {
 
     /// Cycle selection to next commandable NPC.
     /// If at the end of the cycle, return selection to player.
-    pub fn select_next_commandable(&mut self, skip_mobs_on_mission: bool) {
+    pub fn select_next_commandable(&mut self, only_ones_waiting_orders: bool) {
         let r = &self.r;
         let mut seen = 0;
         for mob in r
             .live_entities()
             .filter(|e| e.is_player_aligned(r) && !e.is_player(r))
         {
-            let is_valid = if skip_mobs_on_mission {
-                mob.is_waiting_commands(r)
+            let is_valid = if only_ones_waiting_orders {
+                mob.acts_before_next_player_frame(r)
             } else {
                 true
             };
