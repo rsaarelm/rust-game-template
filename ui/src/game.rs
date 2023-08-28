@@ -311,6 +311,14 @@ impl Game {
             Quickload => {}
         }
     }
+
+    pub fn set_selection(&mut self, sel: impl IntoIterator<Item = Entity>) {
+        self.selection = sel.into_iter().collect();
+    }
+
+    pub fn selection(&self) -> &[Entity] {
+        &self.selection
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

@@ -186,7 +186,9 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                         cell = cell.col(X::TEAL);
                     }
 
-                    if g.current_active() == Some(e) {
+                    if g.current_active() == Some(e)
+                        || g.selection().contains(&e)
+                    {
                         cell = cell.inv();
                     }
                 }
