@@ -291,20 +291,17 @@ impl Game {
                         p.set_goal(&mut self.r, Goal::AttackMove(loc));
                         p.exhaust_actions(&mut self.r);
                     }
+                    self.select_next_commandable(true);
                 }
             }
-            (Command::Indirect(goal), Some(p)) => {
-                let mut units = self.selection.clone();
-                if units.is_empty() {
-                    // No explicit selection, it's just the player then.
-                    units.push(p);
-                }
-
-                let r = &mut self.r;
-
-                for p in units {
-                    p.set_goal(r, goal);
-                    p.exhaust_actions(r);
+            (Command::Indirect(goal), Some(_)) => {
+                // TODO: Do other indirect commands need a mode for when the player character is also doing it?
+                if !self.player_is_selected() {
+                    for p in self.selected().collect::<Vec<_>>() {
+                        p.set_goal(&mut self.r, goal);
+                        p.exhaust_actions(&mut self.r);
+                    }
+                    self.select_next_commandable(true);
                 }
             }
             _ => {}
