@@ -170,10 +170,6 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
             if let Some(e) = loc.mob_at(&g.r) {
                 let mut cell = CharCell::c(e.icon(&g.r));
                 if e.is_player_aligned(&g.r) {
-                    if g.current_active() == Some(e) {
-                        cell = cell.inv();
-                    }
-
                     if g.r.player() == Some(e) {
                         cell.set_c('@');
                     } else if !e.can_be_commanded(&g.r) {
@@ -188,6 +184,10 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                     } else {
                         // Friendly mob still building up it's actions.
                         cell = cell.col(X::TEAL);
+                    }
+
+                    if g.current_active() == Some(e) {
+                        cell = cell.inv();
                     }
                 }
                 win.put(&mut g.s, draw_pos, cell);
