@@ -231,8 +231,13 @@ fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
                             // Select NPC.
                             g.set_selection(vec![npc]);
                         }
+                        Some(_enemy) if g.player_is_selected() => {
+                            // Player group gets a move command that gets
+                            // transformed into autofight when near enough.
+                            g.act(Goal::GoTo(loc));
+                        }
                         Some(enemy) => {
-                            // Attack enemy.
+                            // NPCs get a direct kill task instead.
                             g.act(Goal::Attack(enemy));
                         }
                         None => {
