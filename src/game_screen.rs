@@ -121,6 +121,8 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     } else {
         command_help(&mut cur, Autoexplore, "autofight");
     }
+    writeln!(cur);
+    writeln!(cur);
     writeln!(cur, "Ctrl-C) quit");
     // TODO: Command help formatter
     //  - Highlight letter if possible, d)rop, d(r)op, x) drop
