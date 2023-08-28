@@ -282,7 +282,7 @@ impl<P: Pixel> Window<P> {
     }
 
     fn hovering(&self, mouse: &MouseState) -> bool {
-        if let MouseState::Unpressed(pos) = mouse {
+        if let MouseState::Hover(pos) = mouse {
             self.bounds.contains(*pos)
         } else {
             false
@@ -290,14 +290,7 @@ impl<P: Pixel> Window<P> {
     }
 
     fn pressed(&self, mouse: &MouseState) -> bool {
-        if let MouseState::Pressed(
-            _,
-            MousePress {
-                pos,
-                button: MouseButton::Left,
-            },
-        ) = mouse
-        {
+        if let MouseState::Drag(_, pos, MouseButton::Left) = mouse {
             self.bounds.contains(*pos)
         } else {
             false
@@ -309,13 +302,7 @@ impl<P: Pixel> Window<P> {
     }
 
     pub(crate) fn clicked_on(&self, mouse: &MouseState, bounds: &Rect) -> bool {
-        if let MouseState::Released(
-            current_pos,
-            MousePress {
-                pos,
-                button: MouseButton::Left,
-            },
-        ) = mouse
+        if let MouseState::Release(current_pos, pos, MouseButton::Left) = mouse
         {
             bounds.contains(*pos) && bounds.contains(*current_pos)
         } else {
