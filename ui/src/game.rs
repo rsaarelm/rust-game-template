@@ -77,6 +77,13 @@ impl Game {
             }
         }
 
+        // Clear the dead from selection.
+        for i in (0..self.selection.len()).rev() {
+            if !self.selection[i].is_alive(&self.r) {
+                self.selection.swap_remove(i);
+            }
+        }
+
         // If player doesn't exist, player is not acting this frame or player
         // is executing a goal, run in real time.
         if self.r.player().map_or(true, |p| {
