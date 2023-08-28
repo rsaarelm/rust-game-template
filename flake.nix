@@ -164,6 +164,7 @@
 
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
           LD_LIBRARY_PATH = libPath;
+          RUST_BACKTRACE = "1";
           RUST_LOG = "info";
         } // cargoConfig);
       });
