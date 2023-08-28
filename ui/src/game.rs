@@ -294,6 +294,29 @@ impl Game {
                     self.select_next_commandable(true);
                 }
             }
+            (Command::Indirect(Goal::StartAutoexplore), Some(p)) => {
+                if !self.player_is_selected() {
+                    for e in self.selected().collect::<Vec<_>>() {
+                        e.set_goal(&mut self.r, Goal::Autoexplore);
+                        e.exhaust_actions(&mut self.r);
+                    }
+                    self.select_next_commandable(true);
+                } else {
+                    debug_assert!(p.is_player(&self.r));
+                    // Player can do the adjacent sector search with
+                    // StartAutoexplore, NPCs just get regular autoexplore.
+                    p.set_goal(&mut self.r, Goal::StartAutoexplore);
+
+                    for e in self.selected().collect::<Vec<_>>() {
+                        // Set the others as escorts when player is doing the
+                        // main action.
+                        if e != p {
+                            e.set_goal(&mut self.r, Goal::FollowPlayer);
+                        }
+                    }
+                    self.clear_selection();
+                }
+            }
             (Command::Indirect(goal), Some(_)) => {
                 // TODO: Do other indirect commands need a mode for when the player character is also doing it?
                 if !self.player_is_selected() {
@@ -403,8 +426,6 @@ impl Game {
 
     fn autofight(&mut self, p: Entity) -> bool {
         if let Some(enemy) = p.first_visible_enemy(&self.r) {
-            // Autofight instead of autoexploring when there are
-            // visible enemies.
             if let Some(atk) = p.decide(&self.r, Goal::Attack(enemy)) {
                 self.act(atk);
                 return true;
