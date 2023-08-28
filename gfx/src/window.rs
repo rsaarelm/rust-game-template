@@ -59,6 +59,16 @@ impl<P: Pixel> Window<P> {
         self.bounds.height()
     }
 
+    /// Return whether window contains a point in absolute screen coordinates.
+    pub fn contains(&self, pos: impl Into<[i32; 2]>) -> bool {
+        self.bounds.contains(pos)
+    }
+
+    /// Window bounds rectangle in absolute screen coordinates.
+    pub fn bounds(&self) -> &Rect {
+        &self.bounds
+    }
+
     pub fn fill(&self, c: &mut Buffer<P>, color: P) {
         let area = c.area();
         for pos in self.bounds {
@@ -82,6 +92,17 @@ impl<P: Pixel> Window<P> {
         if self.bounds.contains(pos) {
             c.data[screen.idx(pos)] = col;
         }
+    }
+
+    pub fn get_mut<'a, 'b>(
+        &'a self,
+        c: &'b mut Buffer<P>,
+        pos: impl Into<IVec2>,
+    ) -> Option<&'b mut P> {
+        let pos = pos.into();
+        let idx = c.area().idx(pos + v2(self.bounds.min()));
+
+        self.area().contains(pos).then_some(&mut c.data[idx])
     }
 
     /// Draw an image in the window.

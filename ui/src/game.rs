@@ -244,6 +244,55 @@ impl Game {
                     p.execute(r, act);
                 }
             }
+            (Command::Indirect(Goal::GoTo(loc)), Some(_)) => {
+                if self.player_is_selected() {
+                    // For player group, player gets the goal, others follow
+                    // player.
+
+                    let Some(p) = self.r.player() else { return };
+                    let Some(start) = p.loc(&self.r) else { return };
+
+                    for e in self.selection.iter() {
+                        if !e.is_player(&self.r) {
+                            e.set_goal(&mut self.r, Goal::FollowPlayer);
+                        }
+                    }
+
+                    if p.is_threatened(&self.r) {
+                        // If player is threatened, see if it looks like
+                        // you're trying to fight or flee.
+                        let Some(mut planned_path) =
+                            self.r.fov_aware_path_to(&start, &loc)
+                        else {
+                            return;
+                        };
+
+                        let Some(step) = planned_path.pop() else {
+                            return;
+                        };
+                        let Some(dir) = start.vec_towards(&step).map(s4::norm)
+                        else {
+                            return;
+                        };
+
+                        if p.is_threatened_from(&self.r, dir) {
+                            // Pointing towards the enemy, fight instead of
+                            // moving.
+                            p.clear_goal(&mut self.r);
+                            self.autofight(p);
+                            return;
+                        }
+                    }
+                    p.set_goal(&mut self.r, Goal::GoTo(loc));
+                } else {
+                    // Non-player group: Everyone gets an attack-move command,
+                    // will return to following player when done.
+                    for p in self.selection.iter() {
+                        p.set_goal(&mut self.r, Goal::AttackMove(loc));
+                        p.exhaust_actions(&mut self.r);
+                    }
+                }
+            }
             (Command::Indirect(goal), Some(p)) => {
                 let mut units = self.selection.clone();
                 if units.is_empty() {
@@ -301,15 +350,8 @@ impl Game {
                 self.selection = Default::default();
             }
             Autoexplore => {
-                let r = &self.r;
                 if let Some(p) = self.current_active() {
-                    if let Some(enemy) = p.first_visible_enemy(r) {
-                        // Autofight instead of autoexploring when there are
-                        // visible enemies.
-                        if let Some(atk) = p.decide(r, Goal::Attack(enemy)) {
-                            self.act(atk);
-                        }
-                    } else {
+                    if !self.autofight(p) {
                         self.act(Goal::StartAutoexplore);
                     }
                 }
@@ -319,12 +361,59 @@ impl Game {
         }
     }
 
-    pub fn set_selection(&mut self, sel: impl IntoIterator<Item = Entity>) {
-        self.selection = sel.into_iter().collect();
+    pub fn clear_selection(&mut self) {
+        self.selection.clear();
     }
 
-    pub fn selection(&self) -> &[Entity] {
-        &self.selection
+    pub fn set_selection(&mut self, sel: impl IntoIterator<Item = Entity>) {
+        self.selection = sel.into_iter().collect();
+
+        // Just the player amounts to no selection.
+        if self.selection.len() == 1 && self.selection[0].is_player(&self.r) {
+            self.selection.clear();
+        }
+    }
+
+    pub fn selected(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.selection
+            .iter()
+            .copied()
+            .chain(if self.selection.is_empty() {
+                self.current_active()
+            } else {
+                None
+            })
+    }
+
+    pub fn player_is_selected(&self) -> bool {
+        self.selection.is_empty()
+            || self.selection.iter().any(|p| p.is_player(&self.r))
+    }
+
+    /// Clear movement path visualization.
+    pub fn clear_projected_path(&mut self) {
+        // TODO
+    }
+
+    pub fn projected_path(&self) -> impl Iterator<Item = Location> + '_ {
+        // TODO
+        None.into_iter()
+    }
+
+    pub fn project_path_to(&mut self, loc: Location) {
+        // TODO
+    }
+
+    fn autofight(&mut self, p: Entity) -> bool {
+        if let Some(enemy) = p.first_visible_enemy(&self.r) {
+            // Autofight instead of autoexploring when there are
+            // visible enemies.
+            if let Some(atk) = p.decide(&self.r, Goal::Attack(enemy)) {
+                self.act(atk);
+                return true;
+            }
+        }
+        false
     }
 }
 

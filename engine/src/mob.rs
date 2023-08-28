@@ -16,6 +16,9 @@ impl Entity {
 
     pub fn become_player(&self, r: &mut Runtime) {
         let prev_player = r.player();
+        if Some(*self) == prev_player {
+            return;
+        }
 
         r.player = Some(*self);
         // Clear goal, existing ones probably won't make sense for a

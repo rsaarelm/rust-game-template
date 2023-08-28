@@ -48,7 +48,9 @@ impl Location {
     }
 
     /// Convert an unfolded 2D vector back to a Location.
-    pub fn fold(loc_pos: IVec2) -> Self {
+    pub fn fold(loc_pos: impl Into<IVec2>) -> Self {
+        let loc_pos = loc_pos.into();
+
         let x = loc_pos.x as i16;
         let y =
             ((loc_pos.y as i64).rem_euclid(0x1_0000) + i16::MIN as i64) as i16;
@@ -66,11 +68,28 @@ impl Location {
         ret
     }
 
-    pub fn fold_wide(wide_loc_pos: IVec2) -> Option<Self> {
+    pub fn fold_wide(wide_loc_pos: impl Into<IVec2>) -> Option<Self> {
+        let wide_loc_pos = wide_loc_pos.into();
+
         if wide_loc_pos.x % 2 == 0 {
             Some(Location::fold(wide_loc_pos / ivec2(2, 1)))
         } else {
             None
+        }
+    }
+
+    /// Return the two locations on two sides of an off-center wide pos.
+    ///
+    /// If pos is not off-center, returns the same centered location twice.
+    pub fn fold_wide_sides(wide_loc_pos: impl Into<IVec2>) -> (Self, Self) {
+        let wide_loc_pos = wide_loc_pos.into();
+
+        match Location::fold_wide(wide_loc_pos) {
+            Some(loc) => (loc, loc),
+            None => (
+                Location::fold_wide(wide_loc_pos - ivec2(1, 0)).unwrap(),
+                Location::fold_wide(wide_loc_pos + ivec2(1, 0)).unwrap(),
+            ),
         }
     }
 

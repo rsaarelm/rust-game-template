@@ -9,6 +9,7 @@ use navni::X256Color as X;
 
 pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     g.tick(b);
+    let mouse = b.mouse_state();
 
     // DISPLAY
     let win = Window::from(&g.s);
@@ -21,7 +22,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
         win
     };
 
-    draw_main(g, n, &main);
+    draw_main(g, n, &main, mouse);
 
     let mut cur = Cursor::new(&mut g.s, main);
     for m in g.msg.iter() {
@@ -139,27 +140,153 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
 }
 
 /// Draw main game area.
-fn draw_main(g: &mut Game, n_updates: u32, win: &Window) {
+fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
     if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
+        if g.camera != loc {
+            // Clear path whenever player moves.
+            g.clear_projected_path();
+        }
         g.camera = loc;
     }
 
-    let sector_bounds = wide_unfolded_sector_bounds(g.camera);
+    let wide_sector_bounds = wide_unfolded_sector_bounds(g.camera);
     let offset = util::scroll_offset(
         &win.area(),
         g.camera.unfold_wide(),
-        &sector_bounds,
+        &wide_sector_bounds,
     );
+
+    let screen_to_wide_pos =
+        |screen_pos: [i32; 2]| v2(screen_pos) - v2(win.bounds().min()) + offset;
+
+    let screen_to_loc_pos = |screen_pos: [i32; 2]| {
+        // Get wide location pos corresponding to screen space pos.
+        let wide_pos = screen_to_wide_pos(screen_pos);
+        // Snap to cell.
+        ivec2(wide_pos.x.div_euclid(2), wide_pos.y)
+    };
+
+    // Get a click target, preferring cells with mobs in them.
+    let click_target = |g: &Game, wide_pos: IVec2| -> Location {
+        let (a, b) = Location::fold_wide_sides(wide_pos);
+        // Prefer left cell unless right has a mob and left doesn't.
+        if b.mob_at(&g.r).is_some() && a.mob_at(&g.r).is_none() {
+            b
+        } else {
+            a
+        }
+    };
 
     // Solid background for off-sector extra space.
     win.fill(&mut g.s, CharCell::c('█').col(X::BROWN));
     // Constrain sub-window to current sector only.
-    let sector_win = win.sub(sector_bounds - offset);
+    let sector_win = win.sub(wide_sector_bounds - offset);
     // Adjust offset for sub-window position.
-    let offset = v2(sector_bounds.min()).max(offset);
+    let offset = v2(wide_sector_bounds.min()).max(offset);
     draw_map(g, &sector_win, offset);
     g.draw_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
+
+    if win.contains(mouse) {
+        // Only operate within the currently visible sector.
+        let sector_bounds = g.camera.expanded_sector_bounds();
+
+        match mouse {
+            MouseState::Hover(p) => {
+                let a = screen_to_loc_pos(p);
+
+                if sector_bounds.contains(a) {
+                    g.project_path_to(Location::fold(a));
+                }
+            }
+
+            MouseState::Drag(p, q, MouseButton::Left) if win.contains(q) => {
+                let (a, b) = (screen_to_loc_pos(q), screen_to_loc_pos(p));
+
+                // Draw inverted marquee box.
+                if sector_bounds.contains(a) && sector_bounds.contains(b) {
+                    for a in Rect::from_points([p, q]) - win.bounds().min() {
+                        if let Some(c) = win.get_mut(&mut g.s, a) {
+                            *c = c.inv();
+                        }
+                    }
+                }
+            }
+
+            MouseState::Release(p, q, MouseButton::Left) => {
+                // Was this a local click or the end result of a drag?
+                let (a, b) = (screen_to_wide_pos(q), screen_to_wide_pos(p));
+                if a == b {
+                    // Left click.
+                    let loc = click_target(g, a);
+
+                    match loc.mob_at(&g.r) {
+                        Some(npc) if npc.is_player(&g.r) => {
+                            // Select player.
+                            g.clear_selection();
+                        }
+                        Some(npc) if npc.is_player_aligned(&g.r) => {
+                            // Select NPC.
+                            g.set_selection(vec![npc]);
+                        }
+                        Some(enemy) => {
+                            // Attack enemy.
+                            g.act(Goal::Attack(enemy));
+                        }
+                        None => {
+                            // Move to location.
+                            g.act(Goal::GoTo(loc));
+                        }
+                    }
+                } else {
+                    // A drag ended. Collect covered friendly units into
+                    // selection.
+                    if wide_sector_bounds.contains(a)
+                        && wide_sector_bounds.contains(b)
+                    {
+                        let (a, b) =
+                            (screen_to_wide_pos(q), screen_to_wide_pos(p));
+                        let mut selection = Vec::new();
+                        for e in Rect::from_points([a, b])
+                            .into_iter()
+                            .filter_map(|p| {
+                                Location::fold_wide(p)
+                                    .and_then(|loc| loc.mob_at(&g.r))
+                            })
+                        {
+                            if e.is_player_aligned(&g.r) {
+                                selection.push(e);
+                            }
+                        }
+                        g.set_selection(selection);
+                    }
+                }
+            }
+
+            MouseState::Release(p, q, MouseButton::Right) => {
+                let (a, b) = (screen_to_wide_pos(q), screen_to_wide_pos(p));
+                if a == b {
+                    // Right click.
+                    let loc = click_target(g, a);
+
+                    match loc.mob_at(&g.r) {
+                        Some(npc) if npc.is_player_aligned(&g.r) => {
+                            npc.become_player(&mut g.r);
+                        }
+                        Some(enemy) => {
+                            // Attack enemy.
+                            g.act(Goal::Attack(enemy));
+                        }
+                        None => {
+                            // TODO: Shoot in direction
+                        }
+                    }
+                }
+            }
+
+            _ => {}
+        }
+    }
 }
 
 fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
@@ -188,9 +315,7 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                         cell = cell.col(X::TEAL);
                     }
 
-                    if g.current_active() == Some(e)
-                        || g.selection().contains(&e)
-                    {
+                    if g.selected().any(|a| a == e) {
                         cell = cell.inv();
                     }
                 }
