@@ -127,14 +127,6 @@ fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     writeln!(cur);
     writeln!(cur);
     writeln!(cur, "Ctrl-C) quit");
-    // TODO: Command help formatter
-    //  - Highlight letter if possible, d)rop, d(r)op, x) drop
-    //  - Make the whole word clickable
-
-    // TODO selection helps
-    // LMB) select NPC
-    // Tab) cycle NPCs
-    // Esc) clear selection
 
     for a in actions.into_iter().chain(actions2) {
         g.process_action(a);

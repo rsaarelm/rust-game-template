@@ -141,7 +141,8 @@ impl Game {
             .filter(|e| e.is_player_aligned(r) && !e.is_player(r))
         {
             let is_valid = if only_ones_waiting_orders {
-                mob.acts_before_next_player_frame(r) && mob.is_waiting_commands(r)
+                mob.acts_before_next_player_frame(r)
+                    && mob.is_waiting_commands(r)
             } else {
                 true
             };
