@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt};
+use std::collections::BTreeMap;
 
 use anyhow::bail;
 use derive_deref::Deref;
@@ -155,18 +155,19 @@ impl Patch {
 /// Datafile version of `Patch`.
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct PatchData {
-    pub map: String,
     pub legend: BTreeMap<char, Spawn>,
 }
 
-impl TryFrom<PatchData> for Patch {
+impl TryFrom<((PatchData,), String)> for Patch {
     type Error = anyhow::Error;
 
-    fn try_from(value: PatchData) -> Result<Self, Self::Error> {
+    fn try_from(
+        ((data,), map): ((PatchData,), String),
+    ) -> Result<Self, Self::Error> {
         let mut terrain = IndexMap::default();
         let mut spawns = IndexMap::default();
         let mut entrance = None;
-        for (y, line) in value.map.lines().enumerate() {
+        for (y, line) in map.lines().enumerate() {
             for (x, c) in line.chars().enumerate() {
                 if c.is_whitespace() {
                     continue;
@@ -177,7 +178,7 @@ impl TryFrom<PatchData> for Patch {
                     entrance = Some(p);
                     // Assume that player always stands on regular ground.
                     terrain.insert(p, Tile::Ground);
-                } else if let Some(s) = value.legend.get(&c) {
+                } else if let Some(s) = data.legend.get(&c) {
                     spawns.insert(p, s.clone());
                     // NB. Spawn data can't be safely accessed at the point
                     // where patches are being instantiated, because both are
@@ -203,7 +204,7 @@ impl TryFrom<PatchData> for Patch {
     }
 }
 
-impl From<&Patch> for PatchData {
+impl From<&Patch> for ((PatchData,), String) {
     fn from(value: &Patch) -> Self {
         const LEGEND_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                                        abcdefghijklmnopqrstuvwxyz\
@@ -286,13 +287,7 @@ impl From<&Patch> for PatchData {
         // Reverse legend
         let legend = legend.into_iter().map(|(n, c)| (c, Spawn(n))).collect();
 
-        PatchData { map, legend }
-    }
-}
-
-impl fmt::Display for PatchData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", idm::to_string(self).unwrap())
+        ((PatchData { legend },), map)
     }
 }
 
@@ -301,7 +296,7 @@ impl<'de> Deserialize<'de> for Patch {
     where
         D: serde::Deserializer<'de>,
     {
-        let data = PatchData::deserialize(deserializer)?;
+        let data = <((PatchData,), String)>::deserialize(deserializer)?;
         Patch::try_from(data).map_err(serde::de::Error::custom)
     }
 }
@@ -311,7 +306,7 @@ impl Serialize for Patch {
     where
         S: Serializer,
     {
-        PatchData::from(self).serialize(serializer)
+        <((PatchData,), String)>::from(self).serialize(serializer)
     }
 }
 
@@ -360,15 +355,14 @@ mod test {
     #[test]
     fn patch_roundtrip() {
         const PATCH: &str = "\
-map
-   ###
-  ##a##
-  #..x#
-  ##@##
-   ###
-legend
+:legend
   a archon
-  x xorn";
+  x xorn
+ ###
+##a##
+#..x#
+##@##
+ ###";
 
         let p: Patch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
@@ -378,16 +372,15 @@ legend
     #[test]
     fn legend_assign() {
         const PATCH: &str = "\
-map
-   ###
-  ##x##
-  #yz.#
-  ##@##
-   ###
-legend
+:legend
   x alien-one
   y alien-two
-  z alien-three";
+  z alien-three
+ ###
+##x##
+#yz.#
+##@##
+ ###";
 
         let p: Patch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
