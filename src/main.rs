@@ -5,7 +5,6 @@ use navni::prelude::*;
 use ui::Game;
 
 mod game_screen;
-mod wasm_getrandom;
 
 const GAME_NAME: &str = "gametemplate";
 
