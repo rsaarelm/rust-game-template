@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, GameRng, LazyRes};
+use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{ecs::*, prelude::*, Fov, Placement, Terrain, World, WorldSpec};
 
@@ -196,8 +196,13 @@ impl Runtime {
             &|loc2: &Location| {
                 loc2.sector() == loc.sector() && loc2.is_walkable(self)
             },
-            loc.expanded_sector_locs()
-                .filter(|loc| !loc.is_explored(self)),
+            loc.expanded_sector_locs().filter(|loc2| {
+                !loc2.is_explored(self)
+                    || (loc2.is_explored(self)
+                        && loc2.is_walkable(self)
+                        && loc2.sector() == loc.sector()
+                        && s8::ns(*loc2).any(|loc| !loc.is_explored(self)))
+            }),
         )
         .collect();
 
