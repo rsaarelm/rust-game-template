@@ -168,7 +168,7 @@ impl Game {
         let p = self.r.player();
 
         if self.selection.is_empty()
-            || self.selection.iter().find(|&&a| Some(a) == p).is_some()
+            || self.selection.iter().any(|&a| Some(a) == p)
         {
             // No selection means that player is active.
             // If the selection contains the player, always pick player.
