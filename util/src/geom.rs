@@ -11,6 +11,8 @@ use crate::Rect;
 
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
+    use std::ops::Add;
+
     use glam::{ivec2, IVec2};
 
     use crate::VecExt;
@@ -30,8 +32,10 @@ pub mod s4 {
     }
 
     /// 4-neighbors of given point.
-    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
-        DIR.iter().map(move |d| p + *d)
+    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
+        p: T,
+    ) -> impl Iterator<Item = T> {
+        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     /// Normalize vector to a 4-dir.
@@ -91,7 +95,7 @@ pub mod s4 {
 
 /// Hex coordinate space.
 pub mod s6 {
-    use std::f32::consts::TAU;
+    use std::{f32::consts::TAU, ops::Add};
 
     use glam::IVec2;
     use serde::{Deserialize, Serialize};
@@ -118,8 +122,10 @@ pub mod s6 {
     }
 
     /// 6-neighbors of given point.
-    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
-        DIR.iter().map(move |d| p + *d)
+    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
+        p: T,
+    ) -> impl Iterator<Item = T> {
+        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     #[derive(
@@ -215,7 +221,7 @@ pub mod s6 {
 
 /// 8-directional grid space using chessboard metric.
 pub mod s8 {
-    use std::f32::consts::TAU;
+    use std::{f32::consts::TAU, ops::Add};
 
     use glam::IVec2;
 
@@ -238,8 +244,10 @@ pub mod s8 {
     }
 
     /// 8-neighbors of given point.
-    pub fn ns(p: IVec2) -> impl Iterator<Item = IVec2> {
-        DIR.iter().map(move |d| p + *d)
+    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
+        p: T,
+    ) -> impl Iterator<Item = T> {
+        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     /// Normalize vector to a 8-dir.
