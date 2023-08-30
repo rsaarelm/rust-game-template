@@ -153,6 +153,112 @@ pub fn input_help_string(key: &str, command: &str) -> String {
     format!("{}) {}", key, command)
 }
 
+pub fn is_vowel(c: char) -> bool {
+    // If accented chars are used, they need to be added here...
+    matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'i' | 'o' | 'u')
+}
+
+pub fn is_capitalized(s: &str) -> bool {
+    s.chars().next().map(|c| c.is_uppercase()).unwrap_or(false)
+}
+
+pub fn capitalize(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(c) => c.to_uppercase().chain(chars).collect(),
+    }
+}
+
+pub fn uncapitalize(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(c) => c.to_lowercase().chain(chars).collect(),
+    }
+}
+
+/// Translate segments in square brackets in string with the given function.
+///
+/// Square brackets can be escaped by doubling them, `[[` becomes a literal
+/// `[` and `]]` becomes a literal `]`.
+///
+/// If your opening and closing brackets don't match, the formatting behavior
+/// is unspecified.
+///
+/// If the template parameter starts with a capital letter, the result from
+/// the converter is capitalized. The converter always gets lowercase values.
+///
+/// # Examples
+///
+/// ```
+/// use util::text::templatize;
+///
+/// fn translate(word: &str) -> Result<String, ()> {
+///     match word {
+///         "foo" => Ok("bar"),
+///         _ => Err(())
+///     }.map(|x| x.to_string())
+/// }
+///
+/// assert_eq!(Ok("Foo bar baz".into()), templatize(translate, "Foo [foo] baz"));
+/// assert_eq!(Ok("Bar foo baz".to_string()), templatize(translate, "[Foo] foo baz"));
+/// assert_eq!(Err(()), templatize(translate, "foo [bar] baz"));
+/// assert_eq!(Ok("foo [foo] baz".to_string()), templatize(translate, "foo [[foo]] baz"));
+/// ```
+pub fn templatize<F, E>(mut mapper: F, mut text: &str) -> Result<String, E>
+where
+    F: FnMut(&str) -> Result<String, E>,
+{
+    // I'm going to do some fun corner-cutting here.
+    //
+    // Instead of being all proper-like with the opening and closing bracket, I'll just treat them
+    // both as a generic separator char, so the string will start in verbatim mode and a lone
+    // bracket in either direction will toggle modes between verbatim and templatize.
+
+    fn next_chunk(text: &str) -> (String, &str) {
+        let mut acc = String::new();
+        let mut prev = '\0';
+        for (i, c) in text.char_indices() {
+            // Escaped bracket, emit one.
+            if (c == '[' || c == ']') && prev == c {
+                acc.push(c);
+                prev = '\0';
+                continue;
+            }
+            // Actual bracket, end chunk here and return remain.
+            if prev == '[' || prev == ']' {
+                return (acc, &text[i..]);
+            }
+            if c != '[' && c != ']' {
+                acc.push(c);
+            }
+            prev = c;
+        }
+        (acc, &text[text.len()..])
+    }
+
+    let mut ret = String::new();
+    let mut templating = false;
+    while !text.is_empty() {
+        let (mut chunk, remain) = next_chunk(text);
+        text = remain;
+
+        if templating {
+            if is_capitalized(&chunk) {
+                chunk = mapper(&uncapitalize(&chunk))?;
+                chunk = capitalize(&chunk);
+            } else {
+                chunk = mapper(&chunk)?;
+            }
+        }
+
+        ret += &chunk;
+        templating = !templating;
+    }
+    Ok(ret)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,5 +285,27 @@ All mimsy were the borogoves,
                 "outgrabe."
             ]
         );
+    }
+
+    #[test]
+    fn capitalizers() {
+        use super::{capitalize, is_capitalized};
+        for &(text, cap) in &[
+            ("", ""),
+            ("a", "A"),
+            ("A", "A"),
+            ("Abc", "Abc"),
+            ("abc", "Abc"),
+            ("aBC", "ABC"),
+            ("ABC", "ABC"),
+            ("æ", "Æ"),
+            ("æìë", "Æìë"),
+        ] {
+            assert_eq!(&capitalize(text), cap);
+            assert_eq!(
+                is_capitalized(text),
+                !text.is_empty() && capitalize(text) == text
+            );
+        }
     }
 }
