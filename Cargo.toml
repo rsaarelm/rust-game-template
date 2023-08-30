@@ -31,7 +31,8 @@ clap = { version = "4", features = ["derive"] }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }
-log = "0.4.20"
+idm = "0.4"
+log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
 ui = { path = "ui" }

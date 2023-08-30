@@ -488,6 +488,7 @@ dependencies = [
  "fov",
  "getrandom",
  "gfx",
+ "idm",
  "log",
  "navni",
  "rand",

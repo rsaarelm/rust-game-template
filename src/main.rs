@@ -7,7 +7,7 @@ use util::Logos;
 
 mod game_screen;
 
-const GAME_NAME: &str = "gametemplate";
+pub const GAME_NAME: &str = "gametemplate";
 
 #[derive(Parser, Debug)]
 struct Args {
