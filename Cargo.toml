@@ -27,6 +27,7 @@ codegen-units = 1
 members = ["fov", "engine", "gfx", "ui", "util"]
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }
