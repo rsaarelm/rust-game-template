@@ -114,7 +114,7 @@ impl Entity {
 
         if self.try_to_hit(r, &target) {
             let dmg = self.stats(r).dmg;
-            target.damage(r, dmg);
+            target.damage(r, dmg, Some(*self));
         } else {
             send_msg(Msg::Miss(target));
         }
@@ -136,16 +136,16 @@ impl Entity {
                 return;
             }
             Voice::Shout => {
-                msg!("{} shouts angrily.", self.Name(r));
+                msg!("[One] shout[s] angrily."; self.noun(r));
             }
             Voice::Hiss => {
-                msg!("{} hisses.", self.Name(r));
+                msg!("[One] hiss[es]."; self.noun(r));
             }
             Voice::Gibber => {
-                msg!("{} gibbers.", self.Name(r));
+                msg!("[One] gibber[s]."; self.noun(r));
             }
             Voice::Roar => {
-                msg!("{} roars.", self.Name(r));
+                msg!("[One] roar[s]."; self.noun(r));
             }
         }
 

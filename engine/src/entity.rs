@@ -4,6 +4,7 @@ use std::{fmt, str::FromStr};
 use derive_deref::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+use util::Noun;
 
 use crate::{ecs::*, prelude::*};
 
@@ -172,20 +173,6 @@ impl Entity {
         self.loc(r).is_some()
     }
 
-    /// Return capitalized name of an entity.
-    ///
-    /// This will probably get deprecated by a string templating system later.
-    #[allow(non_snake_case)]
-    pub fn Name(&self, r: &Runtime) -> String {
-        let name = self.name(r);
-        // XXX: ASCII only
-        if !name.is_empty() {
-            name[..1].to_uppercase() + &name[1..]
-        } else {
-            name
-        }
-    }
-
     pub fn name(&self, r: &Runtime) -> String {
         let nickname = self.get::<Nickname>(r).0;
         let name = self.get::<Name>(r).0;
@@ -200,6 +187,15 @@ impl Entity {
             }
         } else {
             name
+        }
+    }
+
+    /// Get the noun for this entity that is used in grammar templating.
+    pub fn noun(&self, r: &Runtime) -> Noun {
+        if self.is_player(r) {
+            Noun::You
+        } else {
+            Noun::It(self.name(r))
         }
     }
 
@@ -268,7 +264,7 @@ impl Entity {
         self.get::<Wounds>(r).0
     }
 
-    pub fn damage(&self, r: &mut Runtime, amount: i32) {
+    pub fn damage(&self, r: &mut Runtime, amount: i32, perp: Option<Entity>) {
         let mut wounds = self.wounds(r);
         wounds += amount;
         self.set(r, Wounds(wounds));
@@ -276,14 +272,19 @@ impl Entity {
             send_msg(Msg::Hurt(*self));
         }
         if wounds >= self.max_wounds(r) {
-            self.die(r);
+            self.die(r, perp);
         }
     }
 
-    pub fn die(&self, r: &mut Runtime) {
+    pub fn die(&self, r: &mut Runtime, perp: Option<Entity>) {
         if let Some(loc) = self.loc(r) {
             // Effects.
-            msg!("{} dies.", self.Name(r));
+            if let Some(perp) = perp {
+                msg!("[One] kill[s] [another]."; perp.noun(r), self.noun(r));
+            } else {
+                msg!("[One] die[s]."; self.noun(r));
+            }
+
             send_msg(Msg::Death(loc));
 
             // Ground splatter.

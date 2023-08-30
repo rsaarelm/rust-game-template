@@ -83,7 +83,7 @@ impl Entity {
 
     pub fn equip(&self, r: &mut Runtime, item: &Entity) {
         if !item.can_be_equipped(r) {
-            msg!("You can't equip that.");
+            msg!("[One] can't equip that."; self.noun(r));
             return;
         }
 
@@ -102,7 +102,7 @@ impl Entity {
 
         if slots.is_empty() {
             // TODO Try to unequip the item in the way.
-            msg!("You can't equip any more of that sort of item.");
+            msg!("[One] can't equip any more of that sort of item."; self.noun(r));
             return;
         }
 
@@ -117,7 +117,7 @@ impl Entity {
             slots[0]
         };
 
-        msg!("Equipped {}.", item.name(r));
+        msg!("[One] equip[s] [another]."; self.noun(r), item.noun(r));
         item.set(r, slot);
         self.complete_turn(r);
     }
@@ -129,7 +129,7 @@ impl Entity {
     pub fn unequip(&self, r: &mut Runtime, item: &Entity) {
         if item.is_equipped(r) {
             item.set(r, EquippedAt::None);
-            msg!("Removed {}.", item.name(r));
+            msg!("[One] remove[s] [another]."; self.noun(r), item.noun(r));
             self.complete_turn(r);
         } else {
             msg!("That isn't equipped.");
@@ -178,7 +178,7 @@ impl Entity {
 
     pub(crate) fn take(&self, r: &mut Runtime, item: &Entity) {
         r.placement.insert(*self, *item);
-        msg!("{} picks up {}.", self.Name(r), item.name(r));
+        msg!("[One] pick[s] up [another]."; self.noun(r), item.noun(r));
     }
 
     pub(crate) fn drop(&self, r: &mut Runtime, item: &Entity) {
@@ -187,7 +187,7 @@ impl Entity {
                 self.unequip(r, item);
             }
             item.place_on_open_spot(r, loc);
-            msg!("{} drops {}.", self.Name(r), item.name(r));
+            msg!("[One] drop[s] [another]."; self.noun(r), item.noun(r));
         } else {
             log::warn!("Entity::drop: Dropping entity has no location");
         }

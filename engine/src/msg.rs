@@ -5,7 +5,9 @@ use std::sync::{
     LazyLock, Mutex,
 };
 
+use anyhow::bail;
 use derive_deref::Deref;
+use util::{text, Noun, Sentence};
 
 use crate::prelude::*;
 
@@ -47,6 +49,29 @@ pub fn send_msg(msg: Msg) {
     }
 }
 
+pub trait Grammatize {
+    fn format(&self, s: &str) -> String;
+}
+
+impl Grammatize for () {
+    fn format(&self, s: &str) -> String {
+        text::templatize(|_| bail!("no nouns"), s).unwrap()
+    }
+}
+
+impl Grammatize for (Noun,) {
+    fn format(&self, s: &str) -> String {
+        text::templatize(|e| self.0.convert(e), s).unwrap()
+    }
+}
+
+impl Grammatize for (Noun, Noun) {
+    fn format(&self, s: &str) -> String {
+        text::templatize(|e| Sentence::new(&self.0, &self.1).convert(e), s)
+            .unwrap()
+    }
+}
+
 #[macro_export]
 macro_rules! msg {
     ($fmt:expr) => {
@@ -59,11 +84,13 @@ macro_rules! msg {
     };
 
     ($fmt:expr; $($grammar_arg:expr),*) => {
-        // TODO 2023-02-04 Support grammar templating
-        msg!($fmt)
+        let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), $fmt);
+        $crate::send_msg($crate::Msg::Message(__txt));
     };
 
     ($fmt:expr, $($arg:expr),*; $($grammar_arg:expr),*) => {
-        msg!($fmt, $($arg),*)
+        let __txt = format!($fmt, $($arg),*);
+        let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), &__txt);
+        $crate::send_msg($crate::Msg::Message(__txt));
     };
 }

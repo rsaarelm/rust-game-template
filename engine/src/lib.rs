@@ -52,7 +52,7 @@ mod mob;
 pub use mob::Goal;
 
 mod msg;
-pub use msg::{send_msg, Msg, Receiver};
+pub use msg::{send_msg, Grammatize, Msg, Receiver};
 
 mod patch;
 pub use patch::{Patch, Spawn};
