@@ -354,8 +354,7 @@ impl Game {
             Pass => self.act(Action::Pass),
             Inventory => {}
             Abilities => {}
-            Equip => {}
-            Unequip => {}
+            Equipment => {}
             Drop => {}
             Throw => {}
             Use => {}
@@ -421,7 +420,7 @@ impl Game {
         None.into_iter()
     }
 
-    pub fn project_path_to(&mut self, loc: Location) {
+    pub fn project_path_to(&mut self, _loc: Location) {
         // TODO
     }
 

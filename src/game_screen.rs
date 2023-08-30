@@ -16,7 +16,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     // Only show sidebar if there's an active player.
     let main = if let Some(player) = g.current_active() {
         let (panel, main) = win.split_left(26);
-        draw_panel(g, b, &panel, player);
+        status_panel(g, b, &panel, player);
         main
     } else {
         win
@@ -63,7 +63,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
     None
 }
 
-fn draw_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
+fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     use InputAction::*;
 
     win.clear(&mut g.s);

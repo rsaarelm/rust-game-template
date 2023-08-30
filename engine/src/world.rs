@@ -4,11 +4,15 @@ use util::Logos;
 
 use crate::{mapgen::Level, prelude::*, Patch, Spawn};
 
-/// Data that specifies the contents of an initial game world.
+/// Fixed-format data that specifies the contents of the initial game world.
+/// Created from `WorldSpec`.
 #[derive(Clone, Default)]
 pub struct World {
+    /// PRNG seed used
     seed: Logos,
+    /// Map generation artifacts specifying terrain and entity spawns.
     patches: IndexMap<Location, Patch>,
+    /// Replicates data from `patches` in a more efficiently accessible form.
     terrain: HashMap<Location, Tile>,
 }
 
@@ -63,6 +67,9 @@ impl World {
     }
 }
 
+/// Compact description of what the initial game world is like. Will be stored
+/// in save files. Expansion is highly context-dependent, may use prefab maps
+/// or procedural generation.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct WorldSpec {
     seed: Logos,

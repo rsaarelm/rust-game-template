@@ -1,4 +1,4 @@
---                power  kind
+--                power  kind          effect
 dagger                4  melee-weapon  -
 sword                 8  melee-weapon  -
 leather_armor         2  armor         -
