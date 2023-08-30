@@ -123,32 +123,20 @@ impl Patch {
         true
     }
 
-    /// Apply patch to world.
-    ///
-    /// If world does not have player defined and the patch specifies an entry
-    /// point, a player will be spawned at that point.
-    pub fn apply(&self, r: &mut Runtime, origin: Location) {
-        for (&p, &t) in &self.terrain {
-            let loc = origin + p;
-            loc.set_tile(r, t);
-        }
+    pub fn tiles(&self) -> impl Iterator<Item = (IVec2, Tile)> + '_ {
+        let overlay: HashMap<IVec2, Tile> = self
+            .spawns
+            .iter()
+            .map(|(&p, s)| (p, s.preferred_tile()))
+            .collect();
 
-        for (&p, s) in &self.spawns {
-            let loc = origin + p;
-
-            // If it wants to spawn on weird terrain, set that.
-            let t = s.preferred_tile();
-            if t != Tile::Ground {
-                loc.set_tile(r, t);
+        self.terrain.iter().map(move |(&p, &t)| {
+            if let Some(&t) = overlay.get(&p) {
+                (p, t)
+            } else {
+                (p, t)
             }
-
-            s.spawn(r, loc);
-        }
-
-        if let Some(p) = self.entrance {
-            // spawn_player is assumed to be a no-op if player already exists.
-            r.spawn_player(origin + p);
-        }
+        })
     }
 }
 

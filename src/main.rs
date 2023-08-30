@@ -1,10 +1,9 @@
 use clap::Parser;
-use rand::Rng;
 
 use engine::prelude::*;
 use navni::prelude::*;
 use ui::Game;
-use util::{srng, Logos};
+use util::Logos;
 
 mod game_screen;
 
@@ -26,8 +25,7 @@ fn main() {
         .unwrap_or_else(|| Logos::sample(&mut rand::thread_rng(), 10));
     log::info!("seed: {seed}");
 
-    let world: World = srng(&seed).gen();
-    let game = Game::new(Runtime::new(&world).unwrap());
+    let game = Game::new(Runtime::new(WorldSpec::new(seed)).unwrap());
 
     run(
         &Config {

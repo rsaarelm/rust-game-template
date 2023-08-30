@@ -1,16 +1,21 @@
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, GameRng};
+use util::{flood_fill_4, GameRng, LazyRes};
 
-use crate::{ecs::*, prelude::*, Fov, Placement, Result, Terrain, World};
+use crate::{
+    ecs::*, prelude::*, Fov, Placement, Result, Terrain, World, WorldSpec,
+};
 
 /// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, rename_all = "kebab-case")]
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
-    pub(crate) terrain: Terrain,
+    /// Lazily instantiated static world structure.
+    pub(crate) world: LazyRes<WorldSpec, World>,
+    /// Terrain modifications made on world during runtime.
+    pub(crate) terrain_overlay: Terrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
@@ -20,10 +25,13 @@ pub struct Runtime {
 impl Default for Runtime {
     fn default() -> Self {
         Runtime {
-            now: Default::default(),
+            // Start time from an above-zero value so that zero time values
+            // can work as "unspecified time".
+            now: Instant(3600),
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
-            terrain: Default::default(),
+            world: Default::default(),
+            terrain_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
@@ -32,20 +40,30 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    pub fn new(w: &World) -> Result<Self> {
-        let mut ret = Runtime::default();
+    pub fn new(w: WorldSpec) -> Result<Self> {
+        let world: LazyRes<WorldSpec, World> = LazyRes::new(w);
+        let rng = util::srng(world.seed());
 
-        for (&loc, patch) in w.iter() {
-            patch.apply(&mut ret, loc);
+        let mut ret = Runtime {
+            world,
+            rng,
+            ..Default::default()
+        };
+
+        let spawns: Vec<_> = ret
+            .world
+            .spawns()
+            .map(|(p, s)| (p, s.clone()))
+            .collect::<Vec<_>>();
+        for (loc, s) in spawns {
+            s.spawn(&mut ret, loc);
         }
 
-        if ret.player.is_none() {
-            return err("Worldfile does not specify player entry point");
+        if let Some(entrance) = ret.world.entrance() {
+            ret.spawn_player(entrance);
+        } else {
+            return err("world does not specify player entry point");
         }
-
-        // Start time from an above-zero value so that zero time values can
-        // work as "unspecified time".
-        ret.now = Instant(3600);
 
         Ok(ret)
     }

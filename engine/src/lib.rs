@@ -75,7 +75,7 @@ mod time;
 pub use time::Instant;
 
 mod world;
-pub use world::World;
+pub use world::{World, WorldSpec};
 
 pub type Rect = util::Rect<i32>;
 

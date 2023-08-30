@@ -98,11 +98,15 @@ impl Location {
     }
 
     pub fn tile(&self, r: &Runtime) -> Tile {
-        r.terrain.get(self).copied().unwrap_or_default()
+        r.terrain_overlay
+            .get(self)
+            .copied()
+            .or_else(|| r.world.tile(self))
+            .unwrap_or_default()
     }
 
     pub fn set_tile(&self, r: &mut Runtime, t: Tile) {
-        r.terrain.insert(*self, t);
+        r.terrain_overlay.insert(*self, t);
     }
 
     /// Return location snapped to the origin of this location's sector.
