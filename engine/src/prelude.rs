@@ -1,5 +1,5 @@
 pub use crate::{
-    err, msg, send_msg, Ability, Action, Entity, Goal, Instant, Location, Msg,
+    msg, send_msg, Ability, Action, Entity, Goal, Instant, Location, Msg,
     Receiver, Runtime, ScenarioStatus, Tile, World, WorldSpec, SECTOR_HEIGHT,
     SECTOR_WIDTH,
 };

@@ -1,10 +1,9 @@
+use anyhow::{bail, Result};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, GameRng, LazyRes};
 
-use crate::{
-    ecs::*, prelude::*, Fov, Placement, Result, Terrain, World, WorldSpec,
-};
+use crate::{ecs::*, prelude::*, Fov, Placement, Terrain, World, WorldSpec};
 
 /// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]
@@ -62,7 +61,7 @@ impl Runtime {
         if let Some(entrance) = ret.world.entrance() {
             ret.spawn_player(entrance);
         } else {
-            return err("world does not specify player entry point");
+            bail!("world does not specify player entry point");
         }
 
         Ok(ret)
