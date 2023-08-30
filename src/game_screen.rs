@@ -39,6 +39,25 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
         if a == QuitGame {
             return Some(StackOp::Pop);
         }
+
+        if a == Quicksave {
+            let saved =
+                idm::to_string(&g.r).expect("runtime serialization failed");
+            navni::Directory::data(crate::GAME_NAME)
+                .expect("data dir not found")
+                .write("saved.idm", &saved)
+                .expect("writing save failed");
+        }
+
+        if a == Quickload {
+            if let Ok(save) = navni::Directory::data(crate::GAME_NAME)
+                .expect("data dir not found")
+                .read("saved.idm")
+            {
+                let r = idm::from_str(&save).expect("corrupt save file");
+                g.r = r;
+            }
+        }
     }
 
     None
