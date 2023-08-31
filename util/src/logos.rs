@@ -87,6 +87,20 @@ impl Logos {
         s.as_ref().chars().collect()
     }
 
+    /// Construct a logos string, substituting missing letters with numbers.
+    pub fn elite_new(s: impl AsRef<str>) -> Self {
+        s.as_ref()
+            .chars()
+            .map(|c| match c.to_ascii_uppercase() {
+                'E' => '3',
+                'I' => '1',
+                'O' => '0',
+                'S' => '5',
+                a => a,
+            })
+            .collect()
+    }
+
     pub fn from_bytes(data: &[u8]) -> Self {
         if data.is_empty() {
             return Default::default();
