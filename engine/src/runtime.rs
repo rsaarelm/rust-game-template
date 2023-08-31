@@ -97,7 +97,7 @@ impl Runtime {
 
         let player = Entity(self.ecs.spawn((
             Name("Player".into()),
-            Icon('P'),
+            Icon('1'),
             Speed(4),
             Level(5),
             IsMob(true),
@@ -117,10 +117,10 @@ impl Runtime {
             .zip(self.perturbed_fill_positions(loc).skip(1))
             .collect();
 
-        for (name, loc) in party_spawns {
+        for (i, (name, loc)) in party_spawns.into_iter().enumerate() {
             let npc = Entity(self.ecs.spawn((
                 Name(name.to_string()),
-                Icon('P'),
+                Icon(format!("{}", i + 2).chars().next().unwrap()),
                 Speed(4),
                 Level(5),
                 IsMob(true),
