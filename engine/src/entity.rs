@@ -4,7 +4,7 @@ use std::{fmt, str::FromStr};
 use derive_deref::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-use util::Noun;
+use util::{Logos, Noun};
 
 use crate::{ecs::*, prelude::*};
 
@@ -343,7 +343,7 @@ impl fmt::Display for Entity {
         let u = self.0.to_bits().get();
         let a = util::spread_u64_by_2(u);
         let b = util::spread_u64_by_2(u >> 32) << 1;
-        write!(f, "#{}", util::mung(a | b))
+        write!(f, "#{}", Logos::from(a | b))
     }
 }
 
@@ -354,7 +354,7 @@ impl FromStr for Entity {
         if !s.starts_with('#') || s.len() < 2 {
             return Err("bad entity");
         }
-        let v = util::unmung(&s[1..]);
+        let v = u64::from(&Logos::new(&s[1..]));
         let a = util::compact_u64_by_2(v);
         let b = util::compact_u64_by_2(v >> 1);
         let u = a | (b << 32);

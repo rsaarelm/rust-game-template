@@ -29,9 +29,6 @@ pub use keyboard_layout::Layout;
 mod lazy_res;
 pub use lazy_res::LazyRes;
 
-mod mung;
-pub use mung::{mung, unmung};
-
 mod logos;
 pub use logos::Logos;
 
