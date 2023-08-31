@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, hash::Hash, str::FromStr};
 
 use anyhow::bail;
 use derive_deref::Deref;
@@ -40,6 +40,11 @@ pub const ALPHABET: &str = "0123456789TANHRDLUCMFWYPVBGKJQXZ";
 ///   srng(&Logos::new("pAss Word")).gen_range(0..1000),
 ///   srng(&Logos::new("password")).gen_range(0..1000));
 ///
+/// // Trailing zeroes are ignored for hashing.
+/// assert_eq!(
+///   srng(&Logos::new("xyzzy")).gen_range(0..1000),
+///   srng(&Logos::new("xyzzy000")).gen_range(0..1000));
+///
 /// assert_ne!(
 ///   srng(&Logos::new("pAss Word 123")).gen_range(0..1000),
 ///   srng(&Logos::new("password")).gen_range(0..1000));
@@ -54,7 +59,6 @@ pub const ALPHABET: &str = "0123456789TANHRDLUCMFWYPVBGKJQXZ";
     Default,
     Eq,
     PartialEq,
-    Hash,
     Ord,
     PartialOrd,
     Deref,
@@ -192,6 +196,14 @@ impl Logos {
         } else {
             &self.0[0..n]
         }
+    }
+}
+
+// Hashing uses the true value and discounts the trailing zeroes.
+
+impl Hash for Logos {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.value().hash(state);
     }
 }
 
