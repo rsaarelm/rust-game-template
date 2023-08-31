@@ -32,11 +32,14 @@ pub use lazy_res::LazyRes;
 mod mung;
 pub use mung::{mung, unmung};
 
+mod logos;
+pub use logos::Logos;
+
 mod path;
 pub use path::{astar_path, dijkstra_map, flood_fill_4, within_range};
 
 mod rng;
-pub use rng::{srng, Logos, Odds, RngExt};
+pub use rng::{srng, Odds, RngExt};
 
 mod sys;
 pub use sys::KeyboardLayout;

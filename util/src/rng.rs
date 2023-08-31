@@ -1,12 +1,9 @@
+use std::hash::Hasher;
 use std::{fmt, hash::Hash};
-use std::{hash::Hasher, str::FromStr};
 
-use anyhow::bail;
-use derive_deref::Deref;
 use rand::{distributions::Standard, prelude::*};
 use rand_xorshift::XorShiftRng;
 use serde::{Deserialize, Serialize};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// Construct a throwaway random number generator seeded by a noise value.
 ///
@@ -16,98 +13,6 @@ pub fn srng(seed: &(impl Hash + ?Sized)) -> XorShiftRng {
     let mut h = crate::FastHasher::default();
     seed.hash(&mut h);
     XorShiftRng::seed_from_u64(h.finish())
-}
-
-/// Strings that are normalized to be case, whitespace and punctuation
-/// insensitive. Use as RNG seeds so that trivial transcription errors like an
-/// added space can't mess up the seed.
-///
-/// ```
-/// # use util::{Logos, srng};
-/// use rand::prelude::*;
-///
-/// assert_ne!(
-///   srng("pAss Word").gen_range(0..1000),
-///   srng("password").gen_range(0..1000));
-///
-/// assert_eq!(
-///   srng(&Logos::new("pAss Word")).gen_range(0..1000),
-///   srng(&Logos::new("password")).gen_range(0..1000));
-///
-/// assert_ne!(
-///   srng(&Logos::new("pAss Word 123")).gen_range(0..1000),
-///   srng(&Logos::new("password")).gen_range(0..1000));
-///
-/// assert_eq!(
-///   srng(&Logos::new("!@#'")).gen_range(0..1000),
-///   srng(&Logos::new(" ")).gen_range(0..1000));
-/// ```
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    Hash,
-    Ord,
-    PartialOrd,
-    Deref,
-    SerializeDisplay,
-    DeserializeFromStr,
-)]
-pub struct Logos(String);
-
-impl fmt::Display for Logos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromIterator<char> for Logos {
-    fn from_iter<T: IntoIterator<Item = char>>(iter: T) -> Self {
-        const MAX_LEN: usize = 64;
-
-        Logos(
-            iter.into_iter()
-                .map(|c| c.to_ascii_uppercase())
-                .filter(char::is_ascii_alphanumeric)
-                .take(MAX_LEN)
-                .collect(),
-        )
-    }
-}
-
-impl Logos {
-    /// Construct a new logos, stripping out punctuation, whitespace,
-    /// character case and non-ASCII characters from the input.
-    pub fn new(s: impl AsRef<str>) -> Self {
-        s.as_ref().chars().collect()
-    }
-
-    /// Generate a random logos of `len` characters.
-    pub fn sample<R: Rng + ?Sized>(rng: &mut R, len: usize) -> Logos {
-        (0..len)
-            .map(|_| {
-                *b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".choose(rng).unwrap()
-                    as char
-            })
-            .collect()
-    }
-}
-
-impl FromStr for Logos {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s
-            .chars()
-            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
-        {
-            bail!("not a valid logos")
-        } else {
-            Ok(Logos(s.into()))
-        }
-    }
 }
 
 /// Deciban log-odds type.
