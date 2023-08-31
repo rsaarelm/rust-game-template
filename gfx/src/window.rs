@@ -94,8 +94,8 @@ impl<P: Pixel> Window<P> {
         }
     }
 
-    pub fn get_mut<'a, 'b>(
-        &'a self,
+    pub fn get_mut<'b>(
+        &self,
         c: &'b mut Buffer<P>,
         pos: impl Into<IVec2>,
     ) -> Option<&'b mut P> {
