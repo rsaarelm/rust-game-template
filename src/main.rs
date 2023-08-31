@@ -33,7 +33,6 @@ fn main() {
             system_color_palette: Some(ui::LIGHT_PALETTE),
             ..Default::default()
         },
-        game,
-        game_screen::run,
+        (game, game_screen::run),
     );
 }

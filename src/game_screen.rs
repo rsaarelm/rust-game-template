@@ -7,7 +7,7 @@ use util::{text, v2, write, writeln};
 
 use navni::X256Color as X;
 
-pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
+pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
     g.tick(b);
     let mouse = b.mouse_state();
 
@@ -37,7 +37,7 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
         g.process_action(a);
 
         if a == QuitGame {
-            return Some(StackOp::Pop);
+            b.quit();
         }
 
         if a == Quicksave {
@@ -59,8 +59,6 @@ pub fn run(g: &mut Game, b: &mut dyn Backend, n: u32) -> Option<StackOp<Game>> {
             }
         }
     }
-
-    None
 }
 
 fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
