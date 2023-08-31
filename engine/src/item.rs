@@ -33,6 +33,20 @@ impl ItemKind {
             _ => false,
         }
     }
+
+    pub fn icon(&self) -> char {
+        use ItemKind::*;
+        match self {
+            None => 'X',
+            MeleeWeapon => ')',
+            RangedWeapon => ')',
+            Armor => '[',
+            Ring => '°',
+            Scroll => '?',
+            Potion => '!',
+            Treasure => '$',
+        }
+    }
 }
 
 #[derive(

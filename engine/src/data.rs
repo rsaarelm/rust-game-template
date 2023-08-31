@@ -81,8 +81,12 @@ pub struct Item {
 }
 
 impl Germ for Item {
-    fn build(&self, _r: &mut Runtime) -> Entity {
-        todo!()
+    fn build(&self, r: &mut Runtime) -> Entity {
+        Entity(r.ecs.spawn((
+            Icon(self.kind.icon()),
+            self.kind,
+            Level(self.power),
+        )))
     }
 }
 

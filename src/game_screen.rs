@@ -336,6 +336,8 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                     }
                 }
                 win.put(&mut g.s, draw_pos, cell);
+            } else if let Some(e) = loc.item_at(&g.r) {
+                win.put(&mut g.s, draw_pos, CharCell::c(e.icon(&g.r)));
             }
         }
     }

@@ -46,6 +46,20 @@ impl Level {
         (*n).into()
     }
 
+    /// Generate a random item.
+    fn item(&self, rng: &mut (impl Rng + ?Sized)) -> Spawn {
+        let spawns: Vec<_> = Data::get()
+            .armory
+            .iter()
+            .filter(|(_, m)| m.min_depth() <= self.depth)
+            .collect();
+
+        let (n, _) = spawns
+            .choose_weighted(rng, |(_, m)| m.commonness())
+            .unwrap();
+        (*n).into()
+    }
+
     /// Generate a random rectangular room.
     fn room(&self, rng: &mut (impl Rng + ?Sized)) -> Patch {
         let mut ret = Patch::default();
@@ -64,7 +78,11 @@ impl Level {
         for p in Rect::sized([w, h]) {
             ret.set_terrain(p, Tile::Ground);
             if rng.one_chance_in(60) && Some(p.into()) != ret.entrance {
-                ret.add_spawn(p, self.creature(rng));
+                if rng.one_chance_in(3) {
+                    ret.add_spawn(p, self.item(rng));
+                } else {
+                    ret.add_spawn(p, self.creature(rng));
+                }
             }
         }
 
