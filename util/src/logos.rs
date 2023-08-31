@@ -180,16 +180,24 @@ impl Logos {
         ret
     }
 
+    fn suffix_len(&self) -> usize {
+        (0..self.0.len())
+            .rev()
+            .take_while(|&i| self.0.as_bytes()[i] == b'0')
+            .count()
+    }
+
+    /// Trim trailing zeroes off the logos.
+    pub fn trim(&mut self) {
+        self.0.truncate(self.0.len() - self.suffix_len());
+    }
+
     /// Return the value prefix of the logos that omits trailing zeroes.
     ///
     /// Logoi are assumed to have the same value regardless of trailing
     /// zeroes, analogous to how 00360 and 360 denote the same number.
     pub fn value(&self) -> &str {
-        let suffix_len = (0..self.0.len())
-            .rev()
-            .take_while(|&i| self.0.as_bytes()[i] == b'0')
-            .count();
-        let n = self.0.len() - suffix_len;
+        let n = self.0.len() - self.suffix_len();
         if n == 0 {
             // No content in string, return single zero from alphabet.
             &ALPHABET[0..1]
@@ -280,6 +288,21 @@ mod test {
         assert_eq!(Logos::new("0000").value(), "0");
         assert_eq!(Logos::new("123000").value(), "123");
         assert_eq!(Logos::new("000001").value(), "000001");
+    }
+
+    #[test]
+    fn trim() {
+        for (a, b) in [
+            ("", ""),
+            ("1", "1"),
+            ("0", ""),
+            ("X0", "X"),
+            ("00A00", "00A"),
+        ] {
+            let mut logos = Logos::new(a);
+            logos.trim();
+            assert_eq!(*logos, b);
+        }
     }
 
     impl Arbitrary for Logos {
