@@ -343,7 +343,7 @@ impl fmt::Display for Entity {
         let u = self.0.to_bits().get();
         let a = util::spread_u64_by_2(u);
         let b = util::spread_u64_by_2(u >> 32) << 1;
-        write!(f, "#{}", Logos::from(a | b))
+        write!(f, "#{}", Logos::from(a | b).value())
     }
 }
 
