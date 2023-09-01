@@ -41,22 +41,11 @@ pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
         }
 
         if a == Quicksave {
-            let saved =
-                idm::to_string(&g.r).expect("runtime serialization failed");
-            navni::Directory::data(crate::GAME_NAME)
-                .expect("data dir not found")
-                .write("saved.idm", &saved)
-                .expect("writing save failed");
+            g.save(crate::GAME_NAME);
         }
 
         if a == Quickload {
-            if let Ok(save) = navni::Directory::data(crate::GAME_NAME)
-                .expect("data dir not found")
-                .read("saved.idm")
-            {
-                let r = idm::from_str(&save).expect("corrupt save file");
-                g.r = r;
-            }
+            g.load(crate::GAME_NAME);
         }
     }
 }

@@ -433,6 +433,25 @@ impl Game {
         }
         false
     }
+
+    pub fn save(&mut self, game_name: &str) {
+        let saved =
+            idm::to_string(&self.r).expect("runtime serialization failed");
+        navni::Directory::data(game_name)
+            .expect("data dir not found")
+            .write("saved.idm", &saved)
+            .expect("writing save failed");
+    }
+
+    pub fn load(&mut self, game_name: &str) {
+        if let Ok(save) = navni::Directory::data(game_name)
+            .expect("data dir not found")
+            .read("saved.idm")
+        {
+            let r = idm::from_str(&save).expect("corrupt save file");
+            self.r = r;
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]

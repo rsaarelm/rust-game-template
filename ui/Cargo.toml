@@ -9,6 +9,7 @@ derive_deref = "1"
 engine = { path = "../engine" }
 gfx = { path = "../gfx" }
 glam = { version = "0.24", features = ["serde"] }
+idm = "0.4"
 log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
