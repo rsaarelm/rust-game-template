@@ -133,9 +133,9 @@ impl<'de> Deserialize<'de> for _String {
 
 /// Functions to serialize an Option value so that "-" denotes `None`.
 pub mod dash_option {
-    use std::str::FromStr;
-
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{
+        de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer,
+    };
 
     pub fn serialize<S, T>(
         val: &Option<T>,
@@ -156,15 +156,16 @@ pub mod dash_option {
     ) -> Result<Option<T>, D::Error>
     where
         D: Deserializer<'de>,
-        T: FromStr,
-        <T as FromStr>::Err: std::fmt::Display,
+        T: DeserializeOwned,
     {
         let s = String::deserialize(deserializer)?;
 
         if s == "-" {
             Ok(None)
         } else {
-            Ok(Some(s.parse().map_err(serde::de::Error::custom)?))
+            idm::from_str::<T>(&s)
+                .map_err(serde::de::Error::custom)
+                .map(Some)
         }
     }
 }
