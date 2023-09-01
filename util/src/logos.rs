@@ -187,6 +187,11 @@ impl Logos {
             .count()
     }
 
+    pub fn trimmed(mut self) -> Self {
+        self.trim();
+        self
+    }
+
     /// Trim trailing zeroes off the logos.
     pub fn trim(&mut self) {
         self.0.truncate(self.0.len() - self.suffix_len());
@@ -215,28 +220,39 @@ impl Hash for Logos {
     }
 }
 
-// XXX: Is there a more compact way to do numeric conversions?
-
-impl From<u64> for Logos {
-    fn from(value: u64) -> Self {
-        let bytes = value.to_le_bytes();
-        let mut buf = &bytes[..];
-        while !buf.is_empty() && buf[buf.len() - 1] == 0 {
-            buf = &buf[0..buf.len() - 1];
-        }
-        Logos::from_bytes(buf)
-    }
-}
-
-impl From<&Logos> for u64 {
+impl<const N: usize> From<&Logos> for [u8; N] {
     fn from(value: &Logos) -> Self {
-        let mut bytes = [0; 8];
-        for (i, b) in value.to_bytes().into_iter().enumerate().take(8) {
-            bytes[i] = b;
+        let mut bytes = value.to_bytes();
+        while bytes.len() < N {
+            bytes.push(0);
         }
-        u64::from_le_bytes(bytes)
+        bytes.truncate(N);
+        bytes.try_into().expect("failed to convert bytes to array")
     }
 }
+
+macro_rules! int_conv {
+    ($t: ty) => {
+        impl From<$t> for Logos {
+            fn from(value: $t) -> Self {
+                Logos::from_bytes(&value.to_le_bytes()).trimmed()
+            }
+        }
+
+        impl From<&Logos> for $t {
+            fn from(value: &Logos) -> Self {
+                <$t>::from_le_bytes(value.into())
+            }
+        }
+    };
+}
+
+int_conv!(u8);
+int_conv!(u16);
+int_conv!(u32);
+int_conv!(u64);
+int_conv!(u128);
+int_conv!(usize);
 
 impl FromStr for Logos {
     type Err = anyhow::Error;
