@@ -270,9 +270,31 @@ impl FromStr for Logos {
 }
 
 #[cfg(test)]
+impl quickcheck::Arbitrary for Logos {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Logos {
+        let size = { usize::arbitrary(g) % 40 };
+        Logos(
+            (0..size)
+                .map(|_| *g.choose(ALPHABET.as_bytes()).unwrap() as char)
+                .collect(),
+        )
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let mut elt = self.clone();
+        Box::new(std::iter::from_fn(move || {
+            if elt.0.pop().is_some() {
+                Some(elt.clone())
+            } else {
+                None
+            }
+        }))
+    }
+}
+
+#[cfg(test)]
 mod test {
     use super::*;
-    use quickcheck::{Arbitrary, Gen};
     use quickcheck_macros::quickcheck;
 
     fn m(log: &str, bytes: &[u8]) {
@@ -318,28 +340,6 @@ mod test {
             let mut logos = Logos::new(a);
             logos.trim();
             assert_eq!(*logos, b);
-        }
-    }
-
-    impl Arbitrary for Logos {
-        fn arbitrary(g: &mut Gen) -> Logos {
-            let size = { usize::arbitrary(g) % 40 };
-            Logos(
-                (0..size)
-                    .map(|_| *g.choose(ALPHABET.as_bytes()).unwrap() as char)
-                    .collect(),
-            )
-        }
-
-        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
-            let mut elt = self.clone();
-            Box::new(std::iter::from_fn(move || {
-                if elt.0.pop().is_some() {
-                    Some(elt.clone())
-                } else {
-                    None
-                }
-            }))
         }
     }
 
