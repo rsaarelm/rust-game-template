@@ -75,22 +75,22 @@ impl Grammatize for (Noun, Noun) {
 #[macro_export]
 macro_rules! msg {
     ($fmt:expr) => {
-        $crate::send_msg($crate::Msg::Message($fmt.into()));
+        $crate::send_msg($crate::Msg::Message($fmt.into()))
     };
 
     ($fmt:expr, $($arg:expr),*) => {
         let __txt = format!($fmt, $($arg),*);
-        $crate::send_msg($crate::Msg::Message(__txt));
+        $crate::send_msg($crate::Msg::Message(__txt))
     };
 
     ($fmt:expr; $($grammar_arg:expr),*) => {
         let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), $fmt);
-        $crate::send_msg($crate::Msg::Message(__txt));
+        $crate::send_msg($crate::Msg::Message(__txt))
     };
 
     ($fmt:expr, $($arg:expr),*; $($grammar_arg:expr),*) => {
         let __txt = format!($fmt, $($arg),*);
         let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), &__txt);
-        $crate::send_msg($crate::Msg::Message(__txt));
+        $crate::send_msg($crate::Msg::Message(__txt))
     };
 }
