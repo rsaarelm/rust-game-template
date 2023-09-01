@@ -98,7 +98,6 @@ pub mod s6 {
     use std::{f32::consts::TAU, ops::Add};
 
     use glam::IVec2;
-    use serde::{Deserialize, Serialize};
 
     /// 6-dirs.
     ///
@@ -126,27 +125,6 @@ pub mod s6 {
         p: T,
     ) -> impl Iterator<Item = T> {
         DIR.iter().map(move |d| p.clone() + *d)
-    }
-
-    #[derive(
-        Copy,
-        Clone,
-        Debug,
-        Eq,
-        PartialEq,
-        Ord,
-        PartialOrd,
-        Hash,
-        Serialize,
-        Deserialize,
-    )]
-    pub enum Dir {
-        North,
-        Northeast,
-        Southeast,
-        South,
-        Southwest,
-        Northwest,
     }
 
     /// Normalize a vector to a hex dir.
