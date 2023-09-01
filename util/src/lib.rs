@@ -39,7 +39,7 @@ mod rng;
 pub use rng::{srng, Odds, RngExt};
 
 mod sys;
-pub use sys::KeyboardLayout;
+pub use sys::{panic_handler, KeyboardLayout};
 
 pub mod text;
 

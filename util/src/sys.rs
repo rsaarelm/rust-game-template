@@ -109,6 +109,35 @@ pub fn is_active(_layout_name: &str) -> bool {
     false
 }
 
+/// Set up a platform-specific special panic handler if necessary.
+///
+/// Windows programs don't have a natural stdout so panics on Windows are
+/// wrapped to a handler that pops up an error dialog box.
+#[cfg(target_os = "windows")]
+pub fn panic_handler() {
+    use winapi::um::winuser::{MessageBoxW, MB_ICONERROR};
+
+    // Wrap panics in dialog boxes on Windows.
+    std::panic::set_hook(Box::new(|panic_info| {
+        let message = panic_info
+            .to_string()
+            .encode_utf16()
+            .chain(Some(0))
+            .collect::<Vec<_>>();
+        let caption = "Error".encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+        unsafe {
+            MessageBoxW(
+                std::ptr::null_mut(),
+                message.as_ptr(),
+                caption.as_ptr(),
+                MB_ICONERROR,
+            );
+        }
+    }));
+}
+#[cfg(not(target_os = "windows"))]
+pub fn panic_handler() {}
+
 #[cfg(test)]
 mod test {
     use super::*;

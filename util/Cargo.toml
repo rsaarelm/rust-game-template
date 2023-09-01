@@ -22,6 +22,9 @@ serde = { version = "1", features = ["derive"] }
 serde_with = "3"
 walkdir = "2"
 
+[target.'cfg(windows)'.dependencies]
+winapi = "0.3"
+
 [dev-dependencies]
 fraction = "0.13"
 quickcheck = "1"

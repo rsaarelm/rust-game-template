@@ -1,3 +1,6 @@
+// Release builds made for Windows don't create a terminal window when run.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use clap::Parser;
 
 use engine::prelude::*;
@@ -16,6 +19,7 @@ struct Args {
 }
 
 fn main() {
+    util::panic_handler();
     navni::logger::start(GAME_NAME);
 
     let args = Args::parse();
