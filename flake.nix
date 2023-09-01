@@ -152,9 +152,9 @@
             xorg.libXi
             alsa-lib
 
-            # Profiling stuff, broken with 2023-01-22 flake.lock?
-            #linuxPackages.perf
-            #hotspot
+            # Profiling
+            linuxPackages.perf
+            hotspot
 
             # Utils
             just

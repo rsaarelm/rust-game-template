@@ -27,6 +27,16 @@ build-win:
     @nix build .#gametemplate-win
     @echo Built windows executable in result/bin/
 
+profile-debug *ARGS:
+    @cargo build
+    perf record -- ./target/x86_64-unknown-linux-gnu/debug/gametemplate {{ARGS}}
+    hotspot ./perf.data
+
+profile-release *ARGS:
+    @cargo build --release
+    perf record -- ./target/x86_64-unknown-linux-gnu/release/gametemplate {{ARGS}}
+    hotspot ./perf.data
+
 # Update pinned nix flake programs.
 update-flake:
     nix flake update

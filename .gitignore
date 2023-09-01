@@ -6,3 +6,6 @@ result
 
 # Generated WASM files
 web/*.wasm
+
+# Profiling data
+perf.data
