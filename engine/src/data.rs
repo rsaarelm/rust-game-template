@@ -77,13 +77,14 @@ pub struct Item {
     pub kind: ItemKind,
 
     #[serde(with = "util::dash_option")]
-    pub effect: Option<String>,
+    pub effect: Option<Ability>,
 }
 
 impl Germ for Item {
     fn build(&self, r: &mut Runtime) -> Entity {
         Entity(r.ecs.spawn((
             Icon(self.kind.icon()),
+            ItemAbility(self.effect),
             self.kind,
             Level(self.power),
         )))

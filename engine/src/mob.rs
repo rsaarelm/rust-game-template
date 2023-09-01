@@ -471,7 +471,7 @@ impl Entity {
     /// don't include bonuses from equipment.
     pub fn stats(&self, r: &Runtime) -> Stats {
         let mut stats = self.get::<Stats>(r);
-        for (_, e) in self.current_equipment(r) {
+        for (_, e) in self.equipment(r) {
             stats += e.stats(r);
         }
         stats

@@ -12,14 +12,15 @@ pub enum Ability {
     BerserkRage,
     CallLightning,
     Confusion,
-    Firebolt,
+    Fireball,
+    MagicMapping,
 }
 
 use Ability::*;
 
 impl Ability {
     pub fn needs_aim(self) -> bool {
-        matches!(self, Firebolt)
+        matches!(self, Fireball)
     }
 
     pub fn invoke(
@@ -30,10 +31,11 @@ impl Ability {
         _perp: Option<Entity>,
     ) {
         match self {
-            BerserkRage => todo!(),
-            CallLightning => todo!(),
-            Confusion => todo!(),
-            Firebolt => todo!(),
+            BerserkRage => msg!("TODO!"),
+            CallLightning => msg!("TODO!"),
+            Confusion => msg!("TODO!"),
+            Fireball => msg!("TODO!"),
+            MagicMapping => msg!("TODO!"),
         }
     }
 }

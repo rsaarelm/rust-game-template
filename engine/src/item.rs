@@ -154,7 +154,7 @@ impl Entity {
         let mut ret: Vec<EquippedAt> =
             EquippedAt::iter().filter(|c| c.is_some()).collect();
 
-        for (slot, _) in self.current_equipment(r) {
+        for (slot, _) in self.equipment(r) {
             if let Some(p) = ret.iter().position(|&a| a == slot) {
                 ret.remove(p);
             }
@@ -167,7 +167,7 @@ impl Entity {
         self.get(r)
     }
 
-    pub fn current_equipment<'a>(
+    pub fn equipment<'a>(
         &self,
         r: &'a Runtime,
     ) -> impl Iterator<Item = (EquippedAt, Entity)> + 'a {
@@ -175,6 +175,13 @@ impl Entity {
             let slot = e.equipped_at(r);
             slot.is_some().then_some((slot, e))
         })
+    }
+
+    pub fn inventory<'a>(
+        &self,
+        r: &'a Runtime,
+    ) -> impl Iterator<Item = Entity> + 'a {
+        self.contents(r).filter(|e| !e.is_equipped(r))
     }
 
     pub fn equipment_at(
