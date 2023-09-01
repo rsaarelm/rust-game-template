@@ -293,6 +293,11 @@ impl Entity {
             for loc in splat {
                 loc.set_tile(r, Tile::Gore);
             }
+
+            // Drop stuff.
+            for e in self.contents(r).collect::<Vec<_>>() {
+                e.place_on_open_spot(r, loc);
+            }
         }
         self.destroy(r);
 
