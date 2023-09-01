@@ -183,8 +183,8 @@ impl<'a> Sentence<'a> {
         let ret = match token {
             "another" => self.object.the_name(),
             "a thing" => self.object.a_name(),
-            "another's" => self.object.their().into(),
-            "the thing's" => self.object.possessive(),
+            "another's" => self.object.possessive(),
+            "their" => self.object.their().into(),
             "them" => self.object.them().into(),
 
             _ => {
@@ -349,13 +349,23 @@ mod test {
 
             goblin
             PLAYER
-            [One] deftly slice[s] through [the thing's] neck with [one's] scimitar.
+            [One] deftly slice[s] through [another's] neck with [one's] scimitar.
             The goblin deftly slices through your neck with its scimitar.
 
             PLAYER
             goblin
-            [One] deftly slice[s] through [the thing's] neck with [one's] scimitar.
+            [One] deftly slice[s] through [another's] neck with [one's] scimitar.
             You deftly slice through the goblin's neck with your scimitar.
+
+            Alexander
+            PLAYER
+            [One] hit[s] [another] and disrupt[s] [their] spell.
+            Alexander hits you and disrupts your spell.
+
+            PLAYER
+            Alexander
+            [One] hit[s] [another] and disrupt[s] [their] spell.
+            You hit Alexander and disrupt his spell.
             ",
         )
         .into_iter()
