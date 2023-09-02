@@ -41,7 +41,7 @@ impl Level {
             .collect();
 
         let (n, _) = spawns
-            .choose_weighted(rng, |(_, m)| m.commonness())
+            .choose_weighted(rng, |(_, m)| m.spawn_weight())
             .unwrap();
         (*n).into()
     }
@@ -55,7 +55,7 @@ impl Level {
             .collect();
 
         let (n, _) = spawns
-            .choose_weighted(rng, |(_, m)| m.commonness())
+            .choose_weighted(rng, |(_, m)| m.spawn_weight())
             .unwrap();
         (*n).into()
     }

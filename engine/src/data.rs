@@ -47,6 +47,7 @@ impl Data {
 pub struct Monster {
     pub icon: char,
     pub power: i32,
+    pub rarity: u32,
     pub min_depth: u32,
 }
 
@@ -65,6 +66,10 @@ impl Germ for Monster {
         )))
     }
 
+    fn rarity(&self) -> u32 {
+        self.rarity
+    }
+
     fn min_depth(&self) -> u32 {
         self.min_depth
     }
@@ -75,6 +80,7 @@ impl Germ for Monster {
 pub struct Item {
     pub power: i32,
     pub kind: ItemKind,
+    pub rarity: u32,
 
     #[serde(with = "util::dash_option")]
     pub effect: Option<Ability>,
@@ -104,8 +110,15 @@ pub trait Germ {
         Tile::Ground
     }
 
-    fn commonness(&self) -> u32 {
+    fn rarity(&self) -> u32 {
         1
+    }
+
+    fn spawn_weight(&self) -> f64 {
+        match self.rarity() {
+            0 => 0.0,
+            r => 1.0 / r as f64,
+        }
     }
 
     fn min_depth(&self) -> u32 {

@@ -1,9 +1,9 @@
---                power  kind          effect
-dagger                4  melee-weapon  -
-sword                 8  melee-weapon  -
-leather_armor         2  armor         -
-chain_mail            5  armor         -
-scroll_of_lightning  10  scroll        call-lightning
-magic_map             0  scroll        magic-mapping
-scroll_of_confusion   4  scroll        confusion
-scroll_of_fireball    8  scroll        fireball
+--                power  kind      rarity  effect
+dagger                4  melee-weapon  10  -
+sword                 8  melee-weapon  20  -
+leather_armor         2  armor         10  -
+chain_mail            5  armor         20  -
+scroll_of_lightning  10  scroll        20  call-lightning
+magic_map             0  scroll        15  magic-mapping
+scroll_of_confusion   4  scroll        10  confusion
+scroll_of_fireball    8  scroll        40  fireball
