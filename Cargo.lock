@@ -821,7 +821,7 @@ checksum = "d4dc96541767a4279572fdcf9f95af9cc1c9b2a2254e7a079203c81e206a9059"
 [[package]]
 name = "navni"
 version = "0.1.0"
-source = "git+https://github.com/rsaarelm/navni#05f9bcfa5913491920aa631c320cd23e6e9e39ef"
+source = "git+https://github.com/rsaarelm/navni#47791b02c12a361a681e28daa89ef3fbc4264dc0"
 dependencies = [
  "anyhow",
  "base64",

@@ -248,12 +248,11 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
         let s = if let Some(k) = g.input_map.key_for(action) {
             text::input_help_string(&k.to_string(), name)
         } else {
-            format!("n/a: {name}")
+            format!("--: {name}")
         };
         if cur.print_button(&b.mouse_state(), &s) {
             actions2.push(action);
         }
-        writeln!(cur);
     };
 
     writeln!(cur, "{}", player.name(&g.r));
@@ -284,23 +283,30 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     writeln!(cur);
 
     writeln!(cur);
-    writeln!(cur, "LMB: Select/command");
-    writeln!(cur, "RMB: Switch player/shoot");
-    command_help(&mut cur, Cancel, "cancel orders");
-    command_help(&mut cur, Cycle, "cycle commandable");
+
+    command_help(&mut cur, Use, "use");
+    cur.pos.x = win.width() / 2;
     if !player.is_threatened(&g.r) {
-        command_help(&mut cur, Autoexplore, "autoexplore");
+        command_help(&mut cur, Autoexplore, "explore");
     } else {
-        command_help(&mut cur, Autoexplore, "autofight");
+        command_help(&mut cur, Autoexplore, "fight");
     }
-    command_help(&mut cur, Inventory, "open inventory");
-    command_help(&mut cur, Equipment, "open equipment");
-    command_help(&mut cur, Use, "use item");
-    command_help(&mut cur, Drop, "drop item");
-    command_help(&mut cur, Throw, "throw item");
     writeln!(cur);
+
+    command_help(&mut cur, Inventory, "inventory");
+    cur.pos.x = win.width() / 2;
+    command_help(&mut cur, Equipment, "equipment");
     writeln!(cur);
-    writeln!(cur, "Ctrl-C) quit");
+
+    command_help(&mut cur, Drop, "drop");
+    cur.pos.x = win.width() / 2;
+    command_help(&mut cur, Throw, "throw");
+    writeln!(cur);
+
+    command_help(&mut cur, Cycle, "cycle");
+    cur.pos.x = win.width() / 2;
+    command_help(&mut cur, Cancel, "cancel");
+    writeln!(cur);
 
     for a in actions.into_iter().chain(actions2) {
         g.process_action(a);

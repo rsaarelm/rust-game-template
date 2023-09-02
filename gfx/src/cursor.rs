@@ -9,7 +9,7 @@ use crate::prelude::*;
 pub struct Cursor<'a, P: Pixel> {
     c: &'a mut Buffer<P>,
     win: Window<P>,
-    pos: IVec2,
+    pub pos: IVec2,
 }
 
 impl<'a, P: Pixel> Cursor<'a, P> {
