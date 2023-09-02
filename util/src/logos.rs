@@ -6,8 +6,6 @@ use itertools::Itertools;
 use rand::prelude::*;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-pub const ALPHABET: &str = "0123456789TANHRDLUCMFWYPVBGKJQXZ";
-
 /// Strings that are normalized to be case, whitespace and punctuation
 /// insensitive. Use as RNG seeds so that trivial transcription errors like an
 /// added space can't mess up the seed.
@@ -78,7 +76,7 @@ impl FromIterator<char> for Logos {
         Logos(
             iter.into_iter()
                 .map(|c| c.to_ascii_uppercase())
-                .filter(|&c| ALPHABET.contains(c))
+                .filter(|&c| idx(c).is_some())
                 .collect(),
         )
     }
@@ -159,7 +157,7 @@ impl Logos {
         for chunk in &self
             .0
             .chars()
-            .map(|c| ALPHABET.find(c).expect("invalid logos") as u8)
+            .map(|c| idx(c).expect("invalid logos") as u8)
             .flat_map(|b| (0..5).map(move |i| (b >> i) & 1))
             .chunks(8)
         {
@@ -292,6 +290,20 @@ impl quickcheck::Arbitrary for Logos {
     }
 }
 
+pub const ALPHABET: &str = "0123456789ABCDFGHJKLMNPQRTUVWXYZ";
+
+const fn idx(c: char) -> Option<usize> {
+    match c as u8 {
+        c @ (b'0'..=b'9') => Some(c as usize - 48),
+        c @ (b'A'..=b'D') => Some(c as usize - 55),
+        c @ (b'F'..=b'H') => Some(c as usize - 56),
+        c @ (b'J'..=b'N') => Some(c as usize - 57),
+        c @ (b'P'..=b'R') => Some(c as usize - 58),
+        c @ (b'T'..=b'Z') => Some(c as usize - 59),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -305,6 +317,13 @@ mod test {
     }
 
     #[test]
+    fn alphabet_idx() {
+        for (i, c) in ALPHABET.chars().enumerate() {
+            assert_eq!(idx(c), Some(i));
+        }
+    }
+
+    #[test]
     fn matches() {
         m("", &[]);
         m("00", &[0]);
@@ -313,7 +332,7 @@ mod test {
         m("08", &[0, 1]);
         m("00000", &[0, 0, 0]);
         m("0000000", &[0, 0, 0, 0]);
-        m("0000L", &[0, 0, 0, 1]);
+        m("0000H", &[0, 0, 0, 1]);
         m("00000000", &[0, 0, 0, 0, 0]);
         m("ZZZZZZZZ", &[0xff, 0xff, 0xff, 0xff, 0xff]);
     }
