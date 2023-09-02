@@ -230,11 +230,11 @@ impl Game {
 
                 if p.is_player(r) {
                     // Main player just does the thing.
-                    p.execute(r, act);
+                    p.execute_direct(r, act);
                 } else if p.can_be_commanded(r) {
                     // It's a NPC that still has actions left. Executing the
                     // action won't advance clock.
-                    p.execute(r, act);
+                    p.execute_direct(r, act);
 
                     // If this action exhausted the actions, automatically
                     // cycle to the next NPC.
@@ -245,7 +245,7 @@ impl Game {
                     // Commanding a NPC past its actions makes it become the
                     // new main player.
                     p.become_player(r);
-                    p.execute(r, act);
+                    p.execute_direct(r, act);
                 }
             }
             (Command::Indirect(Goal::GoTo(loc)), Some(_)) => {

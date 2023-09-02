@@ -142,11 +142,6 @@ impl Entity {
 
     fn post_move_hook(&self, r: &mut Runtime) {
         self.scan_fov(r);
-        if let (true, Some(loc)) = (self.is_player(r), self.loc(r)) {
-            if let Some(item) = loc.item_at(r) {
-                self.take(r, &item);
-            }
-        }
     }
 
     /// Return the type of terrain the entity is expected to spawn in.

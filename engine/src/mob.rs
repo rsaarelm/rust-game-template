@@ -168,7 +168,7 @@ impl Entity {
             }
 
             if let Some(act) = self.decide(r, goal) {
-                self.execute(r, act);
+                self.execute_indirect(r, act);
             } else {
                 self.next_goal(r);
             }

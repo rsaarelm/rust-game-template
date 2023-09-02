@@ -11,13 +11,21 @@ use crate::{
 };
 
 impl Entity {
-    pub fn execute(&self, r: &mut Runtime, action: Action) {
+    fn execute(&self, r: &mut Runtime, action: Action, is_direct: bool) {
         use Action::*;
 
         match action {
             Pass => self.pass(r),
             Bump(dir) => {
                 self.attack_step(r, dir);
+                // Pick up items when moving with a direct command.
+                if is_direct {
+                    if let Some(item) =
+                        self.loc(r).and_then(|loc| loc.item_at(r))
+                    {
+                        self.take(r, &item);
+                    }
+                }
             }
             Shoot(dir) => {
                 self.shoot(r, dir);
@@ -29,6 +37,18 @@ impl Entity {
             Equip(item) => self.equip(r, &item),
             Unequip(item) => self.unequip(r, &item),
         }
+    }
+
+    /// Execute action
+    pub fn execute_indirect(&self, r: &mut Runtime, action: Action) {
+        self.execute(r, action, false);
+    }
+
+    /// Execute action using a direct command.
+    ///
+    /// Can do things like pick up items automatically.
+    pub fn execute_direct(&self, r: &mut Runtime, action: Action) {
+        self.execute(r, action, true);
     }
 
     fn step(&self, r: &mut Runtime, dir: IVec2) -> bool {

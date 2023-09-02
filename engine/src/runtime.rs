@@ -180,7 +180,7 @@ impl Runtime {
                 }
 
                 if let Some(act) = e.decide(self, goal) {
-                    e.execute(self, act);
+                    e.execute_indirect(self, act);
                 } else {
                     e.next_goal(self);
                 }
