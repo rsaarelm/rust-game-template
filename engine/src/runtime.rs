@@ -96,7 +96,7 @@ impl Runtime {
         }
 
         let player = Entity(self.ecs.spawn((
-            Name("Player".into()),
+            Name("Fighter".into()),
             Icon('1'),
             Speed(4),
             Level(5),
@@ -112,7 +112,7 @@ impl Runtime {
         self.player = Some(player);
         player.place(self, loc);
 
-        let party_spawns: Vec<(_, _)> = ["ranger", "monk", "wizard"]
+        let party_spawns: Vec<(_, _)> = ["Ranger", "Monk", "Wizard"]
             .iter()
             .zip(self.perturbed_fill_positions(loc).skip(1))
             .collect();
