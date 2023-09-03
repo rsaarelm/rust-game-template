@@ -107,10 +107,12 @@ impl Entity {
         }
 
         let m = other.live_momentum(r);
-        if (m - dir).taxi_len() < m.taxi_len() {
-            // Never displace against live momentum, this avoids deadlocks
-            // where two NPCs try move in opposing directions and keep
-            // displacing each other.
+        if m != IVec2::ZERO && m.dot(-dir) <= 0 {
+            // If there is live momentum, only allow displaces that push a
+            // nonzero amount further towards the momentum vector (displace
+            // push happens in direction opposite to dir). This avoids
+            // deadlocks where two NPCs try move in opposing directions and
+            // keep displacing each other.
             return false;
         }
 
