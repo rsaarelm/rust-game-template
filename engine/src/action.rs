@@ -17,15 +17,7 @@ impl Entity {
         match action {
             Pass => self.pass(r),
             Bump(dir) => {
-                self.attack_step(r, dir);
-                // Pick up items when moving with a direct command.
-                if is_direct {
-                    if let Some(item) =
-                        self.loc(r).and_then(|loc| loc.item_at(r))
-                    {
-                        self.take(r, &item);
-                    }
-                }
+                self.attack_step(r, dir, is_direct);
             }
             Shoot(dir) => {
                 self.shoot(r, dir);
@@ -51,7 +43,7 @@ impl Entity {
         self.execute(r, action, true);
     }
 
-    fn step(&self, r: &mut Runtime, dir: IVec2) -> bool {
+    fn step(&self, r: &mut Runtime, dir: IVec2, is_direct: bool) -> bool {
         debug_assert!(dir.taxi_len() == 1);
 
         let Some(loc) = self.loc(r) else { return false };
@@ -68,7 +60,7 @@ impl Entity {
         let mut displace = None;
 
         if let Some(mob) = new_loc.mob_at(r) {
-            if self.can_displace(r, dir, &mob) {
+            if self.can_displace(r, dir, &mob, is_direct) {
                 displace = Some(mob);
                 r.placement.remove(&mob);
             }
@@ -77,13 +69,22 @@ impl Entity {
         if self.can_enter(r, new_loc) {
             self.place(r, new_loc);
             self.set(r, Momentum(dir));
-            // This is walking, so we only complete a phase, not a full turn.
-            self.complete_phase(r);
 
             // Put the displaced mob where this one was.
             if let Some(mob) = displace {
                 r.placement.insert(loc, mob);
             }
+
+            // Pick up items when moving with a direct command.
+            if is_direct {
+                if let Some(item) = self.loc(r).and_then(|loc| loc.item_at(r)) {
+                    self.take(r, &item);
+                }
+            }
+
+            // This is walking, so we only complete a phase, not a full turn.
+            self.complete_phase(r);
+
             true
         } else {
             // Put the displaced mob back where it was.
@@ -95,13 +96,18 @@ impl Entity {
     }
 
     /// Attack if running into enemy.
-    fn attack_step(&self, r: &mut Runtime, dir: IVec2) -> bool {
+    fn attack_step(
+        &self,
+        r: &mut Runtime,
+        dir: IVec2,
+        is_direct: bool,
+    ) -> bool {
         if let Some(mob) = self.target_for_attack(r, dir, EquippedAt::RunHand) {
             self.attack(r, mob);
             return true;
         }
 
-        self.step(r, dir)
+        self.step(r, dir, is_direct)
     }
 
     fn shoot(&self, r: &mut Runtime, dir: IVec2) {

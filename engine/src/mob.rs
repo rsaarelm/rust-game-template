@@ -77,7 +77,7 @@ impl Entity {
         }
 
         if let Some(mob) = n.mob_at(r) {
-            if !self.can_displace(r, dir, &mob) {
+            if !self.can_displace(r, dir, &mob, false) {
                 return false;
             }
         }
@@ -90,29 +90,30 @@ impl Entity {
         r: &Runtime,
         dir: IVec2,
         other: &Entity,
+        is_direct_move: bool,
     ) -> bool {
-        if other.is_player(r) {
-            // Don't displace the player.
-            return false;
-        }
-
+        // Can't displace enemies.
         if !self.is_ally(r, other) {
-            // Can't displace enemies.
             return false;
         }
 
-        if self.is_player(r) {
-            // Player can displace regardless of momentum.
+        // The player, and other mobs if they're commanded directly, can
+        // displace regardless of momentum.
+        if self.is_player(r) || is_direct_move {
             return true;
         }
 
+        // Don't displace the player when you're not executing a direct
+        // command.
+        if other.is_player(r) {
+            return false;
+        }
+
+        // If the other mob has already moved (and has existing momentum), only
+        // dispace it if you push it further towards the direction it's
+        // already moving in.
         let m = other.live_momentum(r);
         if m != IVec2::ZERO && m.dot(-dir) <= 0 {
-            // If there is live momentum, only allow displaces that push a
-            // nonzero amount further towards the momentum vector (displace
-            // push happens in direction opposite to dir). This avoids
-            // deadlocks where two NPCs try move in opposing directions and
-            // keep displacing each other.
             return false;
         }
 
