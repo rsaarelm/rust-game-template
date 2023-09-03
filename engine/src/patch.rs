@@ -323,7 +323,7 @@ impl Spawn {
 
         // Names are map keys so they're not stored in the germ, assign the
         // name here.
-        e.set(r, crate::ecs::Name(self.0.clone()));
+        e.set(r, crate::ecs::Name(self.0.as_str().into()));
         e.place(r, loc);
 
         e

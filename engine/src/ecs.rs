@@ -12,6 +12,7 @@ use serde::{
     ser::SerializeMap,
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use util::InString;
 
 use crate::{
     ability::{Ability, AbilityState},
@@ -170,7 +171,7 @@ pub struct Level(pub i32);
 pub struct Momentum(pub IVec2);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
-pub struct Name(pub String);
+pub struct Name(pub InString);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct Nickname(pub String);

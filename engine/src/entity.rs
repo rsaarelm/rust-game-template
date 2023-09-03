@@ -181,7 +181,7 @@ impl Entity {
                 format!("{} the {}", nickname, name)
             }
         } else {
-            name
+            name.to_string()
         }
     }
 

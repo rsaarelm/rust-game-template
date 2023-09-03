@@ -119,7 +119,7 @@ impl Runtime {
 
         for (i, (name, loc)) in party_spawns.into_iter().enumerate() {
             let npc = Entity(self.ecs.spawn((
-                Name(name.to_string()),
+                Name((*name).into()),
                 Icon(format!("{}", i + 2).chars().next().unwrap()),
                 Speed(4),
                 Level(5),
