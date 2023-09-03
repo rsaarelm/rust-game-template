@@ -30,7 +30,7 @@ pub enum InputAction {
     Use,
     QuitGame,
     Cancel,
-    Autoexplore,
+    Roam,
     Quicksave,
     Quickload,
 }
@@ -71,12 +71,12 @@ impl Default for InputMap {
             ("h", Inventory),
             ("z", Powers),
             ("y", Equipment),
-            ("r", Drop),
+            ("x", Drop),
             ("t", Throw),
             ("c", Use),
             ("C-c", QuitGame),
             ("Esc", Cancel),
-            ("x", Autoexplore),
+            ("r", Roam),
             ("F5", Quicksave),
             ("F9", Quickload),
         ] {

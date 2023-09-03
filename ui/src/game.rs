@@ -406,7 +406,7 @@ impl Game {
                 }
                 self.selection = Default::default();
             }
-            Autoexplore => {
+            Roam => {
                 if let Some(p) = self.current_active() {
                     if !self.autofight(p) {
                         self.act(Goal::StartAutoexplore);

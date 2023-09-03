@@ -287,9 +287,9 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     command_help(&mut cur, Use, "use");
     cur.pos.x = win.width() / 2;
     if !player.is_threatened(&g.r) {
-        command_help(&mut cur, Autoexplore, "explore");
+        command_help(&mut cur, Roam, "roam");
     } else {
-        command_help(&mut cur, Autoexplore, "fight");
+        command_help(&mut cur, Roam, "rumble");
     }
     writeln!(cur);
 
