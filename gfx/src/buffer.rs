@@ -4,7 +4,7 @@ use std::{
 };
 
 use glam::{ivec2, IVec2};
-use navni::Rgba;
+use navni::{CharCell, Rgba};
 use util::{hash_map::Entry, HashMap};
 
 use crate::{Image, Pixel, Rect};
@@ -86,6 +86,95 @@ impl Buffer<Rgba> {
         let mut ret: Buffer<Rgba> = image::load_from_memory(bytes)?.into();
         ret.set_key_to_transparent(Buffer::KEY_COLOR);
         Ok(ret)
+    }
+
+    /// Create a screenshot PNG of the buffer.
+    pub fn to_png(&self) -> Vec<u8> {
+        use image::ImageEncoder;
+
+        let bounds = self.area();
+        let img = image::RgbImage::from_fn(self.width, self.height, |x, y| {
+            let p = self.data[bounds.idx([x as _, y as _])];
+            image::Rgb([p.r, p.g, p.b])
+        });
+
+        let mut ret = Vec::new();
+        let encoder = image::codecs::png::PngEncoder::new(&mut ret);
+        encoder
+            .write_image(
+                &img.into_raw(),
+                self.width,
+                self.height,
+                image::ColorType::Rgb8,
+            )
+            .unwrap();
+
+        ret
+    }
+}
+
+impl Buffer<CharCell> {
+    /// Create a screenshot ANSI coded string of the buffer.
+    pub fn to_ansi(&self) -> String {
+        use navni::X256Color;
+
+        let mut ret = String::new();
+        // XXX: This is pretty gross.
+        let col = |ret: &mut String, cell: CharCell| {
+            let is_inverse = cell.foreground == X256Color::BACKGROUND
+                && cell.background != X256Color::BACKGROUND;
+            let foreground = if is_inverse {
+                cell.background.0
+            } else {
+                cell.foreground.0
+            };
+
+            let is_bold = cell.foreground.0 >= 8 && cell.foreground.0 < 16;
+
+            let fore_s = format!("38;5;{}", foreground);
+            let back_s = format!("48;5;{}", cell.background.0);
+            ret.push_str(&format!(
+                "\x1b[0;{}{}{}{}m",
+                if is_inverse { "7;" } else { "" },
+                if is_bold { "1;" } else { "" },
+                if foreground != X256Color::FOREGROUND.0 {
+                    &fore_s
+                } else {
+                    ""
+                },
+                if !is_inverse && cell.background != X256Color::BACKGROUND {
+                    &back_s
+                } else {
+                    ""
+                }
+            ));
+        };
+
+        col(&mut ret, self.data[0]);
+        let mut prev = (self.data[0].foreground, self.data[0].background);
+        let bounds = self.area();
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let cell = self.data[bounds.idx([x as _, y as _])];
+                let current = (cell.foreground, cell.background);
+                if current != prev {
+                    col(&mut ret, cell);
+                    prev = current;
+                }
+                let mut c = char::from_u32(cell.c as u32).unwrap();
+                if c == '\0' {
+                    c = ' ';
+                }
+                ret.push(c);
+            }
+            ret.push('\n');
+        }
+
+        // Reset settings.
+        ret.push_str("\x1b[0m");
+
+        ret
     }
 }
 
