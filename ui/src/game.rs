@@ -366,7 +366,13 @@ impl Game {
             }
             Powers => {}
             Equipment => {
-                self.cmd = CommandState::Partial(Part::ViewEquipment);
+                if let Some(p) = self.current_active() {
+                    if p.equipment(&self.r).next().is_some() {
+                        self.cmd = CommandState::Partial(Part::ViewEquipment);
+                    } else {
+                        msg!("[One] [has] nothing equipped."; p.noun(&self.r));
+                    }
+                }
             }
             Drop => {
                 if let Some(p) = self.current_active() {

@@ -121,6 +121,7 @@ fn inventory_mode(
         {
             g.cmd.add_item(&g.r, e);
         }
+        writeln!(cur);
     }
 
     // TODO: Disable mouse on main when running modes (maybe draw_main can just return hover coords?)
@@ -165,6 +166,7 @@ fn equipment_mode(
         {
             g.cmd = Action::Unequip(e).into();
         }
+        writeln!(cur);
     }
 
     draw_main(g, n, &main, mouse);
