@@ -364,7 +364,7 @@ impl Game {
                     }
                 }
             }
-            Abilities => {}
+            Powers => {}
             Equipment => {
                 self.cmd = CommandState::Partial(Part::ViewEquipment);
             }

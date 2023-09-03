@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ecs::Abilities, prelude::*};
+use crate::{ecs::Powers, prelude::*};
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
-pub enum Ability {
+pub enum Power {
     BerserkRage,
     CallLightning,
     Confusion,
@@ -16,9 +16,9 @@ pub enum Ability {
     MagicMapping,
 }
 
-use Ability::*;
+use Power::*;
 
-impl Ability {
+impl Power {
     pub fn needs_aim(self) -> bool {
         matches!(self, Fireball)
     }
@@ -44,22 +44,22 @@ impl Ability {
     Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize,
 )]
 #[serde(default, rename_all = "kebab-case")]
-pub struct AbilityState {
+pub struct PowerState {
     cooldown_until: Instant,
 }
 
 impl Entity {
-    pub fn has_abilities(&self, r: &Runtime) -> bool {
-        self.with::<Abilities, _>(r, |a| !a.0.is_empty())
+    pub fn has_powers(&self, r: &Runtime) -> bool {
+        self.with::<Powers, _>(r, |a| !a.0.is_empty())
     }
 
-    pub fn abilities(&self, r: &Runtime) -> Vec<Ability> {
-        self.with::<Abilities, _>(r, |ab| ab.0.keys().copied().collect())
+    pub fn powers(&self, r: &Runtime) -> Vec<Power> {
+        self.with::<Powers, _>(r, |ab| ab.0.keys().copied().collect())
     }
 
-    pub(crate) fn cast(&self, r: &mut Runtime, ability: Ability, v: IVec2) {
+    pub(crate) fn cast(&self, r: &mut Runtime, power: Power, v: IVec2) {
         let Some(loc) = self.loc(r) else { return };
-        ability.invoke(r, loc, v, Some(*self));
+        power.invoke(r, loc, v, Some(*self));
         self.complete_turn(r);
     }
 }

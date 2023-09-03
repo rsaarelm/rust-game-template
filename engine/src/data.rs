@@ -46,7 +46,7 @@ impl Data {
 #[serde(default, rename_all = "kebab-case")]
 pub struct Monster {
     pub icon: char,
-    pub power: i32,
+    pub might: i32,
     pub rarity: u32,
     pub min_depth: u32,
 }
@@ -56,12 +56,12 @@ impl Germ for Monster {
         Entity(r.ecs.spawn((
             Icon(self.icon),
             Speed(3),
-            Level(self.power),
+            Level(self.might),
             IsMob(true),
             Stats {
-                hit: self.power,
-                ev: self.power / 2,
-                dmg: self.power,
+                hit: self.might,
+                ev: self.might / 2,
+                dmg: self.might,
             },
         )))
     }
@@ -78,21 +78,21 @@ impl Germ for Monster {
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Item {
-    pub power: i32,
+    pub might: i32,
     pub kind: ItemKind,
     pub rarity: u32,
 
     #[serde(with = "util::dash_option")]
-    pub effect: Option<Ability>,
+    pub power: Option<Power>,
 }
 
 impl Germ for Item {
     fn build(&self, r: &mut Runtime) -> Entity {
         Entity(r.ecs.spawn((
             Icon(self.kind.icon()),
-            ItemAbility(self.effect),
+            ItemPower(self.power),
             self.kind,
-            Level(self.power),
+            Level(self.might),
         )))
     }
 }

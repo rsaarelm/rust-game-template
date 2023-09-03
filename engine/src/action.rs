@@ -4,8 +4,8 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ability::Ability,
     ecs::{ActsNext, Momentum, Voice},
+    power::Power,
     prelude::*,
     EquippedAt, ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
 };
@@ -32,7 +32,7 @@ impl Entity {
             }
             Drop(item) => self.drop(r, &item),
             Use(item, dir) => self.use_item(r, &item, dir),
-            Cast(ability, dir) => self.cast(r, ability, dir),
+            Cast(power, dir) => self.cast(r, power, dir),
             Throw(item, dir) => self.throw(r, &item, dir),
             Equip(item) => self.equip(r, &item),
             Unequip(item) => self.unequip(r, &item),
@@ -209,7 +209,7 @@ pub enum Action {
     Bump(IVec2),
     Shoot(IVec2),
     Drop(Entity),
-    Cast(Ability, IVec2),
+    Cast(Power, IVec2),
     Use(Entity, IVec2),
     Throw(Entity, IVec2),
     Equip(Entity),

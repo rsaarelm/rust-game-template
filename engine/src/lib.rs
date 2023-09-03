@@ -20,9 +20,6 @@ pub const THROW_DIST: i32 = 10;
 /// How many move phases does a complete turn contain.
 pub const PHASES_IN_TURN: i64 = 12;
 
-pub mod ability;
-pub use ability::Ability;
-
 mod action;
 pub use action::Action;
 
@@ -59,6 +56,9 @@ pub use patch::{Patch, Spawn};
 
 mod placement;
 pub use placement::Placement;
+
+pub mod power;
+pub use power::Power;
 
 pub mod prelude;
 

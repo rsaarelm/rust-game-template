@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
-use crate::{ecs::ItemAbility, prelude::*};
+use crate::{ecs::ItemPower, prelude::*};
 
 #[derive(
     Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize,
@@ -80,7 +80,7 @@ impl Entity {
     }
 
     pub fn can_be_applied(&self, r: &Runtime) -> bool {
-        self.get::<ItemAbility>(r).0.is_some()
+        self.get::<ItemPower>(r).0.is_some()
     }
 
     pub fn is_equipped(&self, r: &Runtime) -> bool {
@@ -221,7 +221,7 @@ impl Entity {
 
     pub(crate) fn use_item(&self, r: &mut Runtime, item: &Entity, v: IVec2) {
         // TODO 2023-02-01 Item apply logic
-        let effect = item.get::<ItemAbility>(r).0;
+        let effect = item.get::<ItemPower>(r).0;
         let Some(loc) = self.loc(r) else { return };
         if let Some(effect) = effect {
             effect.invoke(r, loc, v, Some(*self));

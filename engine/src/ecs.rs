@@ -15,8 +15,8 @@ use serde::{
 use util::InString;
 
 use crate::{
-    ability::{Ability, AbilityState},
     item::{EquippedAt, ItemKind},
+    power::{Power, PowerState},
     prelude::*,
     Goal,
 };
@@ -108,8 +108,8 @@ components! {
     Count,
     Icon,
     ItemKind,
-    Abilities,
-    ItemAbility,
+    Powers,
+    ItemPower,
     EquippedAt,
     Level,
     Stats,
@@ -122,9 +122,6 @@ components! {
     ActsNext,
     Momentum,
 }
-
-#[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
-pub struct Abilities(pub BTreeMap<Ability, AbilityState>);
 
 /// Time when the mob can act next.
 #[derive(
@@ -156,7 +153,7 @@ pub struct IsFriendly(pub bool);
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
-pub struct ItemAbility(pub Option<Ability>);
+pub struct ItemPower(pub Option<Power>);
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
@@ -175,6 +172,9 @@ pub struct Name(pub InString);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct Nickname(pub String);
+
+#[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
+pub struct Powers(pub BTreeMap<Power, PowerState>);
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,

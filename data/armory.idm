@@ -1,4 +1,4 @@
---                power  kind      rarity  effect
+--                might  kind      rarity  power
 dagger                4  melee-weapon  10  -
 sword                 8  melee-weapon  20  -
 leather_armor         2  armor         10  -

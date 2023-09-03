@@ -114,8 +114,8 @@ pub enum Part {
     AimThrow(Entity),
     /// Selected an item to use, prompting for direction.
     AimUse(Entity),
-    /// Direction for inherent ability.
-    AimCast(Ability),
+    /// Direction for inherent power.
+    AimCast(Power),
 }
 
 use Part::*;
