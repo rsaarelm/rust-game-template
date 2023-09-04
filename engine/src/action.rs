@@ -15,7 +15,7 @@ impl Entity {
         use Action::*;
 
         match action {
-            Pass => self.pass(r),
+            Pass => self.pass(r, is_direct),
             Bump(dir) => {
                 self.attack_step(r, dir, is_direct);
             }
@@ -116,8 +116,15 @@ impl Entity {
         }
     }
 
-    fn pass(&self, r: &mut Runtime) {
-        self.complete_phase(r);
+    fn pass(&self, r: &mut Runtime, is_direct: bool) {
+        if self.is_npc(r) && is_direct {
+            // If you tell a NPC to wait, exhaust all the actions.
+            while self.can_be_commanded(r) {
+                self.complete_phase(r);
+            }
+        } else {
+            self.complete_phase(r);
+        }
     }
 
     /// Mark the entity as having taken a long action.
