@@ -394,10 +394,10 @@ impl Game {
             }
             Use => {
                 if let Some(p) = self.current_active() {
-                    if p.inventory(&self.r).next().is_some() {
+                    if p.inventory(&self.r).any(|e| e.can_be_used(&self.r)) {
                         self.cmd = CommandState::Partial(Part::Use);
                     } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                        msg!("[One] [has] nothing usable."; p.noun(&self.r));
                     }
                 }
             }

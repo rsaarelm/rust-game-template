@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use engine::prelude::*;
+use engine::{prelude::*, EquippedAt};
 use navni::prelude::*;
 use ui::prelude::*;
 use util::{s4, text, v2, write, writeln};
@@ -265,50 +265,75 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
     writeln!(cur);
     writeln!(cur, "------- Controls -------");
 
-    writeln!(cur, "    LMB          RMB");
+    // Only show help for the second set of directions when it does something.
+    let show_gun = player.equipment_at(&g.r, EquippedAt::GunHand).is_some();
+
+    write!(cur, "  LMB/run");
+    if show_gun {
+        write!(cur, "      RMB/gun");
+    }
+    writeln!(cur);
     write!(cur, "    ");
     command_key(&mut cur, North);
-    write!(cur, "          ");
-    command_key(&mut cur, FireNorth);
+
+    if show_gun {
+        write!(cur, "          ");
+        command_key(&mut cur, FireNorth);
+    }
+
     writeln!(cur);
 
     write!(cur, " ");
     command_key(&mut cur, West);
     command_key(&mut cur, South);
     command_key(&mut cur, East);
-    write!(cur, "    ");
-    command_key(&mut cur, FireWest);
-    command_key(&mut cur, FireSouth);
-    command_key(&mut cur, FireEast);
-    writeln!(cur);
-    writeln!(cur, "    run          gun");
+
+    if show_gun {
+        write!(cur, "    ");
+        command_key(&mut cur, FireWest);
+        command_key(&mut cur, FireSouth);
+        command_key(&mut cur, FireEast);
+    }
     writeln!(cur);
 
     writeln!(cur);
 
-    command_help(&mut cur, Use, "use");
-    cur.pos.x = win.width() / 2;
+    let has_inventory = player.inventory(&g.r).next().is_some();
+    let has_usables = player.inventory(&g.r).any(|e| e.can_be_used(&g.r));
+    let has_equipment = player.equipment(&g.r).next().is_some();
+
     if !player.is_threatened(&g.r) {
         command_help(&mut cur, Roam, "roam");
     } else {
         command_help(&mut cur, Roam, "rumble");
     }
+    cur.pos.x = win.width() / 2;
+    if has_usables {
+        command_help(&mut cur, Use, "use");
+    }
     writeln!(cur);
 
-    command_help(&mut cur, Inventory, "inventory");
-    cur.pos.x = win.width() / 2;
-    command_help(&mut cur, Equipment, "equipment");
+    if has_inventory {
+        command_help(&mut cur, Inventory, "inventory");
+    }
+    if has_equipment {
+        cur.pos.x = win.width() / 2;
+        command_help(&mut cur, Equipment, "equipment");
+    }
     writeln!(cur);
 
-    command_help(&mut cur, Drop, "drop");
-    cur.pos.x = win.width() / 2;
-    command_help(&mut cur, Throw, "throw");
+    if has_inventory {
+        command_help(&mut cur, Drop, "drop");
+        cur.pos.x = win.width() / 2;
+        command_help(&mut cur, Throw, "throw");
+    }
     writeln!(cur);
 
     command_help(&mut cur, Cycle, "cycle");
     cur.pos.x = win.width() / 2;
-    command_help(&mut cur, Cancel, "cancel");
+    command_help(&mut cur, Pass, "wait");
     writeln!(cur);
+    command_help(&mut cur, Cancel, "cancel");
 
     for a in actions.into_iter().chain(actions2) {
         g.process_action(a);
