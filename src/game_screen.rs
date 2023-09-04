@@ -106,17 +106,18 @@ fn move_mode(
 
     // Scrolling
     let k = b.keypress();
+    let scroll = v2(mouse.scroll_delta());
     let mut loc = g.camera;
-    if k == "S-Up".parse().unwrap() {
+    if k == "S-Up".parse().unwrap() || scroll.y == -1 {
         loc += ivec2(0, -4);
     }
-    if k == "S-Right".parse().unwrap() {
+    if k == "S-Right".parse().unwrap() || scroll.x == 1 {
         loc += ivec2(4, 0);
     }
-    if k == "S-Down".parse().unwrap() {
+    if k == "S-Down".parse().unwrap() || scroll.y == 1 {
         loc += ivec2(0, 4);
     }
-    if k == "S-Left".parse().unwrap() {
+    if k == "S-Left".parse().unwrap() || scroll.x == -1 {
         loc += ivec2(-4, 0);
     }
     if loc.sector() == g.camera.sector() {
