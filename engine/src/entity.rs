@@ -6,7 +6,7 @@ use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use util::{Logos, Noun};
 
-use crate::{ecs::*, prelude::*};
+use crate::{ecs::*, prelude::*, EquippedAt};
 
 // Dummy wrapper so we can write impls for it directly instead of deriving a
 // trait for hecs::Entity and writing every fn signature twice.
@@ -142,6 +142,8 @@ impl Entity {
 
     fn post_move_hook(&self, r: &mut Runtime) {
         self.scan_fov(r);
+        // Equipped items become unequipped.
+        self.set(r, EquippedAt::None);
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
