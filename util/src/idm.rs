@@ -1,18 +1,16 @@
 use std::{
     borrow::Borrow,
-    error::Error,
     fs::{self, File},
     io::{self, prelude::*},
     path::Path,
 };
 
+use anyhow::Result;
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize};
 
 /// Dump a directory tree into a single IDM expression.
-pub fn directory_to_idm(
-    path: impl AsRef<Path>,
-) -> Result<String, Box<dyn Error>> {
+pub fn directory_to_idm(path: impl AsRef<Path>) -> Result<String> {
     use std::fmt::Write;
 
     // If pointed at a file, just read the file.

@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::text;
@@ -113,7 +113,7 @@ impl Noun {
         }
     }
 
-    pub fn convert(&self, token: &str) -> anyhow::Result<String> {
+    pub fn convert(&self, token: &str) -> Result<String> {
         let ret = match token {
             "some" => self.a_name(),
             "one" => self.the_name(),
@@ -180,7 +180,7 @@ impl<'a> Sentence<'a> {
         Sentence { subject, object }
     }
 
-    pub fn convert(&self, token: &str) -> anyhow::Result<String> {
+    pub fn convert(&self, token: &str) -> Result<String> {
         let ret = match token {
             "another" => self.object.the_name(),
             "a thing" => self.object.a_name(),
