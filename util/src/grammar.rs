@@ -115,6 +115,7 @@ impl Noun {
 
     pub fn convert(&self, token: &str) -> anyhow::Result<String> {
         let ret = match token {
+            "some" => self.a_name(),
             "one" => self.the_name(),
             "one's" => self.their().into(),
             "oneself" => self.themselves().into(),

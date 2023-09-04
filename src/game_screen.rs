@@ -74,11 +74,17 @@ fn move_mode(
     status_panel(g, b, &panel, player);
 
     let mouse = b.mouse_state();
-    draw_main(g, n, &main, mouse);
+    let hover = draw_main(g, n, &main, mouse);
 
     let mut cur = Cursor::new(&mut g.s, main);
     for m in g.msg.iter() {
         writeln!(cur, "{m}");
+    }
+
+    if let Some(desc) = hover.and_then(|loc| loc.describe(&g.r)) {
+        cur.pos.x = 0;
+        cur.pos.y = win.height() - 1;
+        write!(cur, "{desc}");
     }
 
     // INPUT
@@ -360,7 +366,14 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
 }
 
 /// Draw main game area.
-fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
+///
+/// Return the location over which the mouse is hovering, if any.
+fn draw_main(
+    g: &mut Game,
+    n_updates: u32,
+    win: &Window,
+    mouse: MouseState,
+) -> Option<Location> {
     if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
         if g.viewpoint != loc {
             // Clear path whenever player moves.
@@ -414,17 +427,17 @@ fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
     g.draw_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
 
+    let mut hover_pos = None;
     if win.contains(mouse) && g.current_active().is_some() {
         // Only operate within the currently visible sector.
         let sector_bounds = g.camera.expanded_sector_bounds();
 
         match mouse {
             MouseState::Hover(p) => {
-                let a = screen_to_loc_pos(p);
-
-                if sector_bounds.contains(a) {
-                    g.project_path_to(Location::fold(a));
-                }
+                hover_pos = Some(Location::smart_fold_wide(
+                    screen_to_wide_pos(p),
+                    &g.r,
+                ));
             }
 
             MouseState::Drag(p, q, MouseButton::Left) if win.contains(q) => {
@@ -519,6 +532,8 @@ fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
             _ => {}
         }
     }
+
+    hover_pos
 }
 
 fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {

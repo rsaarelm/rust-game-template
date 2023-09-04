@@ -3,7 +3,7 @@ use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::s4;
 
-use crate::{prelude::*, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{prelude::*, Grammatize, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 /// Absolute locations in the game world.
 #[derive(
@@ -75,6 +75,20 @@ impl Location {
             Some(Location::fold(wide_loc_pos / ivec2(2, 1)))
         } else {
             None
+        }
+    }
+
+    pub fn smart_fold_wide(
+        wide_loc_pos: impl Into<IVec2>,
+        r: &Runtime,
+    ) -> Self {
+        let (a, b) = Self::fold_wide_sides(wide_loc_pos);
+        if !a.is_explored(r) && b.is_explored(r) {
+            b
+        } else if a.entities_at(r).is_empty() && !b.entities_at(r).is_empty() {
+            b
+        } else {
+            a
         }
     }
 
@@ -356,6 +370,25 @@ impl Location {
             p += vec;
             Some(p)
         })
+    }
+
+    /// Create a printable description of interesting features at location.
+    pub fn describe(&self, r: &Runtime) -> Option<String> {
+        let mut ret = String::new();
+        if let Some(mob) = self.mob_at(r) {
+            ret.push_str(&Grammatize::format(&(mob.noun(r),), "[Some]"));
+            if let Some(item) = self.item_at(r) {
+                ret.push_str(&Grammatize::format(&(item.noun(r),), ", [some]"));
+            }
+            ret.push('.');
+            Some(ret)
+        } else if let Some(item) = self.item_at(r) {
+            ret.push_str(&Grammatize::format(&(item.noun(r),), "[Some]."));
+            Some(ret)
+        } else {
+            None
+        }
+        // Add more stuff here as needed.
     }
 }
 
