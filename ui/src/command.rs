@@ -139,7 +139,7 @@ impl Part {
 
     pub fn matches_item(self, r: &Runtime, item: Entity) -> bool {
         match self {
-            Use => item.can_be_applied(r),
+            Use => item.can_be_used(r),
             EquipForSlot(slot) => item.fits(r, slot) && !item.is_equipped(r),
             // If the action is item type agnostic or if matching items
             // doesn't apply to begin with, just return true.

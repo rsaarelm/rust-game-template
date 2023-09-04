@@ -79,7 +79,7 @@ impl Entity {
         false
     }
 
-    pub fn can_be_applied(&self, r: &Runtime) -> bool {
+    pub fn can_be_used(&self, r: &Runtime) -> bool {
         self.get::<ItemPower>(r).0.is_some()
     }
 
