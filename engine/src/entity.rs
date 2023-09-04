@@ -53,14 +53,9 @@ impl Entity {
         }
     }
 
-    // XXX: with and with_mut used to be used with the old, stack-like Orders
-    // component. They don't currently have any use. If new complex components
-    // don't turn up, maybe remove them entirely.
-
     /// Access a component using a closure.
     ///
     /// Use for complex components that aren't just atomic values.
-    #[allow(dead_code)]
     pub(crate) fn with<T: Component + Default, U>(
         &self,
         r: &Runtime,
