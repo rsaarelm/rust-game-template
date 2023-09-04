@@ -380,10 +380,9 @@ impl Location {
             if let Some(item) = self.item_at(r) {
                 ret.push_str(&Grammatize::format(&(item.noun(r),), ", [some]"));
             }
-            ret.push('.');
             Some(ret)
         } else if let Some(item) = self.item_at(r) {
-            ret.push_str(&Grammatize::format(&(item.noun(r),), "[Some]."));
+            ret.push_str(&Grammatize::format(&(item.noun(r),), "[Some]"));
             Some(ret)
         } else {
             None

@@ -81,10 +81,14 @@ fn move_mode(
         writeln!(cur, "{m}");
     }
 
-    if let Some(desc) = hover.and_then(|loc| loc.describe(&g.r)) {
-        cur.pos.x = 0;
-        cur.pos.y = win.height() - 1;
-        write!(cur, "{desc}");
+    if let Some(hover) = hover {
+        if hover.is_explored(&g.r) {
+            if let Some(desc) = hover.describe(&g.r) {
+                cur.pos.x = 0;
+                cur.pos.y = win.height() - 1;
+                write!(cur, "{desc}");
+            }
+        }
     }
 
     // INPUT
