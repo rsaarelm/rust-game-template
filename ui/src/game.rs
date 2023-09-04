@@ -17,7 +17,9 @@ pub struct Game {
     /// Display buffer.
     pub s: Buffer,
 
-    /// Current viewpoint.
+    /// Current viewpoint position, the mob that's being followed.
+    pub viewpoint: Location,
+    /// Camera position on screen, can be scrolled away from viewpoint.
     pub camera: Location,
 
     selection: Vec<Entity>,
@@ -42,6 +44,7 @@ impl Default for Game {
         Game {
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
+            viewpoint: Default::default(),
             camera: Default::default(),
             selection: Default::default(),
             recv: Default::default(),
@@ -77,6 +80,9 @@ impl Game {
 
             if self.s.width() != w as i32 || self.s.height() != h as i32 {
                 self.s = Buffer::new(w, h);
+
+                // Reset scroll when resized.
+                self.camera = self.viewpoint;
             }
         }
 

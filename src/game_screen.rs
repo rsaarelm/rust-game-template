@@ -93,6 +93,25 @@ fn move_mode(
             _ => {}
         }
     }
+
+    // Scrolling
+    let k = b.keypress();
+    let mut loc = g.camera;
+    if k == "S-Up".parse().unwrap() {
+        loc += ivec2(0, -4);
+    }
+    if k == "S-Right".parse().unwrap() {
+        loc += ivec2(4, 0);
+    }
+    if k == "S-Down".parse().unwrap() {
+        loc += ivec2(0, 4);
+    }
+    if k == "S-Left".parse().unwrap() {
+        loc += ivec2(-4, 0);
+    }
+    if loc.sector() == g.camera.sector() {
+        g.camera = loc;
+    }
 }
 
 /// Status panel shows inventory.
@@ -343,11 +362,13 @@ fn status_panel(g: &mut Game, b: &dyn Backend, win: &Window, player: Entity) {
 /// Draw main game area.
 fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
     if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
-        if g.camera != loc {
+        if g.viewpoint != loc {
             // Clear path whenever player moves.
             g.clear_projected_path();
+            g.viewpoint = loc;
+            // Snap camera to viewpoint whenever player moves.
+            g.camera = loc;
         }
-        g.camera = loc;
     }
 
     let wide_sector_bounds = wide_unfolded_sector_bounds(g.camera);
@@ -356,6 +377,11 @@ fn draw_main(g: &mut Game, n_updates: u32, win: &Window, mouse: MouseState) {
         g.camera.unfold_wide(),
         &wide_sector_bounds,
     );
+
+    // Snap camera to view center.
+    g.camera =
+        Location::fold_wide_sides(offset + v2(win.area().dim()) / ivec2(2, 2))
+            .0;
 
     let screen_to_wide_pos =
         |screen_pos: [i32; 2]| v2(screen_pos) - v2(win.bounds().min()) + offset;
