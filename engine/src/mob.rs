@@ -20,6 +20,8 @@ impl Entity {
             return;
         }
 
+        msg!("You are now [one]."; self.noun(r));
+
         r.player = Some(*self);
         // Clear goal, existing ones probably won't make sense for a
         // player mob.
