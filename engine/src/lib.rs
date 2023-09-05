@@ -2,7 +2,9 @@
 #![feature(int_roundings)]
 #![feature(lazy_cell)]
 
+/// Width of a single sector of the game world in tiles.
 pub const SECTOR_WIDTH: i32 = 52;
+/// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 39;
 
 /// How far can the player see.

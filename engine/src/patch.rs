@@ -298,6 +298,7 @@ impl Serialize for Patch {
     }
 }
 
+/// Representation of a generatable entity.
 #[derive(
     Clone,
     Debug,

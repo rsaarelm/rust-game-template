@@ -8,6 +8,7 @@ use util::{IndexMap, _String};
 
 use crate::{ecs::*, item::ItemKind, prelude::*, Patch};
 
+/// Static global game data.
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
