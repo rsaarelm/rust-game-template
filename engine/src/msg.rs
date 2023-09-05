@@ -27,6 +27,8 @@ pub enum Msg {
 
     /// Entity dies.
     Death(Location),
+
+    Explosion(Location),
 }
 
 static RCV: LazyLock<Mutex<Option<Sender<Msg>>>> =

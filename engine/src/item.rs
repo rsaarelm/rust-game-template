@@ -74,9 +74,8 @@ impl Entity {
         !self.is_mob(r)
     }
 
-    pub fn use_needs_aim(&self, _c: &Runtime) -> bool {
-        // TODO 2023-02-01 Make wands etc. require aiming when applied
-        false
+    pub fn use_needs_aim(&self, r: &Runtime) -> bool {
+        self.get::<ItemPower>(r).0.map_or(false, |p| p.needs_aim())
     }
 
     pub fn can_be_used(&self, r: &Runtime) -> bool {
@@ -224,7 +223,7 @@ impl Entity {
         let effect = item.get::<ItemPower>(r).0;
         let Some(loc) = self.loc(r) else { return };
         if let Some(effect) = effect {
-            effect.invoke(r, loc, v, Some(*self));
+            effect.invoke(r, Some(*self), loc, v);
         }
         if item.consumed_on_use(r) {
             item.destroy(r);

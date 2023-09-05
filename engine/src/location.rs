@@ -364,10 +364,15 @@ impl Location {
         None
     }
 
-    pub fn raycast(&self, vec: IVec2) -> impl Iterator<Item = Location> {
+    // Start tracing from self towards `dir` in `dir` size steps. Starts
+    // from the point one step away from self. Panics if `dir` is a zero
+    // vector. Does not follow portals.
+    pub fn trace(&self, dir: IVec2) -> impl Iterator<Item = Location> {
+        assert!(dir != IVec2::ZERO);
+
         let mut p = *self;
         std::iter::from_fn(move || {
-            p += vec;
+            p += dir;
             Some(p)
         })
     }
@@ -388,6 +393,12 @@ impl Location {
             None
         }
         // Add more stuff here as needed.
+    }
+
+    pub fn damage(&self, r: &mut Runtime, perp: Option<Entity>, amount: i32) {
+        if let Some(mob) = self.mob_at(r) {
+            mob.damage(r, perp, amount);
+        }
     }
 }
 

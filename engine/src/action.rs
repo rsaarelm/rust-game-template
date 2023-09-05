@@ -147,7 +147,7 @@ impl Entity {
 
         if self.try_to_hit(r, &target) {
             let dmg = self.stats(r).dmg;
-            target.damage(r, dmg, Some(*self));
+            target.damage(r, Some(*self), dmg);
         } else {
             send_msg(Msg::Miss(target));
         }

@@ -1,7 +1,7 @@
 //! Game user interface machinery
 
 mod anim;
-pub use anim::{Anim, Particle};
+pub use anim::{Anim, Explosion, Particle};
 
 mod command;
 use command::{Command, CommandState};

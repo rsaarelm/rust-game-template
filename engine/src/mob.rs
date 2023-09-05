@@ -433,25 +433,6 @@ impl Entity {
         }
     }
 
-    /// Project a ray in dir for n steps, try to find an enemy not blocked by
-    /// walls.
-    fn raycast_enemy(&self, r: &Runtime, dir: IVec2, n: i32) -> Option<Entity> {
-        let loc = self.loc(r)?;
-        for loc in loc.raycast(dir).take(n as usize) {
-            if loc.tile(r).blocks_shot() {
-                break;
-            }
-
-            if let Some(mob) = loc.mob_at(r) {
-                if mob.is_enemy(r, self) {
-                    return Some(mob);
-                }
-            }
-        }
-
-        None
-    }
-
     pub fn target_for_attack(
         &self,
         r: &Runtime,
@@ -462,11 +443,19 @@ impl Entity {
         if let Some(item) = self.equipment_at(r, weapon_slot) {
             if item.is_ranged_weapon(r) {
                 // TODO Varying ranges for ranged weapons?
-                range = THROW_DIST;
+                range = THROW_DIST as usize;
             }
         }
 
-        self.raycast_enemy(r, dir, range)
+        if let Some(loc) = self.loc(r) {
+            let dest = r.trace_target(Some(*self), loc, dir, range);
+            if let Some(target) = dest.mob_at(r) {
+                if target.is_enemy(r, self) {
+                    return Some(target);
+                }
+            }
+        }
+        None
     }
 
     /// Return current stats for an entity, factoring in its equipment.

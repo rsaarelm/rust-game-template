@@ -141,6 +141,9 @@ impl Game {
                         ));
                     }
                 }
+                Explosion(loc) => {
+                    self.add_anim(Box::new(crate::Explosion::new(loc)));
+                }
             }
         }
     }

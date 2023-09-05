@@ -1,8 +1,8 @@
 use crate::prelude::*;
 use engine::prelude::*;
 use glam::Vec2;
-use navni::prelude::*;
-use util::PlottedPoint;
+use navni::{prelude::*, X256Color as X};
+use util::{v2, PlottedPoint};
 
 pub trait Anim {
     fn render(
@@ -114,6 +114,64 @@ impl Anim for Particle {
                 return false;
             }
             self.pos += self.velocity;
+            self.lifetime -= 1;
+        }
+
+        true
+    }
+}
+
+pub struct Explosion {
+    origin: Anchor,
+    lifetime: usize,
+}
+
+impl Explosion {
+    pub fn new(origin: impl Into<Anchor>) -> Self {
+        let origin = origin.into();
+        Explosion {
+            origin,
+            lifetime: 10,
+        }
+    }
+}
+
+impl Anim for Explosion {
+    fn render(
+        &mut self,
+        r: &Runtime,
+        s: &mut Buffer,
+        n_updates: u32,
+        win: &Window,
+        draw_offset: IVec2,
+    ) -> bool {
+        let Some(origin) = self.origin.to_wide_vec(r) else {
+            return false;
+        };
+        let center = origin - draw_offset;
+        let bounds = Rect::new(center - ivec2(2, 1), center + ivec2(3, 2));
+
+        // Radius of outer cloud and inner void
+        let (outer, inner) = match 10 - self.lifetime {
+            x if x < 2 => (1, 0),
+            x if x < 4 => (2, 0),
+            x if x < 8 => (3, 1),
+            _ => (3, 2),
+        };
+
+        for p in bounds {
+            let mut v = v2(p) - center;
+            v.x /= 2;
+
+            if v.taxi_len() < outer && v.taxi_len() >= inner {
+                win.put(s, p, CharCell::c('*').col(X::YELLOW));
+            }
+        }
+
+        for _ in 0..n_updates {
+            if self.lifetime == 0 {
+                return false;
+            }
             self.lifetime -= 1;
         }
 

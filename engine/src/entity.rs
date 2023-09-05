@@ -256,7 +256,7 @@ impl Entity {
         self.get::<Wounds>(r).0
     }
 
-    pub fn damage(&self, r: &mut Runtime, amount: i32, perp: Option<Entity>) {
+    pub fn damage(&self, r: &mut Runtime, perp: Option<Entity>, amount: i32) {
         let mut wounds = self.wounds(r);
         wounds += amount;
         self.set(r, Wounds(wounds));

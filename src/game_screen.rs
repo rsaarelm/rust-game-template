@@ -1,11 +1,9 @@
 use std::fmt::Write;
 
 use engine::{prelude::*, EquippedAt};
-use navni::prelude::*;
+use navni::{prelude::*, X256Color as X};
 use ui::prelude::*;
 use util::{s4, text, v2, write, writeln};
-
-use navni::X256Color as X;
 
 pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
     g.tick(b);
