@@ -68,6 +68,9 @@ fn move_mode(
 
     let mouse = b.mouse_state();
     let hover = draw_main(g, n, &main, mouse);
+    if let (Some(orig), Some(dest)) = (player.loc(&g.r), hover) {
+        g.planned_path.update(&g.r, orig, dest, mouse.cursor_pos());
+    }
 
     let mut cur = Cursor::new(&mut g.s, main);
     for m in g.msg.iter() {
@@ -375,7 +378,7 @@ fn draw_main(
     if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
         if g.viewpoint != loc {
             // Clear path whenever player moves.
-            g.clear_projected_path();
+            g.planned_path.clear();
             g.viewpoint = loc;
             // Snap camera to viewpoint whenever player moves.
             g.camera = loc;
@@ -424,6 +427,12 @@ fn draw_main(
     draw_map(g, &sector_win, offset);
     g.draw_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
+
+    for &p in g.planned_path.posns() {
+        if let Some(c) = win.get_mut(&mut g.s, p - offset) {
+            *c = c.inv();
+        }
+    }
 
     let mut hover_pos = None;
     if win.contains(mouse) && g.current_active().is_some() {

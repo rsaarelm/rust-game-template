@@ -23,6 +23,7 @@ pub struct Game {
     pub camera: Location,
 
     selection: Vec<Entity>,
+    pub planned_path: PlannedPath,
 
     /// Receiver for engine events.
     recv: Receiver,
@@ -47,6 +48,7 @@ impl Default for Game {
             viewpoint: Default::default(),
             camera: Default::default(),
             selection: Default::default(),
+            planned_path: Default::default(),
             recv: Default::default(),
             msg: Default::default(),
             cmd: Default::default(),
@@ -467,20 +469,6 @@ impl Game {
             || self.selection.iter().any(|p| p.is_player(&self.r))
     }
 
-    /// Clear movement path visualization.
-    pub fn clear_projected_path(&mut self) {
-        // TODO
-    }
-
-    pub fn projected_path(&self) -> impl Iterator<Item = Location> + '_ {
-        // TODO
-        None.into_iter()
-    }
-
-    pub fn project_path_to(&mut self, _loc: Location) {
-        // TODO
-    }
-
     fn autofight(&mut self, p: Entity) -> bool {
         if let Some(enemy) = p.first_visible_enemy(&self.r) {
             if let Some(atk) = p.decide(&self.r, Goal::Attack(enemy)) {
@@ -508,5 +496,71 @@ impl Game {
             let r = idm::from_str(&save).expect("corrupt save file");
             self.r = r;
         }
+    }
+}
+
+#[derive(Default)]
+pub struct PlannedPath {
+    posns: Vec<IVec2>,
+    mouse_pos: IVec2,
+}
+
+impl PlannedPath {
+    pub fn clear(&mut self) {
+        self.posns.clear();
+    }
+
+    pub fn update(
+        &mut self,
+        r: &Runtime,
+        orig: Location,
+        dest: Location,
+        mouse_pos: impl Into<IVec2>,
+    ) {
+        let mouse_pos = mouse_pos.into();
+        // Don't update until mouse actually moves.
+        if mouse_pos == self.mouse_pos {
+            return;
+        }
+        self.mouse_pos = mouse_pos;
+
+        if let Some(mut path) = r.fov_aware_path_to(&orig, &dest) {
+            self.posns.clear();
+
+            if !path.is_empty() {
+                path.push(orig);
+
+                // If the path goes down a stairwell,
+                // the actual endpoint will be on
+                // another sector and won't be shown.
+                // Tweak the visible path so it's all
+                // on the local screen.
+                path[0] = dest;
+            } else {
+                return;
+            }
+
+            self.posns.push(path[0].unfold_wide());
+
+            for w in path.windows(2) {
+                let [a, c] = w else { continue };
+                let (a, c) = (a.unfold_wide(), c.unfold_wide());
+
+                // The in-between part for horizontal step.
+                let b = a + (c - a) / ivec2(2, 2);
+
+                if b != self.posns[self.posns.len() - 1] {
+                    self.posns.push(b);
+                }
+
+                if c != self.posns[self.posns.len() - 1] {
+                    self.posns.push(c);
+                }
+            }
+        }
+    }
+
+    pub fn posns(&self) -> &[IVec2] {
+        &self.posns
     }
 }
