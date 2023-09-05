@@ -201,7 +201,7 @@ impl Entity {
     }
 
     pub(crate) fn take(&self, r: &mut Runtime, item: &Entity) {
-        r.placement.insert(*self, *item);
+        item.place(r, *self);
         msg!("[One] pick[s] up [another]."; self.noun(r), item.noun(r));
     }
 

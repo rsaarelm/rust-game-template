@@ -3,7 +3,10 @@ use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, LazyRes};
 
-use crate::{ecs::*, prelude::*, Fov, Placement, Terrain, World, WorldSpec};
+use crate::{
+    data::StaticGerm, ecs::*, placement::Place, prelude::*, Fov, Placement,
+    Terrain, World, WorldSpec,
+};
 
 /// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]
@@ -340,5 +343,21 @@ impl Runtime {
 
         // TODO win condition
         ScenarioStatus::Ongoing
+    }
+
+    pub fn wish(
+        &mut self,
+        place: impl Into<Place>,
+        name: &str,
+    ) -> Option<Entity> {
+        let germ: StaticGerm = name.parse().ok()?;
+        let ret = germ.build(self);
+
+        // Names are map keys so they're not stored in the germ, assign the
+        // name here.
+        ret.set(self, crate::ecs::Name(name.into()));
+        ret.place(self, place);
+
+        Some(ret)
     }
 }

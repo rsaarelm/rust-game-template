@@ -6,7 +6,7 @@ use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use util::{Logos, Noun};
 
-use crate::{ecs::*, prelude::*, EquippedAt};
+use crate::{ecs::*, placement::Place, prelude::*, EquippedAt};
 
 // Dummy wrapper so we can write impls for it directly instead of deriving a
 // trait for hecs::Entity and writing every fn signature twice.
@@ -113,8 +113,8 @@ impl Entity {
         r.placement.entity_pos(self)
     }
 
-    pub fn place(&self, r: &mut Runtime, loc: Location) {
-        r.placement.insert(loc, *self);
+    pub fn place(&self, r: &mut Runtime, place: impl Into<Place>) {
+        r.placement.insert(place, *self);
         self.post_move_hook(r);
     }
 

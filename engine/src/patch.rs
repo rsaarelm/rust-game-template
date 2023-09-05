@@ -5,7 +5,7 @@ use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
 use util::{_String, s8};
 
-use crate::{data::StaticGerm, prelude::*, Rect};
+use crate::{data::StaticGerm, placement::Place, prelude::*, Rect};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -317,16 +317,8 @@ impl Spawn {
         self.0.parse::<StaticGerm>().unwrap().preferred_tile()
     }
 
-    pub fn spawn(&self, r: &mut Runtime, loc: Location) -> Entity {
-        let germ: StaticGerm = self.0.parse().unwrap();
-        let e = germ.build(r);
-
-        // Names are map keys so they're not stored in the germ, assign the
-        // name here.
-        e.set(r, crate::ecs::Name(self.0.as_str().into()));
-        e.place(r, loc);
-
-        e
+    pub fn spawn(&self, r: &mut Runtime, place: impl Into<Place>) -> Entity {
+        r.wish(place, &self.0).unwrap()
     }
 }
 
