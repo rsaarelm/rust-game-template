@@ -297,7 +297,7 @@ impl Entity {
             // Player entity has died, try to field-promote a minion.
             let npc = r.live_entities().find(|e| e.is_player_aligned(r));
             if let Some(npc) = npc {
-                r.player = Some(npc);
+                npc.become_player(r);
             } else {
                 // No minions found, game over.
                 r.player = None;
