@@ -68,12 +68,7 @@ impl Runtime {
         for (i, loc) in from.trace(dir).enumerate() {
             // Hit a wall, pull back one tile.
             if loc.tile(self).blocks_shot() {
-                // Unless there's a friendly in which case you hit the wall.
-                if friend(loc - dir) {
-                    return loc;
-                } else {
-                    return loc - dir;
-                }
+                return loc - dir;
             }
 
             // Stop at range limit.
