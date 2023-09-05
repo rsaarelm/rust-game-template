@@ -135,6 +135,11 @@ impl Runtime {
                 },
             )));
             npc.place(self, loc);
+            if *name == "Wizard" {
+                for _ in 0..5 {
+                    self.wish(npc, "scroll of fireball").unwrap();
+                }
+            }
             npc.set_goal(self, Goal::FollowPlayer);
         }
     }
