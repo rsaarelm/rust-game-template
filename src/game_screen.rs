@@ -29,11 +29,6 @@ pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
         attract_mode(b, n, g, win);
     }
 
-    // Execute completed commands.
-    if let Some(cmd) = g.cmd.pop() {
-        g.act(cmd)
-    }
-
     g.draw(b);
 }
 

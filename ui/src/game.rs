@@ -106,6 +106,11 @@ impl Game {
             self.msg.clear();
         }
 
+        // Execute completed commands.
+        if let Some(cmd) = self.cmd.pop() {
+            self.act(cmd)
+        }
+
         // Pump messages from world
         while let Ok(msg) = self.recv.try_recv() {
             use Msg::*;
