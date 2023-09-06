@@ -393,6 +393,11 @@ impl Game {
             ClimbDown => {}
             LongMove => {}
             Cycle => self.select_next_commandable(false),
+            BecomePlayer => {
+                if let Some(p) = self.current_active() {
+                    p.become_player(&mut self.r);
+                }
+            }
             Pass => self.act(Action::Pass),
             Inventory => {
                 if let Some(p) = self.current_active() {

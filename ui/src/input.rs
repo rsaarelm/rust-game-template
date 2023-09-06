@@ -31,6 +31,7 @@ pub enum InputAction {
     QuitGame,
     Cancel,
     Roam,
+    BecomePlayer,
     Quicksave,
     Quickload,
 }
@@ -77,6 +78,7 @@ impl Default for InputMap {
             ("C-c", QuitGame),
             ("Esc", Cancel),
             ("r", Roam),
+            ("Ret", BecomePlayer),
             ("F5", Quicksave),
             ("F9", Quickload),
         ] {
