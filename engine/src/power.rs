@@ -109,21 +109,15 @@ impl Runtime {
             .filter_map(|(_, loc)| loc.mob_at(self))
             .collect();
 
-        let target = if let Some(perp) = perp {
-            let Some(target) =
-                targets.into_iter().find(|e| e.is_enemy(self, &perp))
-            else {
-                msg!("You hear distant thunder.");
-                return;
-            };
-            target
-        } else {
-            let Some(target) = targets.into_iter().next() else {
-                msg!("You hear distant thunder.");
-                return;
-            };
-            target
+        // Target enemies of caster, or any mob if there is no caster.
+        let Some(target) = targets
+            .into_iter()
+            .find(|e| perp.map_or(true, |perp| e.is_enemy(self, &perp)))
+        else {
+            msg!("You hear distant thunder.");
+            return;
         };
+
         msg!("There is a peal of thunder.");
         if let Some(loc) = target.loc(self) {
             send_msg(Msg::LightningBolt(loc));
