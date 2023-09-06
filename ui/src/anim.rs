@@ -65,6 +65,21 @@ impl Anchor {
     }
 }
 
+/// Helper function for the standard animation countdown logic.
+///
+/// Decrement `lifetime` `n_updates` times and return whether lifetime stayed
+/// above zero.
+pub fn countdown(n_updates: u32, lifetime: &mut usize) -> bool {
+    debug_assert!(n_updates > 0);
+    for _ in 0..n_updates {
+        if *lifetime == 0 {
+            return false;
+        }
+        *lifetime -= 1;
+    }
+    true
+}
+
 pub struct Particle {
     origin: Anchor,
     cell: CharCell,
@@ -126,15 +141,8 @@ impl Anim for Particle {
         win.put(s, origin + self.pos.as_ivec2() - draw_offset, self.cell);
 
         // Tick down lifetime and update position.
-        for _ in 0..n_updates {
-            if self.lifetime == 0 {
-                return false;
-            }
-            self.pos += self.velocity;
-            self.lifetime -= 1;
-        }
-
-        true
+        self.pos += self.velocity * n_updates as f32;
+        countdown(n_updates, &mut self.lifetime)
     }
 }
 
@@ -185,14 +193,7 @@ impl Anim for Explosion {
             }
         }
 
-        for _ in 0..n_updates {
-            if self.lifetime == 0 {
-                return false;
-            }
-            self.lifetime -= 1;
-        }
-
-        true
+        countdown(n_updates, &mut self.lifetime)
     }
 }
 
@@ -240,12 +241,6 @@ impl Anim for Lightning {
             }
         }
 
-        for _ in 0..n_updates {
-            if self.lifetime == 0 {
-                return false;
-            }
-            self.lifetime -= 1;
-        }
-        true
+        countdown(n_updates, &mut self.lifetime)
     }
 }

@@ -196,13 +196,7 @@ impl Game {
                                         CharCell::c('*').col(X::YELLOW),
                                     );
                                 }
-                                for _ in 0..n {
-                                    if t == 0 {
-                                        return false;
-                                    }
-                                    t -= 1;
-                                }
-                                true
+                                anim::countdown(n, &mut t)
                             },
                         ));
                     }
