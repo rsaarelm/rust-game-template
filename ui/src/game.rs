@@ -569,9 +569,8 @@ impl PlannedPath {
         }
         self.mouse_pos = mouse_pos;
 
+        self.posns.clear();
         if let Some(mut path) = r.fov_aware_path_to(&orig, &dest) {
-            self.posns.clear();
-
             if !path.is_empty() {
                 path.push(orig);
 
