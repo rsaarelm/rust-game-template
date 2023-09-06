@@ -1,7 +1,7 @@
 //! Special powers entities can use
 
 use serde::{Deserialize, Serialize};
-use util::v2;
+use util::{s8, v2};
 
 use crate::{ecs::Powers, prelude::*, Rect, FOV_RADIUS};
 
@@ -36,7 +36,7 @@ impl Power {
             CallLightning => r.lightning(perp, loc),
             Confusion => msg!("TODO!"),
             Fireball => r.fireball(perp, loc, v),
-            MagicMapping => msg!("TODO!"),
+            MagicMapping => r.magic_map(perp, loc),
         }
     }
 }
@@ -123,6 +123,49 @@ impl Runtime {
             send_msg(Msg::LightningBolt(loc));
         }
         target.damage(self, perp, LIGHTNING_DAMAGE);
+    }
+
+    fn magic_map(&mut self, _perp: Option<Entity>, from: Location) {
+        const MAGIC_MAP_RANGE: usize = 100;
+
+        let neighbors = |loc: &Location| {
+            // Location that stops FOV, do not proceed.
+            let mut ret = Vec::new();
+
+            if !loc.is_walkable(self) && loc.tile(self).blocks_sight() {
+                return ret;
+            }
+            // Stop at sector edge.
+            if loc.sector() != from.sector() {
+                return ret;
+            }
+
+            for d in s8::DIR {
+                let loc = *loc + d;
+                // Only add corners if they block further FOV, this is so that
+                // corners of rectangular rooms get added.
+                if d.taxi_len() == 2 && !loc.tile(self).blocks_sight() {
+                    continue;
+                }
+
+                ret.push(loc);
+            }
+            ret
+        };
+
+        let revealed: Vec<(Location, usize)> =
+            util::dijkstra_map(neighbors, [from])
+                .filter(|(loc, d)| {
+                    !loc.is_explored(self) && *d < MAGIC_MAP_RANGE
+                })
+                .collect();
+
+        // Reveal the terrain.
+        for (loc, _) in &revealed {
+            self.fov.insert(*loc);
+        }
+
+        send_msg(Msg::MagicMap(revealed));
     }
 }
 

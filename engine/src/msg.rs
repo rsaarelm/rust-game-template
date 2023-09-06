@@ -33,6 +33,12 @@ pub enum Msg {
 
     /// A lightning bolt hits an entity.
     LightningBolt(Location),
+
+    /// Magic mapping effect
+    ///
+    /// Lists the exposed locations and how far they are from the start of the
+    /// exposure event.
+    MagicMap(Vec<(Location, usize)>),
 }
 
 static RCV: LazyLock<Mutex<Option<Sender<Msg>>>> =

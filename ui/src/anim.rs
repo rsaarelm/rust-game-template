@@ -16,6 +16,19 @@ pub trait Anim {
     ) -> bool;
 }
 
+impl<F: FnMut(&Runtime, &mut Buffer, u32, &Window, IVec2) -> bool> Anim for F {
+    fn render(
+        &mut self,
+        r: &Runtime,
+        s: &mut Buffer,
+        n_updates: u32,
+        win: &Window,
+        draw_offset: IVec2,
+    ) -> bool {
+        (self)(r, s, n_updates, win, draw_offset)
+    }
+}
+
 /// Where an animation is anchored.
 #[derive(Copy, Clone, Debug)]
 pub enum Anchor {
@@ -26,6 +39,8 @@ pub enum Anchor {
     /// Animation will always be drawn relative to the entity.
     /// If the entity disappears, the animation will as well.
     Entity(Entity),
+
+    WidePos(IVec2),
 }
 
 impl From<Location> for Anchor {
@@ -45,6 +60,7 @@ impl Anchor {
         match self {
             Anchor::Location(loc) => Some(loc.unfold_wide()),
             Anchor::Entity(e) => e.loc(r).map(|loc| loc.unfold_wide()),
+            Anchor::WidePos(p) => Some(p),
         }
     }
 }

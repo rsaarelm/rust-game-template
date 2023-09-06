@@ -1,8 +1,8 @@
-use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
 use engine::prelude::*;
+use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout};
 
-use navni::X256Color as X;
+use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
 
 // Target size, looks nice on a 1080p display.
 const WIDTH: u32 = 120;
@@ -152,6 +152,59 @@ impl Game {
                     // Only add sky animations if the player can see them.
                     if loc.is_explored(&self.r) {
                         self.add_sky_anim(Box::new(anim::Lightning::new(loc)));
+                    }
+                }
+                MagicMap(posns) => {
+                    // Map revealed cells into wide space and lengthen the
+                    // reveal times so we can insert in-between times for the
+                    // side cells.
+                    let posns: HashMap<IVec2, usize> = posns
+                        .into_iter()
+                        .map(|(loc, n)| (loc.unfold_wide(), n * 2))
+                        .collect();
+
+                    // Fill the middle positions between two revealed cells.
+                    let sides: Vec<(IVec2, usize)> = posns
+                        .iter()
+                        .filter_map(|(loc, n)| {
+                            if let Some(n2) = posns.get(&(*loc + ivec2(2, 0))) {
+                                Some((*loc + ivec2(1, 0), n.min(n2) + 1))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+
+                    for (p, mut t) in posns.into_iter().chain(sides) {
+                        self.add_anim(Box::new(
+                            move |_: &Runtime,
+                                  s: &mut Buffer,
+                                  n,
+                                  win: &Window,
+                                  off| {
+                                let p = p - off;
+                                if t > 0 {
+                                    win.put(
+                                        s,
+                                        p,
+                                        CharCell::c('░').col(X::BROWN),
+                                    );
+                                } else {
+                                    win.put(
+                                        s,
+                                        p,
+                                        CharCell::c('*').col(X::YELLOW),
+                                    );
+                                }
+                                for _ in 0..n {
+                                    if t == 0 {
+                                        return false;
+                                    }
+                                    t -= 1;
+                                }
+                                true
+                            },
+                        ));
                     }
                 }
             }
