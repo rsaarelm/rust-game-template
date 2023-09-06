@@ -90,7 +90,7 @@ impl Entity {
     pub fn can_displace(
         &self,
         r: &Runtime,
-        dir: IVec2,
+        _dir: IVec2,
         other: &Entity,
         is_direct_move: bool,
     ) -> bool {
@@ -111,11 +111,14 @@ impl Entity {
             return false;
         }
 
-        // If the other mob has already moved (and has existing momentum), only
-        // dispace it if you push it further towards the direction it's
-        // already moving in.
+        // Don't displace other mobs if they're already in motion.
+        //
+        // (There used to be a clever thing here where you could still
+        // displace the mob if you helped it move further along it's momentum,
+        // but it still lead to pathing deadlocks. Going to just keep things
+        // simple.)
         let m = other.live_momentum(r);
-        if m != IVec2::ZERO && m.dot(-dir) <= 0 {
+        if m != IVec2::ZERO {
             return false;
         }
 
