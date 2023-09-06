@@ -425,8 +425,9 @@ fn draw_main(
     // Adjust offset for sub-window position.
     let offset = v2(wide_sector_bounds.min()).max(offset);
     draw_map(g, &sector_win, offset);
-    g.draw_anims(n_updates, &sector_win, offset);
+    g.draw_ground_anims(n_updates, &sector_win, offset);
     draw_fog(g, &sector_win, offset);
+    g.draw_sky_anims(n_updates, &sector_win, offset);
 
     for &p in g.planned_path.posns() {
         if let Some(c) = win.get_mut(&mut g.s, p - offset) {

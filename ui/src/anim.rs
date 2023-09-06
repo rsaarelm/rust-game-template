@@ -2,6 +2,7 @@ use crate::prelude::*;
 use engine::prelude::*;
 use glam::Vec2;
 use navni::{prelude::*, X256Color as X};
+use rand::Rng;
 use util::{v2, PlottedPoint};
 
 pub trait Anim {
@@ -145,11 +146,11 @@ impl Anim for Explosion {
         win: &Window,
         draw_offset: IVec2,
     ) -> bool {
-        let Some(origin) = self.origin.to_wide_vec(r) else {
+        let Some(origin) = self.origin.to_wide_vec(r).map(|p| p - draw_offset)
+        else {
             return false;
         };
-        let center = origin - draw_offset;
-        let bounds = Rect::new(center - ivec2(2, 1), center + ivec2(3, 2));
+        let bounds = Rect::new(origin - ivec2(2, 1), origin + ivec2(3, 2));
 
         // Radius of outer cloud and inner void
         let (outer, inner) = match 10 - self.lifetime {
@@ -160,7 +161,7 @@ impl Anim for Explosion {
         };
 
         for p in bounds {
-            let mut v = v2(p) - center;
+            let mut v = v2(p) - origin;
             v.x /= 2;
 
             if v.taxi_len() < outer && v.taxi_len() >= inner {
@@ -175,6 +176,60 @@ impl Anim for Explosion {
             self.lifetime -= 1;
         }
 
+        true
+    }
+}
+
+/// Lightning bolt hitting from the sky.
+///
+/// Yeah, it doesn't make any sense in a dungeon, but it was easier to make
+/// than a jaggly directed line from A to B.
+pub struct Lightning {
+    origin: Anchor,
+    lifetime: usize,
+}
+
+impl Lightning {
+    pub fn new(origin: impl Into<Anchor>) -> Self {
+        let origin = origin.into();
+        Lightning {
+            origin,
+            lifetime: 10,
+        }
+    }
+}
+
+impl Anim for Lightning {
+    fn render(
+        &mut self,
+        r: &Runtime,
+        s: &mut Buffer,
+        n_updates: u32,
+        win: &Window,
+        draw_offset: IVec2,
+    ) -> bool {
+        let Some(origin) = self.origin.to_wide_vec(r).map(|p| p - draw_offset)
+        else {
+            return false;
+        };
+
+        let mut x = origin.x;
+        for y in (0..=origin.y).rev() {
+            let p = ivec2(x, y);
+            win.put(s, p, CharCell::c('|').col(X::AQUA));
+            match util::srng(&(p, self.lifetime / 5)).gen_range(0..7) {
+                0 if x >= origin.x => x -= 1,
+                1 if x <= origin.x => x += 1,
+                _ => {}
+            }
+        }
+
+        for _ in 0..n_updates {
+            if self.lifetime == 0 {
+                return false;
+            }
+            self.lifetime -= 1;
+        }
         true
     }
 }

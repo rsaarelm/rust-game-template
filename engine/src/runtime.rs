@@ -139,6 +139,9 @@ impl Runtime {
                 for _ in 0..5 {
                     self.wish(npc, "scroll of fireball").unwrap();
                 }
+                for _ in 0..5 {
+                    self.wish(npc, "scroll of lightning").unwrap();
+                }
             }
             npc.set_goal(self, Goal::FollowPlayer);
         }

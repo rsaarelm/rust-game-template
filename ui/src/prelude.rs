@@ -1,6 +1,6 @@
 use navni::prelude::*;
 
-pub use crate::{Game, InputAction};
+pub use crate::{anim::Anim, Game, InputAction};
 
 pub type Buffer = gfx::Buffer<CharCell>;
 pub type Window = gfx::Window<CharCell>;

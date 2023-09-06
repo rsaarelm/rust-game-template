@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use util::v2;
 
-use crate::{ecs::Powers, prelude::*, Rect};
+use crate::{ecs::Powers, prelude::*, Rect, FOV_RADIUS};
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
@@ -33,7 +33,7 @@ impl Power {
     ) {
         match self {
             BerserkRage => msg!("TODO!"),
-            CallLightning => msg!("TODO!"),
+            CallLightning => r.lightning(perp, loc),
             Confusion => msg!("TODO!"),
             Fireball => r.fireball(perp, loc, v),
             MagicMapping => msg!("TODO!"),
@@ -89,16 +89,46 @@ impl Runtime {
         const FIREBALL_DAMAGE: i32 = 10;
         let target = self.trace_target(perp, from, dir, FIREBALL_RANGE);
 
+        if let Some(perp) = perp {
+            send_msg(Msg::Fire(perp, dir));
+        }
+        send_msg(Msg::Explosion(target));
+
         // No need to worry about it going through walls since it only extends
         // one cell in any direction from the valid starting cell.
         for p in Rect::new([-1, -1], [2, 2]) {
             (target + v2(p)).damage(self, perp, FIREBALL_DAMAGE);
         }
+    }
 
-        if let Some(perp) = perp {
-            send_msg(Msg::Fire(perp, dir));
+    fn lightning(&mut self, perp: Option<Entity>, from: Location) {
+        const LIGHTNING_DAMAGE: i32 = 14;
+
+        let targets: Vec<_> = self
+            .fov_from(from, FOV_RADIUS)
+            .filter_map(|(_, loc)| loc.mob_at(self))
+            .collect();
+
+        let target = if let Some(perp) = perp {
+            let Some(target) =
+                targets.into_iter().find(|e| e.is_enemy(self, &perp))
+            else {
+                msg!("You hear distant thunder.");
+                return;
+            };
+            target
+        } else {
+            let Some(target) = targets.into_iter().next() else {
+                msg!("You hear distant thunder.");
+                return;
+            };
+            target
+        };
+        msg!("There is a peal of thunder.");
+        if let Some(loc) = target.loc(self) {
+            send_msg(Msg::LightningBolt(loc));
         }
-        send_msg(Msg::Explosion(target));
+        target.damage(self, perp, LIGHTNING_DAMAGE);
     }
 }
 

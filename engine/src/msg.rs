@@ -28,7 +28,11 @@ pub enum Msg {
     /// Entity dies.
     Death(Location),
 
+    /// A fireball explodes.
     Explosion(Location),
+
+    /// A lightning bolt hits an entity.
+    LightningBolt(Location),
 }
 
 static RCV: LazyLock<Mutex<Option<Sender<Msg>>>> =

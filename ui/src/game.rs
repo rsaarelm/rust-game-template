@@ -1,10 +1,8 @@
-use crate::{command::Part, prelude::*, Command, CommandState, Particle};
+use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
 use engine::prelude::*;
 use util::{s4, s8, Layout};
 
 use navni::X256Color as X;
-
-use crate::{Anim, InputMap};
 
 // Target size, looks nice on a 1080p display.
 const WIDTH: u32 = 120;
@@ -31,7 +29,10 @@ pub struct Game {
 
     pub cmd: CommandState,
 
-    anims: Vec<Box<dyn Anim>>,
+    /// Animations below the fog of war.
+    ground_anims: Vec<Box<dyn Anim>>,
+    /// Animations above the fog of war.
+    sky_anims: Vec<Box<dyn Anim>>,
 
     pub input_map: InputMap,
 }
@@ -52,7 +53,8 @@ impl Default for Game {
             recv: Default::default(),
             msg: Default::default(),
             cmd: Default::default(),
-            anims: Default::default(),
+            ground_anims: Default::default(),
+            sky_anims: Default::default(),
             input_map,
         }
     }
@@ -122,21 +124,21 @@ impl Game {
                 }
                 Fire(e, dir) => {
                     self.add_anim(Box::new(
-                        Particle::new(e, 10).offset(dir).c(dir.to_char()),
+                        anim::Particle::new(e, 10).offset(dir).c(dir.to_char()),
                     ));
                 }
                 Hurt(e) => {
                     self.add_anim(Box::new(
-                        Particle::new(e, 10).c('*').col(X::RED),
+                        anim::Particle::new(e, 10).c('*').col(X::RED),
                     ));
                 }
                 Miss(e) => {
-                    self.add_anim(Box::new(Particle::new(e, 3).c('·')));
+                    self.add_anim(Box::new(anim::Particle::new(e, 3).c('·')));
                 }
                 Death(loc) => {
                     for d in s8::DIR {
                         self.add_anim(Box::new(
-                            Particle::new(loc, 15)
+                            anim::Particle::new(loc, 15)
                                 .c('*')
                                 .col(X::YELLOW)
                                 .v(0.25 * d.as_vec2().normalize()),
@@ -144,7 +146,13 @@ impl Game {
                     }
                 }
                 Explosion(loc) => {
-                    self.add_anim(Box::new(crate::Explosion::new(loc)));
+                    self.add_anim(Box::new(anim::Explosion::new(loc)));
+                }
+                LightningBolt(loc) => {
+                    // Only add sky animations if the player can see them.
+                    if loc.is_explored(&self.r) {
+                        self.add_sky_anim(Box::new(anim::Lightning::new(loc)));
+                    }
                 }
             }
         }
@@ -198,29 +206,44 @@ impl Game {
         }
     }
 
-    pub fn draw_anims(
+    pub fn draw_ground_anims(
         &mut self,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
     ) {
-        for i in (0..self.anims.len()).rev() {
-            // Iterate anims backwards so when we swap-remove expired
-            // animations this doesn't affect upcoming elements.
-            if !self.anims[i].render(
-                &self.r,
-                &mut self.s,
-                n_updates,
-                win,
-                draw_offset,
-            ) {
-                self.anims.swap_remove(i);
-            }
-        }
+        draw_anims(
+            &self.r,
+            &mut self.s,
+            n_updates,
+            win,
+            draw_offset,
+            &mut self.ground_anims,
+        );
+    }
+
+    pub fn draw_sky_anims(
+        &mut self,
+        n_updates: u32,
+        win: &Window,
+        draw_offset: IVec2,
+    ) {
+        draw_anims(
+            &self.r,
+            &mut self.s,
+            n_updates,
+            win,
+            draw_offset,
+            &mut self.sky_anims,
+        );
     }
 
     pub fn add_anim(&mut self, anim: Box<dyn Anim>) {
-        self.anims.push(anim);
+        self.ground_anims.push(anim);
+    }
+
+    pub fn add_sky_anim(&mut self, anim: Box<dyn Anim>) {
+        self.sky_anims.push(anim);
     }
 
     pub fn draw(&self, b: &mut dyn navni::Backend) {
@@ -495,6 +518,23 @@ impl Game {
         {
             let r = idm::from_str(&save).expect("corrupt save file");
             self.r = r;
+        }
+    }
+}
+
+fn draw_anims(
+    r: &Runtime,
+    s: &mut Buffer,
+    n_updates: u32,
+    win: &Window,
+    draw_offset: IVec2,
+    set: &mut Vec<Box<dyn Anim>>,
+) {
+    for i in (0..set.len()).rev() {
+        // Iterate anims backwards so when we swap-remove expired
+        // animations this doesn't affect upcoming elements.
+        if !set[i].render(r, s, n_updates, win, draw_offset) {
+            set.swap_remove(i);
         }
     }
 }
