@@ -43,6 +43,10 @@ impl Tile {
         matches!(self, Wall | LowWall | Door)
     }
 
+    pub fn is_exit(self) -> bool {
+        matches!(self, Upstairs | Downstairs)
+    }
+
     /// Other wall edge height for purposes of shaped wall display.
     pub fn edge_height(self) -> usize {
         match self {

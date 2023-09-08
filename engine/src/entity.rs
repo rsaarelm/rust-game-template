@@ -198,7 +198,9 @@ impl Entity {
         if self.is_mob(r) && loc.mob_at(r).is_some() {
             return false;
         }
-        if self.is_item(r) && loc.item_at(r).is_some() {
+        if self.is_item(r)
+            && (loc.item_at(r).is_some() || loc.tile(r).is_exit())
+        {
             return false;
         }
 
