@@ -48,7 +48,7 @@ pub use location::{Location, SectorDir};
 mod mapgen;
 
 mod mob;
-pub use mob::Goal;
+pub use mob::{Buff, Goal};
 
 mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};

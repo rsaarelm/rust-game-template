@@ -145,6 +145,9 @@ impl Runtime {
                 for _ in 0..5 {
                     self.wish(npc, "scroll of lightning").unwrap();
                 }
+                for _ in 0..5 {
+                    self.wish(npc, "scroll of confusion").unwrap();
+                }
             }
             npc.set_goal(self, Goal::FollowPlayer);
         }
@@ -177,6 +180,11 @@ impl Runtime {
             // loop.
             if !e.is_alive(self) {
                 continue;
+            }
+
+            // Metabolize expired buffs.
+            for buff in e.expired_buffs(self) {
+                buff.expire_msg(self, e);
             }
 
             let goal = e.goal(self);

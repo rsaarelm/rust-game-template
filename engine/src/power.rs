@@ -21,7 +21,7 @@ use Power::*;
 
 impl Power {
     pub fn needs_aim(self) -> bool {
-        matches!(self, Fireball)
+        matches!(self, Confusion | Fireball)
     }
 
     pub fn invoke(
@@ -34,7 +34,7 @@ impl Power {
         match self {
             BerserkRage => msg!("TODO!"),
             CallLightning => r.lightning(perp, loc),
-            Confusion => msg!("TODO!"),
+            Confusion => r.confusion(perp, loc, v),
             Fireball => r.fireball(perp, loc, v),
             MagicMapping => r.magic_map(perp, loc),
         }
@@ -82,6 +82,35 @@ impl Runtime {
             }
         }
         unreachable!()
+    }
+
+    pub fn trace_enemy(
+        &self,
+        perp: Option<Entity>,
+        from: Location,
+        dir: IVec2,
+        range: usize,
+    ) -> Option<Entity> {
+        if let Some(mob) =
+            self.trace_target(perp, from, dir, range).mob_at(self)
+        {
+            if let Some(perp) = perp {
+                if mob.is_enemy(self, &perp) {
+                    return Some(mob);
+                }
+            } else {
+                return Some(mob);
+            }
+        }
+        None
+    }
+
+    fn confusion(&mut self, perp: Option<Entity>, from: Location, dir: IVec2) {
+        const CONFUSION_RANGE: usize = 12;
+        if let Some(target) = self.trace_enemy(perp, from, dir, CONFUSION_RANGE)
+        {
+            target.confuse(self);
+        }
     }
 
     fn fireball(&mut self, perp: Option<Entity>, from: Location, dir: IVec2) {

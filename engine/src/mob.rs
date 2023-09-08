@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use util::s4;
 
 use crate::{
-    ecs::{ActsNext, IsFriendly, IsMob, Momentum, Speed, Stats},
+    ecs::{ActsNext, Buffs, IsFriendly, IsMob, Momentum, Speed, Stats},
     prelude::*,
     EquippedAt, FOV_RADIUS, PHASES_IN_TURN, THROW_DIST,
 };
@@ -451,11 +451,15 @@ impl Entity {
         }
 
         if let Some(loc) = self.loc(r) {
-            let dest = r.trace_target(Some(*self), loc, dir, range);
-            if let Some(target) = dest.mob_at(r) {
-                if target.is_enemy(r, self) {
-                    return Some(target);
-                }
+            // If you're confused, stop avoiding friendly fire.
+            let perp = if self.is_confused(r) {
+                None
+            } else {
+                Some(*self)
+            };
+
+            if let Some(enemy) = r.trace_enemy(perp, loc, dir, range) {
+                return Some(enemy);
             }
         }
         None
@@ -581,6 +585,41 @@ impl Entity {
             }
         }
     }
+
+    pub fn confuse(&self, r: &mut Runtime) {
+        msg!("[One] [is] confused."; self.noun(r));
+        self.buff(r, Buff::Confusion, 40);
+    }
+
+    pub fn buff(&self, r: &mut Runtime, buff: Buff, duration: i64) {
+        let now = r.now();
+        self.with_mut::<Buffs, _>(r, |b| b.insert(buff, now + duration));
+    }
+
+    pub fn has_buff(&self, r: &Runtime, buff: Buff) -> bool {
+        self.with::<Buffs, _>(r, |b| {
+            b.get(&buff).map_or(false, |&e| e >= r.now())
+        })
+    }
+
+    pub fn expired_buffs(&self, r: &mut Runtime) -> Vec<Buff> {
+        let mut ret = Vec::new();
+
+        let now = r.now();
+        self.with_mut::<Buffs, _>(r, |b| {
+            for (b, t) in b.iter() {
+                if *t < now {
+                    ret.push(*b);
+                }
+            }
+        });
+
+        ret
+    }
+
+    pub fn is_confused(&self, r: &Runtime) -> bool {
+        self.has_buff(r, Buff::Confusion)
+    }
 }
 
 /// Indirect long orders.
@@ -642,5 +681,33 @@ pub enum Goal {
 impl Goal {
     pub fn is_some(&self) -> bool {
         !matches!(self, Goal::None)
+    }
+}
+
+/// Status effects.
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd,
+    Serialize,
+    Deserialize,
+)]
+pub enum Buff {
+    Confusion,
+}
+
+impl Buff {
+    pub fn expire_msg(&self, r: &Runtime, e: Entity) {
+        let noun = e.noun(r);
+        match self {
+            Buff::Confusion => {
+                msg!("[One] [is] no longer confused."; noun);
+            }
+        }
     }
 }

@@ -1,7 +1,8 @@
 //! Entities doing things
 
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
+use util::{s4, RngExt};
 
 use crate::{
     ecs::{ActsNext, Momentum, Voice},
@@ -14,18 +15,33 @@ impl Entity {
     fn execute(&self, r: &mut Runtime, action: Action, is_direct: bool) {
         use Action::*;
 
+        let is_confused = self.is_confused(r) && r.rng.one_chance_in(3);
+        let confusion_dir = if is_confused {
+            Some(*s4::DIR.choose(&mut r.rng).unwrap())
+        } else {
+            None
+        };
+
+        let modified_dir = |dir| confusion_dir.unwrap_or(dir);
+
         match action {
             Pass => self.pass(r, is_direct),
             Bump(dir) => {
-                self.attack_step(r, dir, is_direct);
+                self.attack_step(r, modified_dir(dir), is_direct);
             }
             Shoot(dir) => {
-                self.shoot(r, dir);
+                self.shoot(r, modified_dir(dir));
             }
             Drop(item) => self.drop(r, &item),
-            Use(item, dir) => self.use_item(r, &item, dir),
-            Cast(power, dir) => self.cast(r, power, dir),
-            Throw(item, dir) => self.throw(r, &item, dir),
+            Use(item, dir) => {
+                if is_confused {
+                    msg!("[One] stare[s] at [another]."; self.noun(r), item.noun(r));
+                } else {
+                    self.use_item(r, &item, dir);
+                }
+            }
+            Cast(power, dir) => self.cast(r, power, modified_dir(dir)),
+            Throw(item, dir) => self.throw(r, &item, modified_dir(dir)),
             Equip(item) => self.equip(r, &item),
             Unequip(item) => self.unequip(r, &item),
         }

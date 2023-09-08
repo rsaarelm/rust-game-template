@@ -18,7 +18,7 @@ use crate::{
     item::{EquippedAt, ItemKind},
     power::{Power, PowerState},
     prelude::*,
-    Goal,
+    Buff, Goal,
 };
 
 macro_rules! components {
@@ -113,6 +113,7 @@ components! {
     EquippedAt,
     Level,
     Stats,
+    Buffs,
     Speed,
     Wounds,
     IsMob,
@@ -128,6 +129,20 @@ components! {
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
 pub struct ActsNext(pub Instant);
+
+/// Status effects on mob and their expiry times.
+#[derive(
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Default,
+    Deref,
+    DerefMut,
+    Serialize,
+    Deserialize,
+)]
+pub struct Buffs(BTreeMap<Buff, Instant>);
 
 /// Stacking value, value 0 means there's one item but it does not stack.
 #[derive(
