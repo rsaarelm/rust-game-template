@@ -112,6 +112,10 @@ impl Patch {
             .filter_map(|(p, t)| t.is_walkable().then_some(*p))
     }
 
+    pub fn is_open(&self, pos: IVec2) -> bool {
+        self.terrain.get(&pos).map_or(false, |t| t.is_walkable())
+    }
+
     pub fn downstairs_pos(&self) -> Option<IVec2> {
         self.terrain
             .iter()
@@ -160,6 +164,28 @@ impl Patch {
             } else {
                 (p, t)
             }
+        })
+    }
+
+    pub fn upstair_positions(&self) -> impl Iterator<Item = IVec2> + '_ {
+        self.open_area().map(|p| p + ivec2(0, -1)).filter(|&p| {
+            self.terrain.get(&p).is_none()
+                && !self.is_open(p + ivec2(-1, 0))
+                && !self.is_open(p + ivec2(1, 0))
+                && !self.is_open(p + ivec2(-1, -1))
+                && !self.is_open(p + ivec2(0, -1))
+                && !self.is_open(p + ivec2(1, -1))
+        })
+    }
+
+    pub fn downstair_positions(&self) -> impl Iterator<Item = IVec2> + '_ {
+        self.open_area().map(|p| p + ivec2(0, 1)).filter(|&p| {
+            self.terrain.get(&p).is_none()
+                && !self.is_open(p + ivec2(-1, 0))
+                && !self.is_open(p + ivec2(1, 0))
+                && !self.is_open(p + ivec2(-1, 1))
+                && !self.is_open(p + ivec2(0, 1))
+                && !self.is_open(p + ivec2(1, 1))
         })
     }
 }

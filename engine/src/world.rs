@@ -23,9 +23,25 @@ impl TryFrom<WorldSpec> for World {
         let mut rng = util::srng(&value.seed);
 
         let mut patches = IndexMap::default();
-        // TODO: Generate multiple floors when up and downstairs gen is
-        // working.
-        patches.insert(Location::new(0, 0, -1), Level::new(1).sample(&mut rng));
+
+        const MAX_DEPTH: u32 = 8;
+
+        let mut prev_downstairs = None;
+        for depth in 1..=MAX_DEPTH {
+            let mut level = Level::new(depth);
+            if depth < MAX_DEPTH {
+                level = level.with_downstairs();
+            }
+            if let Some(p) = prev_downstairs {
+                level = level.upstairs_at(p + ivec2(0, -1));
+            }
+
+            let map = level.sample(&mut rng);
+            prev_downstairs = map.downstairs_pos();
+
+            let z = -(depth as i16);
+            patches.insert(Location::new(0, 0, z), map);
+        }
 
         let mut terrain = HashMap::default();
         for (&loc, a) in &patches {

@@ -8,9 +8,9 @@ pub struct Level {
     /// Dungeon depth, greater depth has more powerful monsters and items.
     depth: u32,
     /// Upstairs position to generate into the map.
-    _upstairs: Option<IVec2>,
+    upstairs: Option<IVec2>,
     /// True if map should include a downstairs exit.
-    _generate_downstairs: bool,
+    generate_downstairs: bool,
 }
 
 impl Level {
@@ -21,13 +21,13 @@ impl Level {
         }
     }
 
-    pub fn _upstairs_at(mut self, pos: IVec2) -> Self {
-        self._upstairs = Some(pos);
+    pub fn upstairs_at(mut self, pos: IVec2) -> Self {
+        self.upstairs = Some(pos);
         self
     }
 
-    pub fn _with_downstairs(mut self) -> Self {
-        self._generate_downstairs = true;
+    pub fn with_downstairs(mut self) -> Self {
+        self.generate_downstairs = true;
         self
     }
 
@@ -95,6 +95,18 @@ impl Distribution<Patch> for Level {
         let level_area = Rect::sized([SECTOR_WIDTH, SECTOR_HEIGHT]);
         let mut ret = Patch::default();
 
+        if let Some(p) = self.upstairs {
+            ret.set_terrain(p, Tile::Upstairs);
+            ret.set_terrain(p + ivec2(0, 1), Tile::Ground);
+
+            // Undiggable enclosure.
+            ret.set_terrain(p + ivec2(-1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(-1, -1), Tile::Wall);
+            ret.set_terrain(p + ivec2(0, -1), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, -1), Tile::Wall);
+        }
+
         'placement: for _ in 0..rng.gen_range(6..18) {
             let new_room = self.room(rng);
             let room_bounds = new_room.bounds();
@@ -161,6 +173,29 @@ impl Distribution<Patch> for Level {
 
             // Found no places for new room if we fell down here.
             break;
+        }
+
+        if self.generate_downstairs {
+            // Don't put it too close to the edge so the opposite stairs don't
+            // end up being placed weirdly.
+            let posns: Vec<_> = ret
+                .downstair_positions()
+                .filter(|p| p.y > 8 && p.y < SECTOR_HEIGHT - 8)
+                .collect();
+
+            // XXX: Hard panic inside level generator is bad, this should be a
+            // fallible function.
+            let p = *posns.choose(rng).expect("couldn't place downstairs");
+
+            ret.set_terrain(p, Tile::Downstairs);
+            ret.set_terrain(p + ivec2(0, -1), Tile::Ground);
+
+            // Undiggable enclosure.
+            ret.set_terrain(p + ivec2(-1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(-1, 1), Tile::Wall);
+            ret.set_terrain(p + ivec2(0, 1), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 1), Tile::Wall);
         }
 
         ret
