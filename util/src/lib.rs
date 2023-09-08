@@ -21,7 +21,7 @@ mod grid;
 pub use grid::Grid;
 
 mod idm;
-pub use idm::{_String, dash_option, directory_to_idm};
+pub use idm::{_String, dash_option, dir_to_idm, IncrementalOutline, Outline};
 
 mod interned_string;
 pub use interned_string::InString;

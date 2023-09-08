@@ -4,7 +4,7 @@ fn main() {
     // Make sure build.rs gets rerun if the output file disappears.
     println!("cargo:rerun-if-changed=../data");
     println!("cargo:rerun-if-changed=../target/data.idm.z");
-    let data = util::directory_to_idm("../data").unwrap();
+    let data = util::dir_to_idm("../data").unwrap().to_string();
     // Save the uncompressed version for debugging.
     std::fs::write("../target/data.idm", data.as_bytes()).unwrap();
     // Save compressed data for embedding in game binary.

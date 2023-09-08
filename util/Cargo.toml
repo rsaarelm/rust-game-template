@@ -20,7 +20,6 @@ regex = "1"
 rustc-hash = "1"
 serde = { version = "1", features = ["derive"] }
 serde_with = "3"
-walkdir = "2"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3"

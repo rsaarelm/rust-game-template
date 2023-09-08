@@ -1,79 +1,49 @@
-use std::{
-    borrow::Borrow,
-    fs::{self, File},
-    io::{self, prelude::*},
-    path::Path,
-};
+use std::{borrow::Borrow, fmt, fs, path::Path, str::FromStr};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-/// Dump a directory tree into a single IDM expression.
-pub fn directory_to_idm(path: impl AsRef<Path>) -> Result<String> {
-    use std::fmt::Write;
+/// Read a directory tree into a single IDM outline.
+///
+/// Directory trees have natural `IncrementalOutline` semantics,
+/// subdirectories are append headlines and file names are overwrite
+/// headlines, so the output is an `IncrementalOutline`. Use `idm::transmute`
+/// to change it into the type you want.
+pub fn dir_to_idm(path: impl AsRef<Path>) -> Result<IncrementalOutline> {
+    use IncrementalHeadline::*;
 
     // If pointed at a file, just read the file.
     if path.as_ref().is_file() {
-        return Ok(fs::read_to_string(path)?);
+        return Ok(idm::from_str(&fs::read_to_string(path)?)?);
     }
 
-    let mut ret = String::new();
-    for e in walkdir::WalkDir::new(path)
-        .sort_by_key(|a| a.file_name().to_ascii_lowercase())
-    {
-        let e = e.expect("read_path failed");
-        let depth = e.depth();
-        if depth == 0 {
-            // The root element, do not print out.
+    let mut ret = Vec::new();
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let is_dir = entry.file_type()?.is_dir();
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| anyhow!("bad filename {:?}", entry.file_name()))?;
+
+        if is_dir {
+            // Recurse into all subdirectories, make them append headlines.
+            ret.push(((Append(name),), dir_to_idm(entry.path())?));
+        } else if let Some(base) = name.strip_suffix(".idm") {
+            // Recurse into IDM files, make the overwrite headlines.
+            ret.push((
+                (Overwrite(base.to_string()),),
+                dir_to_idm(entry.path())?,
+            ));
+        } else {
+            // Skip non-IDM files.
             continue;
         }
-        for _ in 1..depth {
-            write!(ret, "  ")?;
-        }
-        let is_dir = e.file_type().is_dir();
-        if is_dir {
-            writeln!(ret, "{}", e.file_name().to_string_lossy())?;
-        } else {
-            let path = Path::new(e.file_name());
-
-            if !matches!(
-                path.extension()
-                    .map(|a| a.to_str().unwrap_or(""))
-                    .unwrap_or(""),
-                "idm"
-            ) {
-                // Only read IDM files.
-                continue;
-            }
-
-            let name = path
-                .file_stem()
-                .expect("read_path failed")
-                .to_string_lossy();
-            writeln!(ret, "{}", name)?;
-
-            // Print lines
-            let file =
-                File::open(e.path()).expect("read_path: Open file failed");
-            for line in io::BufReader::new(file).lines() {
-                let line = line.expect("read_path failed");
-                let mut ln = &line[..];
-                let mut depth = depth;
-                // Turn tab indentation into spaces.
-                while ln.starts_with('\t') {
-                    depth += 1;
-                    ln = &ln[1..];
-                }
-                for _ in 1..(depth + 1) {
-                    write!(ret, "  ")?;
-                }
-                writeln!(ret, "{ln}")?;
-            }
-        }
     }
 
-    Ok(ret)
+    Ok(IncrementalOutline(ret))
 }
 
 /// A wrapper type that converts underscores in serialization to spaces at
@@ -126,6 +96,163 @@ impl<'de> Deserialize<'de> for _String {
                 .map(|c| if c == '_' { ' ' } else { c })
                 .collect(),
         ))
+    }
+}
+
+/// The default simple IDM outline.
+#[derive(
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize,
+)]
+pub struct Outline(pub Vec<((String,), Outline)>);
+
+/// A special IDM outline for incremental composition.
+///
+/// A partial outline `B` can be applied to outline `A`, producing a patched
+/// outline. Sections in `B` with overwrite headlines will replace any
+/// corresponding section in `A`. Sections in `B` with append headlines will
+/// have their contents appended to the corresponding section in `A`. Sections
+/// in `B` without a corresponding section in `A` will be appended to the
+/// parent block in `A`.
+///
+/// When a directory tree is read into an outline, the subdirectories are
+/// treated as append headlines. In a single file, headlines that start with
+/// `@` will be read in without the initial `@` and treated as append
+/// headlines. All other headlines are considered overwrite headlines.
+#[derive(
+    Clone,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Serialize,
+    Deserialize,
+)]
+pub struct IncrementalOutline(
+    Vec<((IncrementalHeadline,), IncrementalOutline)>,
+);
+
+impl From<IncrementalOutline> for Outline {
+    fn from(value: IncrementalOutline) -> Self {
+        Outline(
+            value
+                .0
+                .into_iter()
+                .map(|((head,), body)| {
+                    ((head.as_ref().to_string(),), Outline::from(body))
+                })
+                .collect(),
+        )
+    }
+}
+
+/// Print the outline without the partial headline sigils.
+impl fmt::Display for IncrementalOutline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn print(
+            f: &mut fmt::Formatter<'_>,
+            depth: usize,
+            outline: &IncrementalOutline,
+        ) -> fmt::Result {
+            for ((h,), b) in &outline.0 {
+                for _ in 0..depth {
+                    write!(f, "  ")?;
+                }
+                writeln!(f, "{}", h.as_ref())?;
+                print(f, depth + 1, &b)?;
+            }
+            Ok(())
+        }
+
+        print(f, 0, self)
+    }
+}
+
+impl std::ops::AddAssign<&IncrementalOutline> for Outline {
+    fn add_assign(&mut self, rhs: &IncrementalOutline) {
+        use IncrementalHeadline::*;
+
+        for ((head,), body) in &rhs.0 {
+            // Look for the head in current
+            if let Some(i) = self
+                .0
+                .iter()
+                .position(|((h,), _)| head.as_ref() == h.as_str())
+            {
+                if matches!(head, Overwrite(_)) {
+                    self.0[i].1 = body.clone().into();
+                } else {
+                    self.0[i].1 .0.extend(Outline::from(body.clone()).0);
+                }
+            } else {
+                self.0.push(((head.clone().into(),), body.clone().into()));
+            }
+        }
+    }
+}
+
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    SerializeDisplay,
+    DeserializeFromStr,
+)]
+pub enum IncrementalHeadline {
+    /// A headline whose contents will replace those found in the previous
+    /// outline.
+    Overwrite(String),
+    /// A headline whose contents will be appended to those in the previous
+    /// outline.
+    Append(String),
+}
+
+impl FromStr for IncrementalHeadline {
+    type Err = Box<dyn std::error::Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use IncrementalHeadline::*;
+
+        if s.starts_with('@') {
+            Ok(Append((&s[1..]).into()))
+        } else {
+            Ok(Overwrite(s.into()))
+        }
+    }
+}
+
+impl From<IncrementalHeadline> for String {
+    fn from(value: IncrementalHeadline) -> Self {
+        value.as_ref().to_owned()
+    }
+}
+
+impl fmt::Display for IncrementalHeadline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use IncrementalHeadline::*;
+
+        match self {
+            Overwrite(s) => write!(f, "{s}"),
+            Append(s) => write!(f, "@{s}"),
+        }
+    }
+}
+
+/// Removes the glyph from append headlines.
+impl AsRef<str> for IncrementalHeadline {
+    fn as_ref(&self) -> &str {
+        use IncrementalHeadline::*;
+
+        match self {
+            Overwrite(s) => &s,
+            Append(s) => &s,
+        }
     }
 }
 
