@@ -257,7 +257,7 @@ impl From<&Patch> for ((PatchData,), String) {
                 } else if !seen_content {
                     // Push NBSP to make initial space not look like
                     // indentation to IDM.
-                    map.push(' ');
+                    map.push('\u{00A0}');
                 } else {
                     // No longer at start, can use regular space now.
                     map.push(' ');
