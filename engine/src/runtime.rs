@@ -138,6 +138,11 @@ impl Runtime {
             if *name == "Ranger" {
                 self.wish(npc, "magic map").unwrap();
             }
+            if *name == "Monk" {
+                for _ in 0..5 {
+                    self.wish(npc, "potion of healing").unwrap();
+                }
+            }
             if *name == "Wizard" {
                 for _ in 0..5 {
                     self.wish(npc, "scroll of fireball").unwrap();

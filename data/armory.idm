@@ -7,3 +7,4 @@ scroll_of_lightning  10  scroll        20  call-lightning
 magic_map             0  scroll        15  magic-mapping
 scroll_of_confusion   4  scroll        10  confusion
 scroll_of_fireball    8  scroll        40  fireball
+potion_of_healing     8  potion        20  heal-self

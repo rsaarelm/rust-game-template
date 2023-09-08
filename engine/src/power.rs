@@ -3,7 +3,11 @@
 use serde::{Deserialize, Serialize};
 use util::{s8, v2};
 
-use crate::{ecs::Powers, prelude::*, Rect, FOV_RADIUS};
+use crate::{
+    ecs::{Powers, Wounds},
+    prelude::*,
+    Rect, FOV_RADIUS,
+};
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
@@ -15,6 +19,7 @@ pub enum Power {
     Confusion,
     Fireball,
     MagicMapping,
+    HealSelf,
 }
 
 use Power::*;
@@ -37,6 +42,7 @@ impl Power {
             Confusion => r.confusion(perp, loc, v),
             Fireball => r.fireball(perp, loc, v),
             MagicMapping => r.magic_map(perp, loc),
+            HealSelf => r.heal(perp, loc),
         }
     }
 }
@@ -127,6 +133,18 @@ impl Runtime {
         // one cell in any direction from the valid starting cell.
         for p in Rect::new([-1, -1], [2, 2]) {
             (target + v2(p)).damage(self, perp, FIREBALL_DAMAGE);
+        }
+    }
+
+    fn heal(&mut self, perp: Option<Entity>, _from: Location) {
+        const HEAL_AMOUNT: i32 = 8;
+        if let Some(e) = perp {
+            let is_hurt = e.get::<Wounds>(self).0 != 0;
+            let wounds = Wounds((e.get::<Wounds>(self).0 - HEAL_AMOUNT).max(0));
+            e.set(self, wounds);
+            if is_hurt {
+                msg!("[One] [is] healed."; e.noun(self));
+            }
         }
     }
 
