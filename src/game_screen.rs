@@ -428,7 +428,7 @@ fn draw_main(
     g.draw_sky_anims(n_updates, &sector_win, offset);
 
     for &p in g.planned_path.posns() {
-        if let Some(c) = win.get_mut(&mut g.s, p - offset) {
+        if let Some(c) = sector_win.get_mut(&mut g.s, p - offset) {
             *c = c.inv();
         }
     }

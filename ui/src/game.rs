@@ -617,8 +617,6 @@ impl PlannedPath {
         self.posns.clear();
         if let Some(mut path) = r.fov_aware_path_to(&orig, &dest) {
             if !path.is_empty() {
-                path.push(orig);
-
                 // If the path goes down a stairwell,
                 // the actual endpoint will be on
                 // another sector and won't be shown.
