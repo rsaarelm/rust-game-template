@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::bail;
 use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
-use util::{_String, s8};
+use util::{_String, s4, s8};
 
 use crate::{data::StaticGerm, placement::Place, prelude::*, Rect};
 
@@ -73,13 +73,37 @@ impl Patch {
             && self.terrain.get(&pos) == Some(&Tile::Ground)
     }
 
-    pub fn can_tunnel(&self, pos: IVec2) -> bool {
-        match self.terrain.get(&pos) {
-            // Already open, pass through
-            Some(t) if t.is_walkable() => true,
-            None if self.has_tunnel_support(pos) => true,
-            _ => false,
-        }
+    pub fn valid_tunnels_from(
+        &self,
+        &pos: &IVec2,
+    ) -> impl Iterator<Item = IVec2> + '_ {
+        let open = |p| self.terrain.get(&p).map_or(false, |t| t.is_walkable());
+
+        s4::ns(pos).filter(move |&p2| {
+            // Already open neighbor, pass right through.
+            if open(p2) {
+                return true;
+            }
+
+            let front = p2 - pos;
+            let side = front.rotate(ivec2(0, 1));
+
+            // Two consecutive open cells on either side, no go.
+            if open(pos + side) && open(pos + side + front) {
+                return false;
+            }
+
+            if open(pos - side) && open(pos - side + front) {
+                return false;
+            }
+
+            // Don't dig through defined walls.
+            if self.terrain.get(&p2).is_some() {
+                return false;
+            }
+
+            true
+        })
     }
 
     pub fn open_area(&self) -> impl Iterator<Item = IVec2> + '_ {

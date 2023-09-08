@@ -365,6 +365,7 @@ dependencies = [
  "hecs",
  "idm",
  "log",
+ "pathfinding",
  "quickcheck",
  "quickcheck_macros",
  "rand",

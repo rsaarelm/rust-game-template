@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use util::{astar_path, s4, RngExt};
+use util::{s4, RngExt};
 
 use crate::{prelude::*, Data, Germ, Patch, Rect, Spawn};
 
@@ -96,7 +96,7 @@ impl Distribution<Patch> for Level {
         let mut ret = Patch::default();
 
         'placement: for _ in 0..rng.gen_range(6..18) {
-            let mut new_room = self.room(rng);
+            let new_room = self.room(rng);
             let room_bounds = new_room.bounds();
             let mut posns: Vec<IVec2> = level_area
                 .into_iter()
@@ -106,45 +106,57 @@ impl Distribution<Patch> for Level {
             posns.shuffle(rng);
 
             while let Some(p) = posns.pop() {
-                if ret.can_place(p, &new_room) {
-                    let start_cells: Vec<_> = ret
-                        .open_area()
-                        .filter(|&a| !ret.is_tunnel(a))
-                        .map(|a| a - p)
-                        .collect();
-                    let end_cells: Vec<_> = new_room.open_area().collect();
-                    if let Some(&start) = start_cells.choose(rng) {
-                        // Try to find a tunnel between two random points.
-                        let &end =
-                            end_cells.choose(rng).expect("No floor in room");
-
-                        let Some(path) = astar_path(
-                            &start,
-                            &end,
-                            |&a| {
-                                let ret = &ret;
-                                let new_room = &new_room;
-                                s4::ns(a).filter(|&a| {
-                                    new_room.can_tunnel(a)
-                                        && ret.can_tunnel(a - p)
-                                        && (level_area - p).contains(a)
-                                })
-                            },
-                            s4::d,
-                        ) else {
-                            break 'placement;
-                        };
-
-                        for p in path {
-                            if !new_room.terrain.contains_key(&p) {
-                                new_room.set_terrain(p, Tile::Ground);
-                            }
-                        }
-                    }
-
-                    ret.merge(p, new_room);
-                    continue 'placement;
+                if !ret.can_place(p, &new_room) {
+                    continue;
                 }
+
+                let mut map = ret.clone();
+                // Open positions in original (if any)
+                let start_cells: Vec<_> = map.open_area().collect();
+                // Open positions in result.
+                let end_cells: Vec<_> =
+                    new_room.open_area().map(|a| a + p).collect();
+                map.merge(p, new_room.clone());
+
+                // There's no floor when we start out, assume this is the case
+                // here and just place the room and continue.
+                let Some(&start) = start_cells.choose(rng) else {
+                    ret = map;
+                    continue;
+                };
+
+                let &end = end_cells.choose(rng).expect("no floor in room");
+
+                // Try to path from the new room back to existing map. Hitting
+                // any open space in the existing map ends the tunneling.
+
+                let Some((path, _)) = pathfinding::prelude::astar(
+                    &start,
+                    |p| map.valid_tunnels_from(p).map(|c| (c, 1)),
+                    |p| s4::d(p, &end),
+                    |p| end_cells.contains(p),
+                ) else {
+                    continue;
+                };
+
+                let mut prev = None;
+                for p in path {
+                    if !map.terrain.get(&p).map_or(false, |t| t.is_walkable()) {
+                        if prev.is_none() {
+                            map.set_terrain(p, Tile::Door);
+                        } else {
+                            map.set_terrain(p, Tile::Ground);
+                        }
+                        prev = Some(p);
+                    }
+                }
+
+                if let Some(prev) = prev {
+                    map.set_terrain(prev, Tile::Door);
+                }
+
+                ret = map;
+                continue 'placement;
             }
 
             // Found no places for new room if we fell down here.
