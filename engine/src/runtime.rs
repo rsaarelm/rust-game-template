@@ -185,6 +185,7 @@ impl Runtime {
             // Metabolize expired buffs.
             for buff in e.expired_buffs(self) {
                 buff.expire_msg(self, e);
+                e.with_mut::<Buffs, _>(self, |b| b.remove(&buff));
             }
 
             let goal = e.goal(self);
