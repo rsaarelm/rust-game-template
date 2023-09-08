@@ -125,6 +125,13 @@ impl Location {
         r.terrain_overlay.insert(*self, t);
     }
 
+    /// Tile setter that doesn't cover functional terrain.
+    pub fn decorate_tile(&self, r: &mut Runtime, t: Tile) {
+        if self.tile(r) == Tile::Ground || self.tile(r).is_decoration() {
+            r.terrain_overlay.insert(*self, t);
+        }
+    }
+
     /// Return location snapped to the origin of this location's sector.
     pub fn sector(&self) -> Location {
         Location::new(

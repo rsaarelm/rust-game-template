@@ -47,6 +47,10 @@ impl Tile {
         matches!(self, Upstairs | Downstairs)
     }
 
+    pub fn is_decoration(self) -> bool {
+        matches!(self, Gore)
+    }
+
     /// Other wall edge height for purposes of shaped wall display.
     pub fn edge_height(self) -> usize {
         match self {

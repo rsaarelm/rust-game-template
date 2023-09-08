@@ -285,7 +285,7 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.set_tile(r, Tile::Gore);
+                loc.decorate_tile(r, Tile::Gore);
             }
 
             // Drop stuff.
