@@ -166,12 +166,10 @@ impl Game {
                     // Fill the middle positions between two revealed cells.
                     let sides: Vec<(IVec2, usize)> = posns
                         .iter()
-                        .filter_map(|(loc, n)| {
-                            if let Some(n2) = posns.get(&(*loc + ivec2(2, 0))) {
-                                Some((*loc + ivec2(1, 0), n.min(n2) + 1))
-                            } else {
-                                None
-                            }
+                        .filter_map(|(&loc, n)| {
+                            posns
+                                .get(&(loc + ivec2(2, 0)))
+                                .map(|n2| (loc + ivec2(1, 0), n.min(n2) + 1))
                         })
                         .collect();
 

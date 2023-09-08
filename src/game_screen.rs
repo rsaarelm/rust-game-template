@@ -123,7 +123,7 @@ fn move_mode(
 
 /// Status panel shows inventory.
 fn inventory_mode(
-    b: &mut dyn Backend,
+    b: &dyn Backend,
     n: u32,
     g: &mut Game,
     win: Window,
@@ -156,16 +156,15 @@ fn inventory_mode(
     if let Some(&a) = g.input_map.get(&b.keypress()) {
         use ui::InputAction::*;
 
-        match a {
-            Cancel => g.cmd.reset(),
-            _ => {}
+        if a == Cancel {
+            g.cmd.reset();
         }
     }
 }
 
 /// Status panel shows equipment.
 fn equipment_mode(
-    b: &mut dyn Backend,
+    b: &dyn Backend,
     n: u32,
     g: &mut Game,
     win: Window,
@@ -200,9 +199,8 @@ fn equipment_mode(
     if let Some(&a) = g.input_map.get(&b.keypress()) {
         use ui::InputAction::*;
 
-        match a {
-            Cancel => g.cmd.reset(),
-            _ => {}
+        if a == Cancel {
+            g.cmd.reset();
         }
     }
 }

@@ -161,7 +161,7 @@ impl fmt::Display for IncrementalOutline {
                     write!(f, "  ")?;
                 }
                 writeln!(f, "{}", h.as_ref())?;
-                print(f, depth + 1, &b)?;
+                print(f, depth + 1, b)?;
             }
             Ok(())
         }
@@ -219,8 +219,8 @@ impl FromStr for IncrementalHeadline {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use IncrementalHeadline::*;
 
-        if s.starts_with('@') {
-            Ok(Append((&s[1..]).into()))
+        if let Some(s) = s.strip_prefix('@') {
+            Ok(Append(s.into()))
         } else {
             Ok(Overwrite(s.into()))
         }
@@ -250,8 +250,8 @@ impl AsRef<str> for IncrementalHeadline {
         use IncrementalHeadline::*;
 
         match self {
-            Overwrite(s) => &s,
-            Append(s) => &s,
+            Overwrite(s) => s,
+            Append(s) => s,
         }
     }
 }

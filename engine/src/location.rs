@@ -82,13 +82,15 @@ impl Location {
         wide_loc_pos: impl Into<IVec2>,
         r: &Runtime,
     ) -> Self {
-        let (a, b) = Self::fold_wide_sides(wide_loc_pos);
-        if !a.is_explored(r) && b.is_explored(r) {
-            b
-        } else if a.entities_at(r).is_empty() && !b.entities_at(r).is_empty() {
-            b
-        } else {
-            a
+        match Self::fold_wide_sides(wide_loc_pos) {
+            (a, b) if !a.is_explored(r) && b.is_explored(r) => b,
+            (a, b)
+                if a.entities_at(r).is_empty()
+                    && !b.entities_at(r).is_empty() =>
+            {
+                b
+            }
+            (a, _) => a,
         }
     }
 
