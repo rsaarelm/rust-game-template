@@ -1,12 +1,13 @@
 // Release builds made for Windows don't create a terminal window when run.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use std::path::PathBuf;
 
 use clap::Parser;
 
 use engine::prelude::*;
 use navni::prelude::*;
 use ui::Game;
-use util::Logos;
+use util::{IncrementalOutline, Logos};
 
 mod game_screen;
 
@@ -16,13 +17,27 @@ pub const GAME_NAME: &str = "gametemplate";
 struct Args {
     #[arg(long, value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)), help = "Game world seed")]
     seed: Option<Logos>,
+
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Comma-separarted list of mod files to apply"
+    )]
+    mods: Vec<PathBuf>,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     util::panic_handler();
     navni::logger::start(GAME_NAME);
 
     let args = Args::parse();
+
+    let mut mods: Vec<IncrementalOutline> = Default::default();
+    for path in args.mods {
+        let md = util::dir_to_idm(path)?;
+        mods.push(md);
+    }
+    engine::register_mods(mods);
 
     let seed = args
         .seed

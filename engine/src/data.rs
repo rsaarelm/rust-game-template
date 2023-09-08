@@ -1,10 +1,10 @@
 //! Static game data
 
-use std::{str::FromStr, sync::LazyLock};
+use std::{str::FromStr, sync::OnceLock};
 
 use anyhow::bail;
 use serde::Deserialize;
-use util::{IndexMap, _String};
+use util::{IncrementalOutline, IndexMap, Outline, _String};
 
 use crate::{ecs::*, item::ItemKind, prelude::*, Patch};
 
@@ -17,23 +17,41 @@ pub struct Data {
     pub vaults: IndexMap<_String, Patch>,
 }
 
+static DATA: OnceLock<Data> = OnceLock::new();
+
+static MODS: OnceLock<Vec<IncrementalOutline>> = OnceLock::new();
+
+pub fn register_mods(mods: Vec<IncrementalOutline>) {
+    assert!(
+        DATA.get().is_none(),
+        "too late to register mods, game data is already initialized"
+    );
+    assert!(MODS.get().is_none(), "mods can only be registered once");
+    MODS.set(mods).unwrap();
+}
+
 // Custom loader that initializes the global static gamedata from the data
 // files. The data.idm.z file is constructed from project data files by engine
 // crate's build.rs script.
 impl Default for &'static Data {
     fn default() -> Self {
-        static DATA: LazyLock<Data> = LazyLock::new(|| {
+        DATA.get_or_init(|| {
             let data = fdeflate::decompress_to_vec(include_bytes!(
                 "../../target/data.idm.z"
             ))
             .unwrap();
             let data = std::str::from_utf8(&data).unwrap();
-            let data: Data = idm::from_str(data).unwrap();
+            let mut data: Outline = idm::from_str(data).unwrap();
 
-            data
-        });
+            let mods: &Vec<IncrementalOutline> =
+                MODS.get_or_init(Default::default);
 
-        &DATA
+            for md in mods {
+                data += md;
+            }
+
+            idm::transmute(&data).unwrap()
+        })
     }
 }
 
