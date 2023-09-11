@@ -25,6 +25,9 @@ pub const PHASES_IN_TURN: i64 = 12;
 mod action;
 pub use action::Action;
 
+mod ai;
+pub use ai::Goal;
+
 mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
@@ -48,7 +51,7 @@ pub use location::{Location, SectorDir};
 mod mapgen;
 
 mod mob;
-pub use mob::{Buff, Goal};
+pub use mob::Buff;
 
 mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
