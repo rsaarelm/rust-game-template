@@ -27,20 +27,22 @@ use crate::{ecs::*, placement::Place, prelude::*, EquippedAt};
 pub struct Entity(pub(crate) hecs::Entity);
 
 impl Entity {
-    pub(crate) fn get<T>(&self, r: &Runtime) -> T
+    pub(crate) fn get<T>(&self, r: &impl AsRef<Runtime>) -> T
     where
         T: Component + Clone + Default,
     {
+        let r = r.as_ref();
         r.ecs
             .get::<&T>(**self)
             .map(|c| (*c).clone())
             .unwrap_or_default()
     }
 
-    pub(crate) fn set<T>(&self, r: &mut Runtime, val: T)
+    pub(crate) fn set<T>(&self, r: &mut impl AsMut<Runtime>, val: T)
     where
         T: Component + Default + PartialEq,
     {
+        let r = r.as_mut();
         if val == T::default() {
             // Remove default values, abstraction layer assumes components are
             // always present but defaulted.
@@ -58,9 +60,10 @@ impl Entity {
     /// Use for complex components that aren't just atomic values.
     pub(crate) fn with<T: Component + Default, U>(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         f: impl Fn(&T) -> U,
     ) -> U {
+        let r = r.as_ref();
         let scratch = T::default();
         if let Ok(c) = r.ecs.get::<&T>(**self) {
             f(&*c)
@@ -75,9 +78,10 @@ impl Entity {
     #[allow(dead_code)]
     pub(crate) fn with_mut<T: Component + Default + Eq, U>(
         &self,
-        r: &mut Runtime,
+        r: &mut impl AsMut<Runtime>,
         mut f: impl FnMut(&mut T) -> U,
     ) -> U {
+        let r = r.as_mut();
         let mut delete = false;
         let mut insert = false;
         let ret;
@@ -109,11 +113,13 @@ impl Entity {
         ret
     }
 
-    pub fn loc(&self, r: &Runtime) -> Option<Location> {
+    pub fn loc(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
+        let r = r.as_ref();
         r.placement.entity_pos(self)
     }
 
-    pub fn place(&self, r: &mut Runtime, place: impl Into<Place>) {
+    pub fn place(&self, r: &mut impl AsMut<Runtime>, place: impl Into<Place>) {
+        let r = r.as_mut();
         r.placement.insert(place, *self);
         self.post_move_hook(r);
     }
@@ -121,7 +127,12 @@ impl Entity {
     /// Place an item near `loc`, deviating to avoid similar entities.
     ///
     /// Items will avoid other items, mobs will avoid other mobs.
-    pub fn place_on_open_spot(&self, r: &mut Runtime, loc: Location) {
+    pub fn place_on_open_spot(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        loc: Location,
+    ) {
+        let r = r.as_mut();
         // If no open position is found, just squeeze the thing right where it
         // was asked to go.
         let mut place_loc = loc;
@@ -135,37 +146,37 @@ impl Entity {
         self.place(r, place_loc);
     }
 
-    fn post_move_hook(&self, r: &mut Runtime) {
+    fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
         self.scan_fov(r);
         // Equipped items become unequipped.
         self.set(r, EquippedAt::None);
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &Runtime) -> Tile {
+    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile {
         // Return a different tile if entity is aquatic or another weird type.
         Tile::Ground
     }
 
-    pub fn icon(&self, r: &Runtime) -> char {
+    pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
         match self.get::<Icon>(r) {
             Icon('\0') => '�',
             Icon(c) => c,
         }
     }
 
-    pub fn draw_layer(&self, r: &Runtime) -> i32 {
+    pub fn draw_layer(&self, r: &impl AsRef<Runtime>) -> i32 {
         if self.is_mob(r) {
             return 1;
         }
         0
     }
 
-    pub fn is_alive(&self, r: &Runtime) -> bool {
+    pub fn is_alive(&self, r: &impl AsRef<Runtime>) -> bool {
         self.loc(r).is_some()
     }
 
-    pub fn name(&self, r: &Runtime) -> String {
+    pub fn name(&self, r: &impl AsRef<Runtime>) -> String {
         let nickname = self.get::<Nickname>(r).0;
         let name = self.get::<Name>(r).0;
         let is_proper = name.chars().next().map_or(false, |c| c.is_uppercase());
@@ -183,7 +194,7 @@ impl Entity {
     }
 
     /// Get the noun for this entity that is used in grammar templating.
-    pub fn noun(&self, r: &Runtime) -> Noun {
+    pub fn noun(&self, r: &impl AsRef<Runtime>) -> Noun {
         if self.is_player(r) {
             Noun::You
         } else {
@@ -191,7 +202,7 @@ impl Entity {
         }
     }
 
-    pub fn can_enter(&self, r: &Runtime, loc: Location) -> bool {
+    pub fn can_enter(&self, r: &impl AsRef<Runtime>, loc: Location) -> bool {
         if !loc.is_walkable(r) {
             return false;
         }
@@ -208,7 +219,9 @@ impl Entity {
     }
 
     /// Method called at the start of every frame.
-    pub(crate) fn tick(&self, r: &mut Runtime) {
+    pub(crate) fn tick(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
         if self.acts_this_frame(r) {
             // Clear momentum from previous turn at the start of the next one.
             self.set(r, Momentum::default());
@@ -219,7 +232,7 @@ impl Entity {
     /// the map provides any valid steps.
     pub fn dijkstra_map_direction(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         map: &HashMap<Location, usize>,
         loc: Location,
     ) -> Option<IVec2> {
@@ -250,15 +263,22 @@ impl Entity {
         None
     }
 
-    pub fn max_wounds(&self, r: &Runtime) -> i32 {
+    pub fn max_wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
         ((self.get::<Level>(r).0 * 2) as f32).powf(1.25).round() as i32
     }
 
-    pub fn wounds(&self, r: &Runtime) -> i32 {
+    pub fn wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
         self.get::<Wounds>(r).0
     }
 
-    pub fn damage(&self, r: &mut Runtime, perp: Option<Entity>, amount: i32) {
+    pub fn damage(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        perp: Option<Entity>,
+        amount: i32,
+    ) {
+        let r = r.as_mut();
+
         let mut wounds = self.wounds(r);
         wounds += amount;
         self.set(r, Wounds(wounds));
@@ -270,7 +290,8 @@ impl Entity {
         }
     }
 
-    pub fn die(&self, r: &mut Runtime, perp: Option<Entity>) {
+    pub fn die(&self, r: &mut impl AsMut<Runtime>, perp: Option<Entity>) {
+        let r = r.as_mut();
         if let Some(loc) = self.loc(r) {
             // Effects.
             if let Some(perp) = perp {
@@ -307,13 +328,14 @@ impl Entity {
         }
     }
 
-    pub fn destroy(&self, r: &mut Runtime) {
+    pub fn destroy(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
         r.placement.remove(self);
     }
 
     pub(crate) fn vec_towards(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         other: &Entity,
     ) -> Option<IVec2> {
         let (Some(a), Some(b)) = (self.loc(r), other.loc(r)) else {
@@ -324,8 +346,9 @@ impl Entity {
 
     pub fn contents<'a>(
         &self,
-        r: &'a Runtime,
+        r: &'a impl AsRef<Runtime>,
     ) -> impl Iterator<Item = Entity> + 'a {
+        let r = r.as_ref();
         r.placement.entities_in(self)
     }
 }

@@ -37,6 +37,30 @@ pub struct Game {
     pub input_map: InputMap,
 }
 
+impl AsRef<Runtime> for Game {
+    fn as_ref(&self) -> &Runtime {
+        &self.r
+    }
+}
+
+impl AsMut<Runtime> for Game {
+    fn as_mut(&mut self) -> &mut Runtime {
+        &mut self.r
+    }
+}
+
+impl AsRef<Buffer> for Game {
+    fn as_ref(&self) -> &Buffer {
+        &self.s
+    }
+}
+
+impl AsMut<Buffer> for Game {
+    fn as_mut(&mut self) -> &mut Buffer {
+        &mut self.s
+    }
+}
+
 impl Default for Game {
     fn default() -> Self {
         let layout = Layout::system_layout();
@@ -92,7 +116,7 @@ impl Game {
 
         // Clear the dead from selection.
         for i in (0..self.selection.len()).rev() {
-            if !self.selection[i].is_alive(&self.r) {
+            if !self.selection[i].is_alive(self) {
                 self.selection.swap_remove(i);
             }
         }
@@ -100,7 +124,7 @@ impl Game {
         // If player doesn't exist, player is not acting this frame or player
         // is executing a goal, run in real time.
         if self.r.player().map_or(true, |p| {
-            !p.acts_this_frame(&self.r) || p.goal(&self.r).is_some()
+            !p.acts_this_frame(self) || p.goal(self).is_some()
         }) {
             self.r.tick();
         }
@@ -150,7 +174,7 @@ impl Game {
                 }
                 LightningBolt(loc) => {
                     // Only add sky animations if the player can see them.
-                    if loc.is_explored(&self.r) {
+                    if loc.is_explored(self) {
                         self.add_sky_anim(Box::new(anim::Lightning::new(loc)));
                     }
                 }
@@ -446,54 +470,54 @@ impl Game {
             Pass => self.act(Action::Pass),
             Inventory => {
                 if let Some(p) = self.current_active() {
-                    if p.inventory(&self.r).next().is_some() {
+                    if p.inventory(self).next().is_some() {
                         self.cmd = CommandState::Partial(Part::ViewInventory);
                     } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                        msg!("[One] [is] not carrying anything."; p.noun(self));
                     }
                 }
             }
             Powers => {}
             Equipment => {
                 if let Some(p) = self.current_active() {
-                    if p.equipment(&self.r).next().is_some() {
+                    if p.equipment(self).next().is_some() {
                         self.cmd = CommandState::Partial(Part::ViewEquipment);
                     } else {
-                        msg!("[One] [has] nothing equipped."; p.noun(&self.r));
+                        msg!("[One] [has] nothing equipped."; p.noun(self));
                     }
                 }
             }
             Drop => {
                 if let Some(p) = self.current_active() {
-                    if p.inventory(&self.r).next().is_some() {
+                    if p.inventory(self).next().is_some() {
                         self.cmd = CommandState::Partial(Part::Drop);
                     } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                        msg!("[One] [is] not carrying anything."; p.noun(self));
                     }
                 }
             }
             Throw => {
                 if let Some(p) = self.current_active() {
-                    if p.inventory(&self.r).next().is_some() {
+                    if p.inventory(self).next().is_some() {
                         self.cmd = CommandState::Partial(Part::Throw);
                     } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(&self.r));
+                        msg!("[One] [is] not carrying anything."; p.noun(self));
                     }
                 }
             }
             Use => {
                 if let Some(p) = self.current_active() {
-                    if p.inventory(&self.r).any(|e| e.can_be_used(&self.r)) {
+                    if p.inventory(self).any(|e| e.can_be_used(self)) {
                         self.cmd = CommandState::Partial(Part::Use);
                     } else {
-                        msg!("[One] [has] nothing usable."; p.noun(&self.r));
+                        msg!("[One] [has] nothing usable."; p.noun(self));
                     }
                 }
             }
             QuitGame => {}
             Cancel => {
                 if let Some(p) = self.current_active() {
-                    if p.is_player(&self.r) {
+                    if p.is_player(self) {
                         p.clear_goal(&mut self.r);
                     } else {
                         p.set_goal(&mut self.r, Goal::FollowPlayer);
@@ -521,7 +545,7 @@ impl Game {
         self.selection = sel.into_iter().collect();
 
         // Just the player amounts to no selection.
-        if self.selection.len() == 1 && self.selection[0].is_player(&self.r) {
+        if self.selection.len() == 1 && self.selection[0].is_player(self) {
             self.selection.clear();
         }
     }
@@ -539,12 +563,12 @@ impl Game {
 
     pub fn player_is_selected(&self) -> bool {
         self.selection.is_empty()
-            || self.selection.iter().any(|p| p.is_player(&self.r))
+            || self.selection.iter().any(|p| p.is_player(self))
     }
 
     fn autofight(&mut self, p: Entity) -> bool {
-        if let Some(enemy) = p.first_visible_enemy(&self.r) {
-            if let Some(atk) = p.decide(&self.r, Goal::Attack(enemy)) {
+        if let Some(enemy) = p.first_visible_enemy(self) {
+            if let Some(atk) = p.decide(self, Goal::Attack(enemy)) {
                 self.act(atk);
                 return true;
             }
@@ -573,13 +597,14 @@ impl Game {
 }
 
 fn draw_anims(
-    r: &Runtime,
+    r: &impl AsRef<Runtime>,
     s: &mut Buffer,
     n_updates: u32,
     win: &Window,
     draw_offset: IVec2,
     set: &mut Vec<Box<dyn Anim>>,
 ) {
+    let r = r.as_ref();
     for i in (0..set.len()).rev() {
         // Iterate anims backwards so when we swap-remove expired
         // animations this doesn't affect upcoming elements.
@@ -602,11 +627,13 @@ impl PlannedPath {
 
     pub fn update(
         &mut self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         orig: Location,
         dest: Location,
         mouse_pos: impl Into<IVec2>,
     ) {
+        let r = r.as_ref();
+
         let mouse_pos = mouse_pos.into();
         // Don't update until mouse actually moves.
         if mouse_pos == self.mouse_pos {

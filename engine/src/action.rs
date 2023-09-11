@@ -12,8 +12,14 @@ use crate::{
 };
 
 impl Entity {
-    fn execute(&self, r: &mut Runtime, action: Action, is_direct: bool) {
+    fn execute(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        action: Action,
+        is_direct: bool,
+    ) {
         use Action::*;
+        let r = r.as_mut();
 
         let is_confused = self.is_confused(r) && r.rng.one_chance_in(3);
         let confusion_dir = if is_confused {
@@ -48,18 +54,28 @@ impl Entity {
     }
 
     /// Execute action
-    pub fn execute_indirect(&self, r: &mut Runtime, action: Action) {
+    pub fn execute_indirect(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        action: Action,
+    ) {
         self.execute(r, action, false);
     }
 
     /// Execute action using a direct command.
     ///
     /// Can do things like pick up items automatically.
-    pub fn execute_direct(&self, r: &mut Runtime, action: Action) {
+    pub fn execute_direct(&self, r: &mut impl AsMut<Runtime>, action: Action) {
         self.execute(r, action, true);
     }
 
-    fn step(&self, r: &mut Runtime, dir: IVec2, is_direct: bool) -> bool {
+    fn step(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        dir: IVec2,
+        is_direct: bool,
+    ) -> bool {
+        let r = r.as_mut();
         debug_assert!(dir.taxi_len() == 1);
 
         let Some(loc) = self.loc(r) else { return false };
@@ -114,10 +130,12 @@ impl Entity {
     /// Attack if running into enemy.
     fn attack_step(
         &self,
-        r: &mut Runtime,
+        r: &mut impl AsMut<Runtime>,
         dir: IVec2,
         is_direct: bool,
     ) -> bool {
+        let r = r.as_mut();
+
         if let Some(mob) = self.target_for_attack(r, dir, EquippedAt::RunHand) {
             self.attack(r, mob);
             return true;
@@ -126,13 +144,17 @@ impl Entity {
         self.step(r, dir, is_direct)
     }
 
-    fn shoot(&self, r: &mut Runtime, dir: IVec2) {
+    fn shoot(&self, r: &mut impl AsMut<Runtime>, dir: IVec2) {
+        let r = r.as_mut();
+
         if let Some(mob) = self.target_for_attack(r, dir, EquippedAt::GunHand) {
             self.attack(r, mob);
         }
     }
 
-    fn pass(&self, r: &mut Runtime, is_direct: bool) {
+    fn pass(&self, r: &mut impl AsMut<Runtime>, is_direct: bool) {
+        let r = r.as_mut();
+
         if self.is_npc(r) && is_direct {
             // If you tell a NPC to wait, exhaust all the actions.
             while self.can_be_commanded(r) {
@@ -144,17 +166,21 @@ impl Entity {
     }
 
     /// Mark the entity as having taken a long action.
-    pub(crate) fn complete_turn(&self, r: &mut Runtime) {
+    pub(crate) fn complete_turn(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
         let t = self.acts_next(r).max(r.now());
         self.set(r, ActsNext(t + PHASES_IN_TURN));
     }
 
     /// Mark the entity as having taken a short action.
-    fn complete_phase(&self, r: &mut Runtime) {
+    fn complete_phase(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
         self.set(r, ActsNext(self.next_phase_frame(r)));
     }
 
-    fn attack(&self, r: &mut Runtime, target: Entity) {
+    fn attack(&self, r: &mut impl AsMut<Runtime>, target: Entity) {
+        let r = r.as_mut();
+
         if let Some(d) = self.vec_towards(r, &target) {
             if d.taxi_len() > 1 {
                 send_msg(Msg::Fire(*self, d.to_dir4()));
@@ -171,7 +197,12 @@ impl Entity {
         self.complete_turn(r);
     }
 
-    pub fn try_to_hit(&self, r: &mut Runtime, other: &Entity) -> bool {
+    pub fn try_to_hit(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        other: &Entity,
+    ) -> bool {
+        let r = r.as_mut();
         let stats = self.stats(r);
         let other_stats = other.stats(r);
 
@@ -179,7 +210,13 @@ impl Entity {
         r.rng().sample(odds)
     }
 
-    pub(crate) fn shout(&self, r: &mut Runtime, enemy: Option<&Entity>) {
+    pub(crate) fn shout(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        enemy: Option<&Entity>,
+    ) {
+        let r = r.as_mut();
+
         match self.get::<Voice>(r) {
             Voice::Silent => {
                 return;
@@ -215,7 +252,13 @@ impl Entity {
     /// Alert a mob to the presence of another entity.
     ///
     /// Return whether mob was actually alerted
-    pub(crate) fn alert_to(&self, r: &mut Runtime, enemy: &Entity) -> bool {
+    pub(crate) fn alert_to(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        enemy: &Entity,
+    ) -> bool {
+        let r = r.as_mut();
+
         match self.vec_towards(r, enemy) {
             None => return false,
             Some(v) if v.taxi_len() > ALERT_RADIUS => return false,

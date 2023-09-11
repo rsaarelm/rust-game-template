@@ -7,7 +7,12 @@ use crate::{ecs::IsFriendly, prelude::*, EquippedAt, FOV_RADIUS, THROW_DIST};
 
 impl Entity {
     /// Decide on the next action given a goal.
-    pub fn decide(&self, r: &Runtime, goal: Goal) -> Option<Action> {
+    pub fn decide(
+        &self,
+        r: &impl AsRef<Runtime>,
+        goal: Goal,
+    ) -> Option<Action> {
+        let r = r.as_ref();
         let mut dest;
 
         let loc = self.loc(r)?;
@@ -204,7 +209,9 @@ impl Entity {
     }
 
     /// Figure out the next goal when current one is completed.
-    pub fn next_goal(&self, r: &mut Runtime) {
+    pub fn next_goal(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
         match self.goal(r) {
             Goal::None => {}
             Goal::FollowPlayer => {
@@ -248,12 +255,16 @@ impl Entity {
         }
     }
 
-    pub fn is_threatened(&self, r: &Runtime) -> bool {
+    pub fn is_threatened(&self, r: &impl AsRef<Runtime>) -> bool {
         self.first_visible_enemy(r).is_some()
     }
 
     /// Return if there are threatening mobs in the given direction.
-    pub fn is_threatened_from(&self, r: &Runtime, dir: IVec2) -> bool {
+    pub fn is_threatened_from(
+        &self,
+        r: &impl AsRef<Runtime>,
+        dir: IVec2,
+    ) -> bool {
         debug_assert_eq!(s4::norm(dir), dir);
         self.fov_mobs(r, FOV_RADIUS)
             .into_iter()
@@ -267,36 +278,37 @@ impl Entity {
             })
     }
 
-    pub fn is_player_aligned(&self, r: &Runtime) -> bool {
+    pub fn is_player_aligned(&self, r: &impl AsRef<Runtime>) -> bool {
         self.get::<IsFriendly>(r).0
     }
 
-    pub fn is_enemy(&self, r: &Runtime, other: &Entity) -> bool {
+    pub fn is_enemy(&self, r: &impl AsRef<Runtime>, other: &Entity) -> bool {
         self.is_player_aligned(r) != other.is_player_aligned(r)
     }
 
-    pub fn is_ally(&self, r: &Runtime, other: &Entity) -> bool {
+    pub fn is_ally(&self, r: &impl AsRef<Runtime>, other: &Entity) -> bool {
         self.is_player_aligned(r) == other.is_player_aligned(r)
     }
 
-    pub fn goal(&self, r: &Runtime) -> Goal {
+    pub fn goal(&self, r: &impl AsRef<Runtime>) -> Goal {
         self.get::<Goal>(r)
     }
 
-    pub fn set_goal(&self, r: &mut Runtime, goal: Goal) {
+    pub fn set_goal(&self, r: &mut impl AsMut<Runtime>, goal: Goal) {
         self.set(r, goal);
     }
 
-    pub fn clear_goal(&self, r: &mut Runtime) {
+    pub fn clear_goal(&self, r: &mut impl AsMut<Runtime>) {
         self.set(r, Goal::default());
     }
 
     pub(crate) fn target_for_attack(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         dir: IVec2,
         weapon_slot: EquippedAt,
     ) -> Option<Entity> {
+        let r = r.as_ref();
         let mut range = 1;
         if let Some(item) = self.equipment_at(r, weapon_slot) {
             if item.is_ranged_weapon(r) {
@@ -320,12 +332,18 @@ impl Entity {
         None
     }
 
-    pub(crate) fn is_looking_for_fight(&self, r: &Runtime) -> bool {
+    pub(crate) fn is_looking_for_fight(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
         matches!(self.goal(r), Goal::None | Goal::GoTo(_) | Goal::Escort(_))
             && Some(*self) != r.player()
     }
 
-    pub(crate) fn fov_mobs(&self, r: &Runtime, range: i32) -> Vec<Entity> {
+    pub(crate) fn fov_mobs(
+        &self,
+        r: &impl AsRef<Runtime>,
+        range: i32,
+    ) -> Vec<Entity> {
+        let r = r.as_ref();
         // XXX: Not returning an iterator since I'm not bothering to handle
         // the nonexistent location component case into the chain.
         let Some(loc) = self.loc(r) else {
@@ -342,13 +360,17 @@ impl Entity {
     /// The selection criteria for the enemy should be that it's the most
     /// preferred target of opportunity for the current mob given its current
     /// FOV. The choice may depend on the capabilities of the queried mob.
-    pub fn first_visible_enemy(&self, r: &Runtime) -> Option<Entity> {
+    pub fn first_visible_enemy(
+        &self,
+        r: &impl AsRef<Runtime>,
+    ) -> Option<Entity> {
         self.fov_mobs(r, FOV_RADIUS)
             .into_iter()
             .find(|e| e.is_enemy(r, self))
     }
 
-    pub(crate) fn scan_fov(&self, r: &mut Runtime) {
+    pub(crate) fn scan_fov(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
         let Some(loc) = self.loc(r) else { return };
 
         let cells: Vec<Location> =

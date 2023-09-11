@@ -68,7 +68,7 @@ impl CommandState {
     }
 
     /// The partial command accepts given item as input.
-    pub fn matches_item(&self, r: &Runtime, item: Entity) -> bool {
+    pub fn matches_item(&self, r: &impl AsRef<Runtime>, item: Entity) -> bool {
         matches!(self, Partial(p) if p.matches_item(r, item))
     }
 
@@ -77,7 +77,7 @@ impl CommandState {
         matches!(self, Partial(p) if p.needs_direction())
     }
 
-    pub fn add_item(&mut self, r: &Runtime, item: Entity) {
+    pub fn add_item(&mut self, r: &impl AsRef<Runtime>, item: Entity) {
         if let Partial(p) = self {
             if let Ok(next) = p.add_item(r, item) {
                 *self = next;
@@ -133,11 +133,15 @@ impl Part {
         matches!(self, AimThrow(_) | AimUse(_) | AimCast(_))
     }
 
-    pub fn matches_any_contents(self, r: &Runtime, container: Entity) -> bool {
+    pub fn matches_any_contents(
+        self,
+        r: &impl AsRef<Runtime>,
+        container: Entity,
+    ) -> bool {
         container.contents(r).any(|item| self.matches_item(r, item))
     }
 
-    pub fn matches_item(self, r: &Runtime, item: Entity) -> bool {
+    pub fn matches_item(self, r: &impl AsRef<Runtime>, item: Entity) -> bool {
         match self {
             Use => item.can_be_used(r),
             EquipForSlot(slot) => item.fits(r, slot) && !item.is_equipped(r),
@@ -147,7 +151,11 @@ impl Part {
         }
     }
 
-    fn add_item(self, r: &Runtime, item: Entity) -> Result<CommandState> {
+    fn add_item(
+        self,
+        r: &impl AsRef<Runtime>,
+        item: Entity,
+    ) -> Result<CommandState> {
         match self {
             Drop => Ok(Action::Drop(item).into()),
             Throw => Ok(AimThrow(item).into()),

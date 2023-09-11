@@ -31,7 +31,7 @@ const CROSSED: [char; 16] = [
 
 /// Return 4-bit wallform connectivity shape for center cell.
 /// Return none if the wall cell shouldn't be shown at all.
-fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
+fn wallform(r: &impl AsRef<Runtime>, p: IVec2) -> Option<usize> {
     //     701
     //     6.2
     //     543
@@ -80,7 +80,10 @@ fn wallform(r: &Runtime, p: IVec2) -> Option<usize> {
 
 /// Show the interpolated and shaped map terrain cell in the given wide
 /// unfolded coordinate position.
-pub fn terrain_cell(r: &Runtime, wide_loc_pos: impl Into<IVec2>) -> CharCell {
+pub fn terrain_cell(
+    r: &impl AsRef<Runtime>,
+    wide_loc_pos: impl Into<IVec2>,
+) -> CharCell {
     let wide_loc_pos = wide_loc_pos.into();
 
     let is_centered = wide_loc_pos.x % 2 == 0;
@@ -155,7 +158,7 @@ pub fn terrain_cell(r: &Runtime, wide_loc_pos: impl Into<IVec2>) -> CharCell {
     }
 }
 
-fn tile(r: &Runtime, wide_loc_pos: IVec2) -> Tile {
+fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> Tile {
     let p = wide_loc_pos;
 
     if p.x % 2 == 0 {

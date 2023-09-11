@@ -24,6 +24,18 @@ pub struct Runtime {
     pub(crate) rng: GameRng,
 }
 
+impl AsRef<Runtime> for Runtime {
+    fn as_ref(&self) -> &Runtime {
+        self
+    }
+}
+
+impl AsMut<Runtime> for Runtime {
+    fn as_mut(&mut self) -> &mut Runtime {
+        self
+    }
+}
+
 impl Default for Runtime {
     fn default() -> Self {
         Runtime {

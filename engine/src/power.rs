@@ -31,11 +31,12 @@ impl Power {
 
     pub fn invoke(
         self,
-        r: &mut Runtime,
+        r: &mut impl AsMut<Runtime>,
         perp: Option<Entity>,
         loc: Location,
         v: IVec2,
     ) {
+        let r = r.as_mut();
         match self {
             BerserkRage => msg!("TODO!"),
             CallLightning => r.lightning(perp, loc),
@@ -225,15 +226,21 @@ pub struct PowerState {
 }
 
 impl Entity {
-    pub fn has_powers(&self, r: &Runtime) -> bool {
+    pub fn has_powers(&self, r: &impl AsRef<Runtime>) -> bool {
         self.with::<Powers, _>(r, |a| !a.0.is_empty())
     }
 
-    pub fn powers(&self, r: &Runtime) -> Vec<Power> {
+    pub fn powers(&self, r: &impl AsRef<Runtime>) -> Vec<Power> {
         self.with::<Powers, _>(r, |ab| ab.0.keys().copied().collect())
     }
 
-    pub(crate) fn cast(&self, r: &mut Runtime, power: Power, v: IVec2) {
+    pub(crate) fn cast(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        power: Power,
+        v: IVec2,
+    ) {
+        let r = r.as_mut();
         let Some(loc) = self.loc(r) else { return };
         power.invoke(r, Some(*self), loc, v);
         self.complete_turn(r);

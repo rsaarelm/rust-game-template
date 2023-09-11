@@ -368,7 +368,12 @@ impl Spawn {
         self.0.parse::<StaticGerm>().unwrap().preferred_tile()
     }
 
-    pub fn spawn(&self, r: &mut Runtime, place: impl Into<Place>) -> Entity {
+    pub fn spawn(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        place: impl Into<Place>,
+    ) -> Entity {
+        let r = r.as_mut();
         r.wish(place, &self.0).unwrap()
     }
 }

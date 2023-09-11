@@ -15,6 +15,18 @@ pub struct Buffer<P> {
     pub(crate) data: Vec<P>,
 }
 
+impl<P> AsRef<Buffer<P>> for Buffer<P> {
+    fn as_ref(&self) -> &Buffer<P> {
+        self
+    }
+}
+
+impl<P> AsMut<Buffer<P>> for Buffer<P> {
+    fn as_mut(&mut self) -> &mut Buffer<P> {
+        self
+    }
+}
+
 impl<P> AsRef<[P]> for Buffer<P> {
     fn as_ref(&self) -> &[P] {
         &self.data

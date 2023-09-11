@@ -80,7 +80,7 @@ impl Location {
 
     pub fn smart_fold_wide(
         wide_loc_pos: impl Into<IVec2>,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
     ) -> Self {
         match Self::fold_wide_sides(wide_loc_pos) {
             (a, b) if !a.is_explored(r) && b.is_explored(r) => b,
@@ -113,7 +113,8 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn tile(&self, r: &Runtime) -> Tile {
+    pub fn tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+        let r = r.as_ref();
         r.terrain_overlay
             .get(self)
             .copied()
@@ -121,12 +122,14 @@ impl Location {
             .unwrap_or_default()
     }
 
-    pub fn set_tile(&self, r: &mut Runtime, t: Tile) {
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+        let r = r.as_mut();
         r.terrain_overlay.insert(*self, t);
     }
 
     /// Tile setter that doesn't cover functional terrain.
-    pub fn decorate_tile(&self, r: &mut Runtime, t: Tile) {
+    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+        let r = r.as_mut();
         if self.tile(r) == Tile::Ground || self.tile(r).is_decoration() {
             r.terrain_overlay.insert(*self, t);
         }
@@ -172,26 +175,30 @@ impl Location {
     }
 
     /// Location has been seen by an allied unit at some point.
-    pub fn is_explored(&self, r: &Runtime) -> bool {
+    pub fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
         r.fov.contains(self)
     }
 
-    pub fn is_walkable(&self, r: &Runtime) -> bool {
+    pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
         !self.tile(r).blocks_movement()
     }
 
-    pub fn mob_at(&self, r: &Runtime) -> Option<Entity> {
+    pub fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        let r = r.as_ref();
         r.placement.entities_at(*self).find(|e| e.is_mob(r))
     }
 
     /// Return entities at cell sorted to draw order.
-    pub fn entities_at(&self, r: &Runtime) -> Vec<Entity> {
+    pub fn entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity> {
+        let r = r.as_ref();
         let mut ret: Vec<Entity> = r.placement.entities_at(*self).collect();
         ret.sort_by_key(|e| e.draw_layer(r));
         ret
     }
 
-    pub fn item_at(&self, r: &Runtime) -> Option<Entity> {
+    pub fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        let r = r.as_ref();
         r.placement.entities_at(*self).find(|e| e.is_item(r))
     }
 
@@ -216,7 +223,7 @@ impl Location {
     /// folding.
     pub fn find_step_towards(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         other: &Location,
     ) -> Option<IVec2> {
         // They're on the same Z-plane, just do the normal pointing direction.
@@ -235,7 +242,7 @@ impl Location {
 
     /// Follow upstairs, downstairs and possible other portals until you end
     /// up at a non-portaling location starting from this location.
-    pub fn follow(&self, r: &Runtime) -> Location {
+    pub fn follow(&self, r: &impl AsRef<Runtime>) -> Location {
         let path = || {
             let mut p = Some(*self);
             std::iter::from_fn(move || {
@@ -262,7 +269,7 @@ impl Location {
         path().last().unwrap_or(*self)
     }
 
-    pub fn portal_dest(&self, r: &Runtime) -> Option<Location> {
+    pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         match self.tile(r) {
             Tile::Upstairs => Some(*self + ivec3(0, 0, 1)),
             Tile::Downstairs => Some(*self + ivec3(0, 0, -1)),
@@ -335,7 +342,7 @@ impl Location {
     /// Find the closest pathable location on neighboring sector.
     pub fn path_dest_to_neighboring_sector(
         &self,
-        r: &Runtime,
+        r: &impl AsRef<Runtime>,
         neighbor_dir: SectorDir,
     ) -> Option<Location> {
         for (loc, _) in util::dijkstra_map(
@@ -387,7 +394,7 @@ impl Location {
     }
 
     /// Create a printable description of interesting features at location.
-    pub fn describe(&self, r: &Runtime) -> Option<String> {
+    pub fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
         let mut ret = String::new();
         if let Some(mob) = self.mob_at(r) {
             ret.push_str(&Grammatize::format(&(mob.noun(r),), "[Some]"));
@@ -404,7 +411,13 @@ impl Location {
         // Add more stuff here as needed.
     }
 
-    pub fn damage(&self, r: &mut Runtime, perp: Option<Entity>, amount: i32) {
+    pub fn damage(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        perp: Option<Entity>,
+        amount: i32,
+    ) {
+        let r = r.as_mut();
         if let Some(mob) = self.mob_at(r) {
             mob.damage(r, perp, amount);
         }

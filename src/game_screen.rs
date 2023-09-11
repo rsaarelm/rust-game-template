@@ -68,7 +68,7 @@ fn move_mode(
 
     let mouse = b.mouse_state();
     let hover = draw_main(g, n, &main, mouse);
-    if let (Some(orig), Some(dest)) = (player.loc(&g.r), hover) {
+    if let (Some(orig), Some(dest)) = (player.loc(g), hover) {
         g.planned_path.update(&g.r, orig, dest, mouse.cursor_pos());
     }
 
@@ -134,8 +134,8 @@ fn inventory_mode(
 
     let keys = "abcdefghijklmnopqrstuvwxyz";
     let items: Vec<Entity> = player
-        .contents(&g.r)
-        .filter(|e| !e.is_equipped(&g.r) && g.cmd.matches_item(&g.r, *e))
+        .contents(g)
+        .filter(|e| !e.is_equipped(g) && g.cmd.matches_item(&g.r, *e))
         .collect();
 
     let mouse = b.mouse_state();
@@ -178,8 +178,8 @@ fn equipment_mode(
 
     let keys = "abcdefghijklmnopqrstuvwxyz";
     let items: Vec<Entity> = player
-        .contents(&g.r)
-        .filter(|e| e.is_equipped(&g.r) && g.cmd.matches_item(&g.r, *e))
+        .contents(g)
+        .filter(|e| e.is_equipped(g) && g.cmd.matches_item(&g.r, *e))
         .collect();
 
     let mouse = b.mouse_state();
@@ -373,7 +373,7 @@ fn draw_main(
     win: &Window,
     mouse: MouseState,
 ) -> Option<Location> {
-    if let Some(loc) = g.current_active().and_then(|p| p.loc(&g.r)) {
+    if let Some(loc) = g.current_active().and_then(|p| p.loc(g)) {
         if g.viewpoint != loc {
             // Clear path whenever player moves.
             g.planned_path.clear();
@@ -409,7 +409,7 @@ fn draw_main(
     let click_target = |g: &Game, wide_pos: IVec2| -> Location {
         let (a, b) = Location::fold_wide_sides(wide_pos);
         // Prefer left cell unless right has a mob and left doesn't.
-        if b.mob_at(&g.r).is_some() && a.mob_at(&g.r).is_none() {
+        if b.mob_at(g).is_some() && a.mob_at(&g.r).is_none() {
             b
         } else {
             a
@@ -440,10 +440,8 @@ fn draw_main(
 
         match mouse {
             MouseState::Hover(p) => {
-                hover_pos = Some(Location::smart_fold_wide(
-                    screen_to_wide_pos(p),
-                    &g.r,
-                ));
+                hover_pos =
+                    Some(Location::smart_fold_wide(screen_to_wide_pos(p), g));
             }
 
             MouseState::Drag(p, q, MouseButton::Left) if win.contains(q) => {
@@ -466,12 +464,12 @@ fn draw_main(
                     // Left click.
                     let loc = click_target(g, a);
 
-                    match loc.mob_at(&g.r) {
-                        Some(npc) if npc.is_player(&g.r) => {
+                    match loc.mob_at(g) {
+                        Some(npc) if npc.is_player(g) => {
                             // Select player.
                             g.clear_selection();
                         }
-                        Some(npc) if npc.is_player_aligned(&g.r) => {
+                        Some(npc) if npc.is_player_aligned(g) => {
                             // Select NPC.
                             g.set_selection(vec![npc]);
                         }
@@ -502,10 +500,10 @@ fn draw_main(
                             .into_iter()
                             .filter_map(|p| {
                                 Location::fold_wide(p)
-                                    .and_then(|loc| loc.mob_at(&g.r))
+                                    .and_then(|loc| loc.mob_at(g))
                             })
                         {
-                            if e.is_player_aligned(&g.r) {
+                            if e.is_player_aligned(g) {
                                 selection.push(e);
                             }
                         }
@@ -520,8 +518,8 @@ fn draw_main(
                     // Right click.
                     let loc = click_target(g, a);
 
-                    match loc.mob_at(&g.r) {
-                        Some(npc) if npc.is_player_aligned(&g.r) => {
+                    match loc.mob_at(g) {
+                        Some(npc) if npc.is_player_aligned(g) => {
                             npc.become_player(&mut g.r);
                         }
                         Some(enemy) => {
@@ -549,18 +547,18 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
         win.put(&mut g.s, draw_pos, ui::terrain_cell(&g.r, p));
 
         if let Some(loc) = Location::fold_wide(p) {
-            if let Some(e) = loc.mob_at(&g.r) {
-                let mut cell = CharCell::c(e.icon(&g.r));
-                if e.is_player_aligned(&g.r) {
+            if let Some(e) = loc.mob_at(g) {
+                let mut cell = CharCell::c(e.icon(g));
+                if e.is_player_aligned(g) {
                     if g.r.player() == Some(e) {
                         cell.set_c('@');
-                    } else if !e.can_be_commanded(&g.r) {
+                    } else if !e.can_be_commanded(g) {
                         // Friendly mob out of moves.
                         cell = cell.col(X::GRAY);
-                    } else if e.goal(&g.r) != Goal::FollowPlayer {
+                    } else if e.goal(g) != Goal::FollowPlayer {
                         // Frindly mob out on a mission.
                         cell = cell.col(X::GREEN);
-                    } else if e.acts_before_next_player_frame(&g.r) {
+                    } else if e.acts_before_next_player_frame(g) {
                         // Friendly mob ready for next command
                         cell = cell.col(X::AQUA);
                     } else {
@@ -573,7 +571,7 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                     }
                 }
                 win.put(&mut g.s, draw_pos, cell);
-            } else if let Some(e) = loc.item_at(&g.r) {
+            } else if let Some(e) = loc.item_at(g) {
                 win.put(&mut g.s, draw_pos, CharCell::c(e.icon(&g.r)));
             }
         }
