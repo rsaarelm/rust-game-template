@@ -8,7 +8,7 @@ use util::{s4, text, v2, write, writeln};
 pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
     g.tick(b);
 
-    let win = Window::from(&g.s);
+    let win = Window::from(g.as_ref());
     if let Some(player) = g.current_active() {
         // Launch a different UI mode based on what the current partial
         // command needs next.
@@ -32,7 +32,7 @@ pub fn run(b: &mut dyn Backend, n: u32, g: &mut Game) {
 
 /// Show when there's no player.
 fn attract_mode(b: &mut dyn Backend, n: u32, g: &mut Game, win: Window) {
-    win.clear(&mut g.s);
+    win.clear(g);
     let main = win;
     let mouse = b.mouse_state();
     draw_main(g, n, &main, mouse);
@@ -62,7 +62,7 @@ fn move_mode(
     win: Window,
     player: Entity,
 ) {
-    win.clear(&mut g.s);
+    win.clear(g);
     let (panel, main) = win.split_left(26);
     status_panel(g, b, &panel, player);
 
@@ -129,7 +129,7 @@ fn inventory_mode(
     win: Window,
     player: Entity,
 ) {
-    win.clear(&mut g.s);
+    win.clear(g);
     let (panel, main) = win.split_left(26);
 
     let keys = "abcdefghijklmnopqrstuvwxyz";
@@ -170,7 +170,7 @@ fn equipment_mode(
     win: Window,
     player: Entity,
 ) {
-    win.clear(&mut g.s);
+    win.clear(g);
     let (panel, main) = win.split_left(26);
 
     // TODO: Show stable set of equipment slots
@@ -213,7 +213,7 @@ fn aim_mode(
     win: Window,
     player: Entity,
 ) {
-    win.clear(&mut g.s);
+    win.clear(g);
 
     let (panel, main) = win.split_left(26);
     status_panel(g, b, &panel, player);
@@ -417,7 +417,7 @@ fn draw_main(
     };
 
     // Solid background for off-sector extra space.
-    win.fill(&mut g.s, CharCell::c('█').col(X::BROWN));
+    win.fill(g, CharCell::c('█').col(X::BROWN));
     // Constrain sub-window to current sector only.
     let sector_win = win.sub(wide_sector_bounds - offset);
     // Adjust offset for sub-window position.
@@ -450,7 +450,7 @@ fn draw_main(
                 // Draw inverted marquee box.
                 if sector_bounds.contains(a) && sector_bounds.contains(b) {
                     for a in Rect::from_points([p, q]) - win.bounds().min() {
-                        if let Some(c) = win.get_mut(&mut g.s, a) {
+                        if let Some(c) = win.get_mut(g, a) {
                             *c = c.inv();
                         }
                     }
@@ -544,7 +544,7 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
     for draw_pos in win.area().into_iter().map(v2) {
         let p = draw_pos + offset;
 
-        win.put(&mut g.s, draw_pos, ui::terrain_cell(&g.r, p));
+        win.put(g, draw_pos, ui::terrain_cell(&g.r, p));
 
         if let Some(loc) = Location::fold_wide(p) {
             if let Some(e) = loc.mob_at(g) {
@@ -570,9 +570,9 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
                         cell = cell.inv();
                     }
                 }
-                win.put(&mut g.s, draw_pos, cell);
+                win.put(g, draw_pos, cell);
             } else if let Some(e) = loc.item_at(g) {
-                win.put(&mut g.s, draw_pos, CharCell::c(e.icon(&g.r)));
+                win.put(g, draw_pos, CharCell::c(e.icon(&g.r)));
             }
         }
     }
@@ -581,7 +581,7 @@ fn draw_map(g: &mut Game, win: &Window, offset: IVec2) {
 fn draw_fog(g: &mut Game, win: &Window, offset: IVec2) {
     for draw_pos in win.area().into_iter().map(v2) {
         if g.r.wide_pos_is_shrouded(draw_pos + offset) {
-            win.put(&mut g.s, draw_pos, CharCell::c('░').col(X::BROWN));
+            win.put(g, draw_pos, CharCell::c('░').col(X::BROWN));
         }
     }
 }

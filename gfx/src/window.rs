@@ -69,18 +69,25 @@ impl<P: Pixel> Window<P> {
         &self.bounds
     }
 
-    pub fn fill(&self, c: &mut Buffer<P>, color: P) {
+    pub fn fill(&self, c: &mut impl AsMut<Buffer<P>>, color: P) {
+        let c = c.as_mut();
         let area = c.area();
         for pos in self.bounds {
             c.data[area.idx(pos)] = color;
         }
     }
 
-    pub fn clear(&self, c: &mut Buffer<P>) {
+    pub fn clear(&self, c: &mut impl AsMut<Buffer<P>>) {
         self.fill(c, self.background_col);
     }
 
-    pub fn put(&self, c: &mut Buffer<P>, pos: impl Into<IVec2>, col: P) {
+    pub fn put(
+        &self,
+        c: &mut impl AsMut<Buffer<P>>,
+        pos: impl Into<IVec2>,
+        col: P,
+    ) {
+        let c = c.as_mut();
         let screen = c.area();
         let pos = pos.into();
         if !self.area().contains(pos) {
@@ -96,9 +103,11 @@ impl<P: Pixel> Window<P> {
 
     pub fn get_mut<'b>(
         &self,
-        c: &'b mut Buffer<P>,
+        c: &'b mut impl AsMut<Buffer<P>>,
         pos: impl Into<IVec2>,
     ) -> Option<&'b mut P> {
+        let c = c.as_mut();
+
         let pos = pos.into();
         let idx = c.area().idx(pos + v2(self.bounds.min()));
 
@@ -108,7 +117,7 @@ impl<P: Pixel> Window<P> {
     /// Draw an image in the window.
     pub fn blit<F: Field<P>>(
         &self,
-        c: &mut Buffer<P>,
+        c: &mut impl AsMut<Buffer<P>>,
         pos: impl Into<IVec2>,
         img: &Image<P, F>,
     ) {
@@ -160,7 +169,7 @@ impl<P: Pixel> Window<P> {
     /// Write text to window, return updated position.
     pub fn write(
         &self,
-        c: &mut Buffer<P>,
+        c: &mut impl AsMut<Buffer<P>>,
         pos: impl Into<IVec2>,
         text: &str,
     ) -> IVec2 {
@@ -177,7 +186,7 @@ impl<P: Pixel> Window<P> {
         pos
     }
 
-    pub fn write_center(&self, c: &mut Buffer<P>, text: &str) {
+    pub fn write_center(&self, c: &mut impl AsMut<Buffer<P>>, text: &str) {
         let width = self.font.width(text);
         let x = self.width() / 2 - width / 2;
         self.write(c, [x, 0], text);
@@ -186,7 +195,11 @@ impl<P: Pixel> Window<P> {
     /// Draw a caption box GUI element.
     ///
     /// Returns the window for the inner area.
-    pub fn caption_box(&self, c: &mut Buffer<P>, caption: &str) -> Window<P> {
+    pub fn caption_box(
+        &self,
+        c: &mut impl AsMut<Buffer<P>>,
+        caption: &str,
+    ) -> Window<P> {
         let w = self.font.width(caption);
 
         let x0 = 0;
@@ -207,7 +220,12 @@ impl<P: Pixel> Window<P> {
     }
 
     /// Write text with an updating cursor position.
-    pub fn print(&self, c: &mut Buffer<P>, pos: &mut IVec2, text: &str) {
+    pub fn print(
+        &self,
+        c: &mut impl AsMut<Buffer<P>>,
+        pos: &mut IVec2,
+        text: &str,
+    ) {
         for (i, line) in text.lines().enumerate() {
             // Newlines
             if i > 0 {
@@ -218,7 +236,12 @@ impl<P: Pixel> Window<P> {
         }
     }
 
-    pub fn println(&self, c: &mut Buffer<P>, pos: &mut IVec2, text: &str) {
+    pub fn println(
+        &self,
+        c: &mut impl AsMut<Buffer<P>>,
+        pos: &mut IVec2,
+        text: &str,
+    ) {
         self.print(c, pos, text);
         pos.y += 1;
         pos.x = 0;
@@ -226,7 +249,7 @@ impl<P: Pixel> Window<P> {
 
     pub fn print_button(
         &self,
-        c: &mut Buffer<P>,
+        c: &mut impl AsMut<Buffer<P>>,
         pos: &mut IVec2,
         mouse: &MouseState,
         text: &str,
@@ -250,7 +273,7 @@ impl<P: Pixel> Window<P> {
 
     pub fn line(
         &self,
-        c: &mut Buffer<P>,
+        c: &mut impl AsMut<Buffer<P>>,
         p1: impl Into<IVec2>,
         p2: impl Into<IVec2>,
     ) {
@@ -259,7 +282,7 @@ impl<P: Pixel> Window<P> {
         }
     }
 
-    pub fn draw_border(&self, c: &mut Buffer<P>) -> Window<P> {
+    pub fn draw_border(&self, c: &mut impl AsMut<Buffer<P>>) -> Window<P> {
         let [x1, y1] = self.bounds.dim();
         let [x1, y1] = [x1 - 1, y1 - 1];
 
@@ -271,7 +294,8 @@ impl<P: Pixel> Window<P> {
         self.sub(self.area().shrink([1, 1], [1, 1]))
     }
 
-    pub fn invert(&self, c: &mut Buffer<P>) {
+    pub fn invert(&self, c: &mut impl AsMut<Buffer<P>>) {
+        let c = c.as_mut();
         let bounds = c.area();
         for p in self.bounds {
             c.data[bounds.idx(p)].invert();
@@ -280,7 +304,7 @@ impl<P: Pixel> Window<P> {
 
     pub fn button(
         &self,
-        c: &mut Buffer<P>,
+        c: &mut impl AsMut<Buffer<P>>,
         mouse: &MouseState,
         text: &str,
     ) -> bool {

@@ -13,9 +13,9 @@ pub struct Cursor<'a, P: Pixel> {
 }
 
 impl<'a, P: Pixel> Cursor<'a, P> {
-    pub fn new(buffer: &'a mut Buffer<P>, win: Window<P>) -> Self {
+    pub fn new(buffer: &'a mut impl AsMut<Buffer<P>>, win: Window<P>) -> Self {
         Cursor {
-            c: buffer,
+            c: buffer.as_mut(),
             win,
             pos: Default::default(),
         }
