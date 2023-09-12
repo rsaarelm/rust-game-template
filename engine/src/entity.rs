@@ -254,7 +254,7 @@ impl Entity {
             .min_by_key(|(_, u)| *u)
         {
             if *n < start {
-                debug_assert!(best.z == loc.z);
+                debug_assert!(best.z() == loc.z());
                 let a = loc.unfold();
                 let b = best.unfold();
                 return Some(a.dir4_towards(&b));

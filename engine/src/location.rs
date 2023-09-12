@@ -24,9 +24,9 @@ use crate::{prelude::*, Grammatize, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 pub struct Location {
     // NB. Fields are in this order so that lexical sorting produces a
     // "natural" order of layers, then rows, then columns.
-    pub z: i16,
-    pub y: i16,
-    pub x: i16,
+    z: i16,
+    y: i16,
+    x: i16,
 }
 
 impl Location {
@@ -36,6 +36,10 @@ impl Location {
 }
 
 impl Location {
+    pub fn z(&self) -> i16 {
+        self.z
+    }
+
     /// Convert to 2D vector, layering Z-levels vertically in 2-plane.
     ///
     /// Each location has a unique point on the `IVec2` plane and the original
