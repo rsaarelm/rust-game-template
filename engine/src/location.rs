@@ -126,6 +126,16 @@ impl Location {
             .unwrap_or_default()
     }
 
+    /// Get actual tiles from visible cells, assume ground for unexplored
+    /// cell.
+    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+        if self.is_explored(r) {
+            self.tile(r)
+        } else {
+            Tile::Ground
+        }
+    }
+
     pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
         let r = r.as_mut();
         r.terrain_overlay.insert(*self, t);

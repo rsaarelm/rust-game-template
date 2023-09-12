@@ -162,11 +162,15 @@ fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> Tile {
     let p = wide_loc_pos;
 
     if p.x % 2 == 0 {
-        Location::fold_wide(p).unwrap().tile(r)
+        Location::fold_wide(p).unwrap().assumed_tile(r)
     } else {
         Location::fold_wide(p - ivec2(1, 0))
             .unwrap()
-            .tile(r)
-            .mix(Location::fold_wide(p + ivec2(1, 0)).unwrap().tile(r))
+            .assumed_tile(r)
+            .mix(
+                Location::fold_wide(p + ivec2(1, 0))
+                    .unwrap()
+                    .assumed_tile(r),
+            )
     }
 }
