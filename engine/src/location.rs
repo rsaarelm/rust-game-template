@@ -119,11 +119,19 @@ impl Location {
 
     pub fn tile(&self, r: &impl AsRef<Runtime>) -> Tile {
         let r = r.as_ref();
-        r.terrain_overlay
+        let mut ret = r
+            .terrain_overlay
             .get(self)
             .copied()
             .or_else(|| r.world.tile(self))
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        // Doors are opened when someone walks through.
+        if ret == Tile::Door && self.mob_at(r).is_some() {
+            ret = Tile::Ground;
+        }
+
+        ret
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
