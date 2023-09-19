@@ -37,6 +37,18 @@ pub struct Game {
     pub input_map: InputMap,
 }
 
+static mut GAME: Option<Game> = None;
+
+pub fn init() {
+    unsafe {
+        GAME = Some(Game::default());
+    }
+}
+
+pub fn game() -> &'static mut Game {
+    unsafe { GAME.as_mut().expect("game not initialized") }
+}
+
 impl AsRef<Runtime> for Game {
     fn as_ref(&self) -> &Runtime {
         &self.r
