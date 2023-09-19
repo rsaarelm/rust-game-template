@@ -41,6 +41,9 @@ pub use path::{astar_path, dijkstra_map, flood_fill_4, within_range};
 mod rng;
 pub use rng::{srng, Odds, RngExt};
 
+mod sync;
+pub use sync::SameThread;
+
 mod sys;
 pub use sys::{panic_handler, KeyboardLayout};
 

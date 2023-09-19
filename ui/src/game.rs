@@ -1,6 +1,6 @@
 use engine::prelude::*;
 use navni::{prelude::*, X256Color as X};
-use util::{s4, s8, Layout};
+use util::{s4, s8, Layout, SameThread};
 
 use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
 
@@ -10,6 +10,8 @@ const HEIGHT: u32 = 36;
 
 /// Toplevel context object for game state.
 pub struct Game {
+    same_thread: SameThread,
+
     /// Logic level data.
     pub r: Runtime,
     /// Display buffer.
@@ -46,7 +48,9 @@ pub fn init() {
 }
 
 pub fn game() -> &'static mut Game {
-    unsafe { GAME.as_mut().expect("game not initialized") }
+    let ret = unsafe { GAME.as_mut().expect("game not initialized") };
+    ret.same_thread.assert();
+    ret
 }
 
 impl AsRef<Runtime> for Game {
@@ -80,6 +84,7 @@ impl Default for Game {
         let input_map = InputMap::for_layout(Layout::system_layout());
 
         Game {
+            same_thread: Default::default(),
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
             viewpoint: Default::default(),
