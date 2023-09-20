@@ -119,19 +119,11 @@ impl Location {
 
     pub fn tile(&self, r: &impl AsRef<Runtime>) -> Tile {
         let r = r.as_ref();
-        let mut ret = r
-            .terrain_overlay
+        r.terrain_overlay
             .get(self)
             .copied()
             .or_else(|| r.world.tile(self))
-            .unwrap_or_default();
-
-        // Doors are opened when someone walks through.
-        if ret == Tile::Door && self.mob_at(r).is_some() {
-            ret = Tile::Ground;
-        }
-
-        ret
+            .unwrap_or_default()
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -204,6 +196,22 @@ impl Location {
 
     pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
         !self.tile(r).blocks_movement()
+    }
+
+    pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
+        match self.tile(r) {
+            // Door is held open by someone passing through.
+            Tile::Door if self.mob_at(r).is_some() => false,
+            t => t.blocks_shot(),
+        }
+    }
+
+    pub fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
+        match self.tile(r) {
+            // Door is held open by someone passing through.
+            Tile::Door if self.mob_at(r).is_some() => false,
+            t => t.blocks_sight(),
+        }
     }
 
     pub fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {

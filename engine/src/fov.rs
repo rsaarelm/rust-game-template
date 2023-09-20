@@ -87,7 +87,7 @@ impl Runtime {
                     return None;
                 }
 
-                let is_edge = loc.tile(self.r).blocks_sight();
+                let is_edge = loc.blocks_sight(self.r);
 
                 Some(FovState { is_edge, ..*self })
             }
