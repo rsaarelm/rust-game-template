@@ -41,7 +41,7 @@ pub struct Game {
 
 static mut GAME: Option<Game> = None;
 
-pub fn init() {
+pub fn init_game() {
     unsafe {
         GAME = Some(Game::default());
     }

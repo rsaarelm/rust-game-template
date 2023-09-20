@@ -6,7 +6,7 @@ mod command;
 use command::{Command, CommandState};
 
 mod game;
-pub use game::{game, init, Game};
+pub use game::{game, init_game, Game};
 
 mod input;
 pub use input::{InputAction, InputMap};
