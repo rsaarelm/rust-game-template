@@ -29,7 +29,8 @@ impl ItemKind {
         use EquippedAt::*;
         use ItemKind::*;
         match self {
-            MeleeWeapon | RangedWeapon => slot == RunHand || slot == GunHand,
+            MeleeWeapon => slot == RunHand,
+            RangedWeapon => slot == RunHand || slot == GunHand,
             Armor => slot == Body,
             Ring => slot == Ring1 || slot == Ring2,
             _ => false,
@@ -66,8 +67,12 @@ pub enum EquippedAt {
 }
 
 impl EquippedAt {
+    pub fn is_none(&self) -> bool {
+        matches!(self, EquippedAt::None)
+    }
+
     pub fn is_some(&self) -> bool {
-        !matches!(self, EquippedAt::None)
+        !self.is_none()
     }
 }
 
@@ -96,6 +101,48 @@ impl Entity {
         )
     }
 
+    /// Return slots this piece of equipment can go in.
+    /// Always returns the preferred slot first.
+    pub fn valid_slots(
+        &self,
+        r: &impl AsRef<Runtime>,
+    ) -> impl IntoIterator<Item = &'static EquippedAt> {
+        use EquippedAt::*;
+        use ItemKind::*;
+        match self.get::<ItemKind>(r) {
+            MeleeWeapon => &[RunHand][..],
+            RangedWeapon => &[GunHand, RunHand][..],
+            Armor => &[Body][..],
+            Ring => &[Ring1, Ring2][..],
+            _ => &[],
+        }
+    }
+
+    /// Find a free slot for the item in a mob.
+    ///
+    /// If not found, return the blocking item and slot.
+    pub fn find_slot_in(
+        &self,
+        r: &impl AsRef<Runtime>,
+        mob: &Entity,
+    ) -> std::result::Result<EquippedAt, (EquippedAt, Entity)> {
+        let mut ret = Ok(EquippedAt::None);
+
+        for &slot in self.valid_slots(r) {
+            if let Some(e) = mob.equipment_at(r, slot) {
+                // If colliding at the first (preferred) slot, mark return
+                // value with that slot and entity to be unequipped.
+                if ret.is_ok() {
+                    ret = Err((slot, e));
+                }
+            } else {
+                return Ok(slot);
+            }
+        }
+
+        ret
+    }
+
     pub fn fits(&self, r: &impl AsRef<Runtime>, slot: EquippedAt) -> bool {
         self.get::<ItemKind>(r).fits(slot)
     }
@@ -103,40 +150,24 @@ impl Entity {
     pub fn equip(&self, r: &mut impl AsMut<Runtime>, item: &Entity) {
         let r = r.as_mut();
 
-        if !item.can_be_equipped(r) {
-            msg!("[One] can't equip that."; self.noun(r));
-            return;
-        }
-
         if item.is_equipped(r) {
             msg!("That is already equipped.");
             return;
         }
 
-        let kind = item.get::<ItemKind>(r);
+        let slot = match item.find_slot_in(r, self) {
+            Ok(slot) => slot,
+            Err((slot, previous)) => {
+                // Unequip previous thing if it's in the way.
+                self.unequip(r, &previous);
+                slot
+            }
+        };
 
-        let slots: Vec<EquippedAt> = self
-            .free_slots(r)
-            .into_iter()
-            .filter(|&s| kind.fits(s))
-            .collect();
-
-        if slots.is_empty() {
-            // TODO Try to unequip the item in the way.
-            msg!("[One] can't equip any more of that sort of item."; self.noun(r));
+        if slot.is_none() {
+            msg!("[One] can't equip that."; self.noun(r));
             return;
         }
-
-        let slot = if kind == ItemKind::RangedWeapon
-            && slots.contains(&EquippedAt::GunHand)
-        {
-            // Always start by equipping a ranged weapon in gun hand even if
-            // run hand is also free.
-            EquippedAt::GunHand
-        } else {
-            // Guaranteed to work since we already covered slots.is_empty.
-            slots[0]
-        };
 
         msg!("[One] equip[s] [another]."; self.noun(r), item.noun(r));
         item.set(r, slot);

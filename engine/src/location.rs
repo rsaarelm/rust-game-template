@@ -441,6 +441,12 @@ impl Location {
         // Add more stuff here as needed.
     }
 
+    /// Description for the general area of the location.
+    pub fn region_name(&self, _r: &impl AsRef<Runtime>) -> String {
+        let depth = -self.z;
+        format!("Mazes of Menace: {depth}")
+    }
+
     pub fn damage(
         &self,
         r: &mut impl AsMut<Runtime>,

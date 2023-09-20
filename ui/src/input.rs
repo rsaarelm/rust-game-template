@@ -5,6 +5,14 @@ use navni::{Key, KeyTyped};
 use serde::{Deserialize, Serialize};
 use util::{IndexMap, Layout};
 
+use crate::game;
+
+/// Convenience method, get input action from current navni keypress if you
+/// can make one.
+pub fn input_press() -> Option<InputAction> {
+    game().input_map.get(&navni::keypress()).copied()
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum InputAction {
     North,

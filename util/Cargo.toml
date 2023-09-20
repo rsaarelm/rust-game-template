@@ -25,6 +25,6 @@ serde_with = "3"
 winapi = "0.3"
 
 [dev-dependencies]
-fraction = "0.13"
+fraction = "0.14"
 quickcheck = "1"
 quickcheck_macros = "1"

@@ -3,9 +3,6 @@
 mod buffer;
 pub use buffer::Buffer;
 
-mod cursor;
-pub use cursor::Cursor;
-
 mod pixel;
 pub use pixel::Pixel;
 
@@ -16,8 +13,5 @@ mod image;
 pub use crate::image::{Field, Image, SubImage};
 
 pub mod prelude;
-
-mod window;
-pub use window::Window;
 
 pub type Rect = util::Rect<i32>;

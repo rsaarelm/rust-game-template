@@ -10,9 +10,7 @@ pub use bits::{
 };
 
 mod geom;
-pub use geom::{
-    bresenham_line, s4, s6, s8, scroll_offset, v2, PlottedPoint, VecExt,
-};
+pub use geom::{bresenham_line, s4, s6, s8, v2, PlottedPoint, VecExt};
 
 mod grammar;
 pub use grammar::{Noun, Sentence};

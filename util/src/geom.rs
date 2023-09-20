@@ -7,8 +7,6 @@ use std::{
 use glam::{ivec2, vec2, IVec2, IVec3, Vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-use crate::Rect;
-
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
     use std::ops::Add;
@@ -393,44 +391,6 @@ pub fn bresenham_line(
             Some(ret)
         }
     })
-}
-
-/// Compute an offset to add to canvas rectangle points to show map rectangle
-/// points.
-///
-/// Offsetting will try to ensure maximum amount of map is shown on canvas. If
-/// the map center is near map rectangle's edge, map rectangle will be offset
-/// so it's edge will snap the inside of the canvas rectangle. If the map
-/// rectangle is smaller than the canvas rectangle along either dimension, it
-/// can't fill the canvas rectangle and will be centered on the canvas
-/// rectangle instead along that dimension.
-pub fn scroll_offset(
-    canvas_rect: &Rect<i32>,
-    view_pos: IVec2,
-    map_rect: &Rect<i32>,
-) -> IVec2 {
-    // Starting point, snap to the center of the canvas.
-    let mut offset = view_pos - IVec2::from(canvas_rect.center());
-
-    let offset_rect = *map_rect - offset;
-
-    // Check each axis
-    for d in 0..2 {
-        if offset_rect.dim()[d] < canvas_rect.dim()[d] {
-            // Canvas is big enough (along this axis) to fit the whole arena.
-            // Just center the arena rect then.
-            offset[d] = map_rect.min()[d] - canvas_rect.min()[d]
-                + (map_rect.dim()[d] - canvas_rect.dim()[d]) / 2;
-        } else if offset_rect.min()[d] > canvas_rect.min()[d] {
-            // Snap inside inner edge of the canvas_rect.
-            offset[d] += offset_rect.min()[d] - canvas_rect.min()[d];
-        } else if offset_rect.max()[d] < canvas_rect.max()[d] {
-            // Snap inside outer edge of the canvas_rect.
-            offset[d] -= canvas_rect.max()[d] - offset_rect.max()[d];
-        }
-    }
-
-    offset
 }
 
 /// Floating-point valued point that plots a nice-looking line when repeatedly

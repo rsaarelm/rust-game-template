@@ -9,23 +9,21 @@ pub trait Anim {
     fn render(
         &mut self,
         r: &Runtime,
-        s: &mut Buffer,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
     ) -> bool;
 }
 
-impl<F: FnMut(&Runtime, &mut Buffer, u32, &Window, IVec2) -> bool> Anim for F {
+impl<F: FnMut(&Runtime, u32, &Window, IVec2) -> bool> Anim for F {
     fn render(
         &mut self,
         r: &Runtime,
-        s: &mut Buffer,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
     ) -> bool {
-        (self)(r, s, n_updates, win, draw_offset)
+        (self)(r, n_updates, win, draw_offset)
     }
 }
 
@@ -127,7 +125,6 @@ impl Anim for Particle {
     fn render(
         &mut self,
         r: &Runtime,
-        s: &mut Buffer,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
@@ -138,7 +135,7 @@ impl Anim for Particle {
             return false;
         };
 
-        win.put(s, origin + self.pos.as_ivec2() - draw_offset, self.cell);
+        win.put(origin + self.pos.as_ivec2() - draw_offset, self.cell);
 
         // Tick down lifetime and update position.
         self.pos += self.velocity * n_updates as f32;
@@ -165,7 +162,6 @@ impl Anim for Explosion {
     fn render(
         &mut self,
         r: &Runtime,
-        s: &mut Buffer,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
@@ -189,7 +185,7 @@ impl Anim for Explosion {
             v.x /= 2;
 
             if v.taxi_len() < outer && v.taxi_len() >= inner {
-                win.put(s, p, CharCell::c('*').col(X::YELLOW));
+                win.put(p, CharCell::c('*').col(X::YELLOW));
             }
         }
 
@@ -220,7 +216,6 @@ impl Anim for Lightning {
     fn render(
         &mut self,
         r: &Runtime,
-        s: &mut Buffer,
         n_updates: u32,
         win: &Window,
         draw_offset: IVec2,
@@ -233,7 +228,7 @@ impl Anim for Lightning {
         let mut x = origin.x;
         for y in (0..=origin.y).rev() {
             let p = ivec2(x, y);
-            win.put(s, p, CharCell::c('|').col(X::AQUA));
+            win.put(p, CharCell::c('|').col(X::AQUA));
             match util::srng(&(p, self.lifetime / 5)).gen_range(0..7) {
                 0 if x >= origin.x => x -= 1,
                 1 if x <= origin.x => x += 1,

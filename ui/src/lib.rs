@@ -1,20 +1,50 @@
 //! Game user interface machinery
 
+pub mod prelude {
+    use navni::prelude::*;
+
+    pub use crate::{
+        anim::Anim, cell, game, input_press, Backdrop, Cursor, Game,
+        InputAction, Widget, Window,
+    };
+
+    pub type Buffer = gfx::Buffer<CharCell>;
+    pub type Rect = util::Rect<i32>;
+}
+
 pub mod anim;
 
+mod backdrop;
+pub use backdrop::Backdrop;
+
 mod command;
-use command::{Command, CommandState};
+use command::Command;
+
+mod cursor;
+pub use cursor::Cursor;
 
 mod game;
 pub use game::{game, init_game, Game};
 
 mod input;
-pub use input::{InputAction, InputMap};
-
-pub mod prelude;
+pub use input::{input_press, InputAction, InputMap};
 
 mod tile_display;
 pub use tile_display::terrain_cell;
+
+mod widget;
+pub use widget::{Centered, ConfirmationDialog, Widget};
+
+mod window;
+pub use window::Window;
+
+pub fn cell(
+    c: char,
+    fore: impl Into<navni::X256Color>,
+    back: impl Into<navni::X256Color>,
+) -> navni::CharCell {
+    navni::CharCell::new(c, fore, back)
+}
 
 pub const LIGHT_PALETTE: [navni::Rgba; 16] = {
     use navni::Rgba;

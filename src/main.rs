@@ -3,13 +3,13 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-
 use engine::prelude::*;
-use navni::prelude::*;
-use ui::Game;
+use ui::game;
 use util::{IncrementalOutline, Logos};
 
-mod game_screen;
+mod map_view;
+mod run;
+mod view;
 
 pub const GAME_NAME: &str = "gametemplate";
 
@@ -44,14 +44,20 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| Logos::sample(&mut rand::thread_rng(), 10));
     log::info!("seed: {seed}");
 
-    let game = Game::new(Runtime::new(WorldSpec::new(seed)).unwrap());
+    navni::run(GAME_NAME, async {
+        ui::init_game();
+        game().r = Runtime::new(WorldSpec::new(Logos::new("xyzzy"))).unwrap();
+        game().viewpoint = game()
+            .r
+            .player()
+            .and_then(|p| p.loc(game()))
+            .unwrap_or_default();
+        game().camera = game().viewpoint;
 
-    run(
-        &Config {
-            application_name: GAME_NAME.to_string(),
-            system_color_palette: Some(ui::LIGHT_PALETTE),
-            ..Default::default()
-        },
-        (game, game_screen::run),
-    );
+        navni::set_palette(&ui::LIGHT_PALETTE);
+
+        run::explore().await;
+    });
+
+    Ok(())
 }

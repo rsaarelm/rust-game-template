@@ -6,7 +6,7 @@ use util::{s8, srng};
 use navni::X256Color as X;
 
 #[rustfmt::skip]
-const SHARP_CORNERS: [char; 16] = [
+pub(crate) const SHARP_CORNERS: [char; 16] = [
     '│', '╵', '╶', '└', '╷', '│', '┌', '├',
     '╴', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];

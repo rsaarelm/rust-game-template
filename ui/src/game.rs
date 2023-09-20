@@ -2,7 +2,7 @@ use engine::prelude::*;
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
 
-use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
+use crate::{anim, prelude::*, Command, InputMap};
 
 // Maximum GUI terminal size.
 // Get just about to a size where a whole sector fits on map screen.
@@ -29,8 +29,6 @@ pub struct Game {
     /// Receiver for engine events.
     recv: Receiver,
     pub msg: Vec<String>,
-
-    pub cmd: CommandState,
 
     /// Animations below the fog of war.
     ground_anims: Vec<Box<dyn Anim>>,
@@ -94,7 +92,6 @@ impl Default for Game {
             planned_path: Default::default(),
             recv: Default::default(),
             msg: Default::default(),
-            cmd: Default::default(),
             ground_anims: Default::default(),
             sky_anims: Default::default(),
             input_map,
@@ -110,28 +107,7 @@ impl Game {
         }
     }
 
-    pub fn tick(&mut self, b: &dyn navni::Backend) {
-        // Check for window resize
-        let (mut w, mut h) = b.char_resolution();
-        if w == 0 || h == 0 {
-            // Out of focus window probably, do nothing.
-        } else {
-            if b.is_gui() {
-                // Don't go too tiny compared to target size.
-                while w > WIDTH || h > HEIGHT {
-                    w /= 2;
-                    h /= 2;
-                }
-            }
-
-            if self.s.width() != w as i32 || self.s.height() != h as i32 {
-                self.s = Buffer::new(w, h);
-
-                // Reset scroll when resized.
-                self.camera = self.viewpoint;
-            }
-        }
-
+    pub fn tick(&mut self) {
         // Clear the dead from selection.
         for i in (0..self.selection.len()).rev() {
             if !self.selection[i].is_alive(self) {
@@ -147,14 +123,12 @@ impl Game {
             self.r.tick();
         }
 
-        // Clear message buffer if any key is pressed.
-        if b.keypress().is_some() {
-            self.msg.clear();
-        }
+        // Update camera in case engine tick moved player.
+        self.update_camera();
 
-        // Execute completed commands.
-        if let Some(cmd) = self.cmd.pop() {
-            self.act(cmd)
+        // Clear message buffer if any key is pressed.
+        if navni::keypress().is_some() {
+            self.msg.clear();
         }
 
         // Pump messages from world
@@ -217,24 +191,12 @@ impl Game {
 
                     for (p, mut t) in posns.into_iter().chain(sides) {
                         self.add_anim(Box::new(
-                            move |_: &Runtime,
-                                  s: &mut Buffer,
-                                  n,
-                                  win: &Window,
-                                  off| {
+                            move |_: &Runtime, n, win: &Window, off| {
                                 let p = p - off;
                                 if t > 0 {
-                                    win.put(
-                                        s,
-                                        p,
-                                        CharCell::c('░').col(X::BROWN),
-                                    );
+                                    win.put(p, CharCell::c('░').col(X::BROWN));
                                 } else {
-                                    win.put(
-                                        s,
-                                        p,
-                                        CharCell::c('*').col(X::YELLOW),
-                                    );
+                                    win.put(p, CharCell::c('*').col(X::YELLOW));
                                 }
                                 anim::countdown(n, &mut t)
                             },
@@ -293,36 +255,12 @@ impl Game {
         }
     }
 
-    pub fn draw_ground_anims(
-        &mut self,
-        n_updates: u32,
-        win: &Window,
-        draw_offset: IVec2,
-    ) {
-        draw_anims(
-            &self.r,
-            &mut self.s,
-            n_updates,
-            win,
-            draw_offset,
-            &mut self.ground_anims,
-        );
+    pub fn draw_ground_anims(&mut self, win: &Window, draw_offset: IVec2) {
+        draw_anims(&self.r, win, draw_offset, &mut self.ground_anims);
     }
 
-    pub fn draw_sky_anims(
-        &mut self,
-        n_updates: u32,
-        win: &Window,
-        draw_offset: IVec2,
-    ) {
-        draw_anims(
-            &self.r,
-            &mut self.s,
-            n_updates,
-            win,
-            draw_offset,
-            &mut self.sky_anims,
-        );
+    pub fn draw_sky_anims(&mut self, win: &Window, draw_offset: IVec2) {
+        draw_anims(&self.r, win, draw_offset, &mut self.sky_anims);
     }
 
     pub fn add_anim(&mut self, anim: Box<dyn Anim>) {
@@ -333,12 +271,38 @@ impl Game {
         self.sky_anims.push(anim);
     }
 
-    pub fn draw(&self, b: &mut dyn navni::Backend) {
-        b.draw_chars(
+    /// The async bottom point where things get actually drawn to screen.
+    ///
+    /// If the screen got resized, all the layout must be done again. As a
+    /// hack around this, `draw` will return `None` on a resize that can be
+    /// caught at a higher level and used to abort a stack of modal options.
+    pub async fn draw(&mut self) -> Option<()> {
+        // Check for window resize
+        let (w, h) = navni::char_resolution(WIDTH, HEIGHT);
+        let mut was_resized = false;
+
+        if w != 0
+            && h != 0
+            && (self.s.width() != w as i32 || self.s.height() != h as i32)
+        {
+            self.s = Buffer::new(w, h);
+
+            // Reset scroll when resized.
+            self.camera = self.viewpoint;
+
+            // Signal the caller that the screen layout has been
+            // invalidated.
+            was_resized = true;
+        }
+
+        navni::draw_chars(
             self.s.width() as _,
             self.s.height() as _,
             self.s.as_ref(),
-        );
+        )
+        .await;
+
+        (!was_resized).then_some(())
     }
 
     pub fn act(&mut self, cmd: impl Into<Command>) {
@@ -459,6 +423,9 @@ impl Game {
             }
             _ => {}
         }
+
+        // Player may have moved, check camera position.
+        self.update_camera();
     }
 
     pub fn process_action(&mut self, action: InputAction) {
@@ -486,6 +453,7 @@ impl Game {
                 }
             }
             Pass => self.act(Action::Pass),
+            /*
             Inventory => {
                 if let Some(p) = self.current_active() {
                     if p.inventory(self).next().is_some() {
@@ -495,43 +463,13 @@ impl Game {
                     }
                 }
             }
+            */
+            Inventory => {}
             Powers => {}
-            Equipment => {
-                if let Some(p) = self.current_active() {
-                    if p.equipment(self).next().is_some() {
-                        self.cmd = CommandState::Partial(Part::ViewEquipment);
-                    } else {
-                        msg!("[One] [has] nothing equipped."; p.noun(self));
-                    }
-                }
-            }
-            Drop => {
-                if let Some(p) = self.current_active() {
-                    if p.inventory(self).next().is_some() {
-                        self.cmd = CommandState::Partial(Part::Drop);
-                    } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(self));
-                    }
-                }
-            }
-            Throw => {
-                if let Some(p) = self.current_active() {
-                    if p.inventory(self).next().is_some() {
-                        self.cmd = CommandState::Partial(Part::Throw);
-                    } else {
-                        msg!("[One] [is] not carrying anything."; p.noun(self));
-                    }
-                }
-            }
-            Use => {
-                if let Some(p) = self.current_active() {
-                    if p.inventory(self).any(|e| e.can_be_used(self)) {
-                        self.cmd = CommandState::Partial(Part::Use);
-                    } else {
-                        msg!("[One] [has] nothing usable."; p.noun(self));
-                    }
-                }
-            }
+            Equipment => {}
+            Drop => {}
+            Throw => {}
+            Use => {}
             QuitGame => {}
             Cancel => {
                 if let Some(p) = self.current_active() {
@@ -588,7 +526,7 @@ impl Game {
             || self.selection.iter().any(|p| p.is_player(self))
     }
 
-    fn autofight(&mut self, p: Entity) -> bool {
+    pub fn autofight(&mut self, p: Entity) -> bool {
         if let Some(enemy) = p.first_visible_enemy(self) {
             if let Some(atk) = p.decide(self, Goal::Attack(enemy)) {
                 self.act(atk);
@@ -616,21 +554,30 @@ impl Game {
             self.r = r;
         }
     }
+
+    fn update_camera(&mut self) {
+        if let Some(loc) = self.current_active().and_then(|p| p.loc(self)) {
+            if loc != self.viewpoint {
+                self.viewpoint = loc;
+                self.camera = self.viewpoint;
+                self.planned_path.clear();
+            }
+        }
+    }
 }
 
 fn draw_anims(
     r: &impl AsRef<Runtime>,
-    s: &mut Buffer,
-    n_updates: u32,
     win: &Window,
     draw_offset: IVec2,
     set: &mut Vec<Box<dyn Anim>>,
 ) {
+    let n_updates = navni::logical_frames_elapsed();
     let r = r.as_ref();
     for i in (0..set.len()).rev() {
         // Iterate anims backwards so when we swap-remove expired
         // animations this doesn't affect upcoming elements.
-        if !set[i].render(r, s, n_updates, win, draw_offset) {
+        if !set[i].render(r, n_updates, win, draw_offset) {
             set.swap_remove(i);
         }
     }

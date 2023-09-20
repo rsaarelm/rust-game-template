@@ -148,6 +148,8 @@ impl Runtime {
             )));
             npc.place(self, loc);
             if *name == "Ranger" {
+                self.wish(npc, "dagger").unwrap();
+                self.wish(npc, "sword").unwrap();
                 self.wish(npc, "magic map").unwrap();
             }
             if *name == "Monk" {
