@@ -120,8 +120,12 @@ impl Entity {
 
     pub fn place(&self, r: &mut impl AsMut<Runtime>, place: impl Into<Place>) {
         let r = r.as_mut();
-        r.placement.insert(place, *self);
-        self.post_move_hook(r);
+        let place = place.into();
+        if Some(place) != r.placement.get(self) {
+            self.detach(r);
+            r.placement.insert(place, *self);
+            self.post_move_hook(r);
+        }
     }
 
     /// Place an item near `loc`, deviating to avoid similar entities.

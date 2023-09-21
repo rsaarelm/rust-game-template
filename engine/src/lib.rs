@@ -17,7 +17,7 @@ pub const ALERT_RADIUS: i32 = 9;
 pub const SHOUT_RADIUS: i32 = 6;
 
 /// How far can you throw items.
-pub const THROW_DIST: i32 = 10;
+pub const THROW_RANGE: i32 = 10;
 
 /// How many move phases does a complete turn contain.
 pub const PHASES_IN_TURN: i64 = 12;

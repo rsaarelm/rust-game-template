@@ -1,9 +1,11 @@
 //! Entity logic for usable items.
 
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
+use util::{s4, RngExt};
 
-use crate::{ecs::ItemPower, prelude::*};
+use crate::{ecs::ItemPower, prelude::*, THROW_RANGE};
 
 #[derive(
     Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize,
@@ -145,11 +147,24 @@ impl Entity {
         self.get::<ItemKind>(r) == ItemKind::RangedWeapon
     }
 
+    /// Detach an equipped item.
+    ///
+    /// Return whether anything was done.
+    pub fn detach(&self, r: &mut impl AsMut<Runtime>) -> bool {
+        let r = r.as_mut();
+
+        if self.is_equipped(r) {
+            self.set(r, EquippedAt::None);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn unequip(&self, r: &mut impl AsMut<Runtime>, item: &Entity) {
         let r = r.as_mut();
 
-        if item.is_equipped(r) {
-            item.set(r, EquippedAt::None);
+        if item.detach(r) {
             msg!("[One] remove[s] [another]."; self.noun(r), item.noun(r));
             self.complete_turn(r);
         } else {
@@ -215,9 +230,6 @@ impl Entity {
         let r = r.as_mut();
 
         if let Some(loc) = self.loc(r) {
-            if item.is_equipped(r) {
-                self.unequip(r, item);
-            }
             item.place_on_open_spot(r, loc);
             msg!("[One] drop[s] [another]."; self.noun(r), item.noun(r));
         } else {
@@ -249,10 +261,46 @@ impl Entity {
         &self,
         r: &mut impl AsMut<Runtime>,
         item: &Entity,
-        _v: IVec2,
+        mut v: IVec2,
     ) {
-        // TODO 2023-02-01 Item throw logic
-        msg!("Whoosh!");
-        self.drop(r, item);
+        let r = r.as_mut();
+        let Some(loc) = self.loc(r) else { return };
+
+        // Bad aim when confused.
+        let is_confused = self.is_confused(r) && r.rng.one_chance_in(3);
+        let mut perp = Some(*self);
+        if is_confused {
+            v = *s4::DIR.choose(&mut r.rng).unwrap();
+
+            // Perp controls friendly fire in trace, when confused you hit
+            // allies.
+            perp = None;
+        }
+
+        let target = r.trace_target(perp, loc, v, THROW_RANGE as usize);
+
+        if target == loc {
+            // No room to throw, just drop it.
+            self.drop(r, item);
+        } else {
+            // Throw time.
+            send_msg(Msg::Fire(*self, v));
+
+            if let Some(mob) = target.mob_at(r) {
+                if self.try_to_hit(r, &mob) {
+                    // TODO Figure out throw damage based on item (and thrower strength?)
+                    // TODO Throw to-hit determination should be different than melee, wielded weapon doesn't matter for one thing
+                    // TODO Mulch items when they are used as weapons
+                    mob.damage(r, Some(*self), 4);
+                    msg!("[One] hit[s] [another]."; item.noun(r), mob.noun(r));
+                } else {
+                    // TODO The projectile should keep flying past the mobs it misses
+                    msg!("[One] miss[es] [another]."; item.noun(r), mob.noun(r));
+                }
+            } else {
+                msg!("[One] throw[s] [another]."; self.noun(r), item.noun(r));
+            }
+            item.place(r, target);
+        }
     }
 }

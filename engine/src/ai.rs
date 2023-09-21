@@ -3,7 +3,7 @@ use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::s4;
 
-use crate::{ecs::IsFriendly, prelude::*, EquippedAt, FOV_RADIUS, THROW_DIST};
+use crate::{ecs::IsFriendly, prelude::*, EquippedAt, FOV_RADIUS, THROW_RANGE};
 
 impl Entity {
     /// Decide on the next action given a goal.
@@ -313,7 +313,7 @@ impl Entity {
         if let Some(item) = self.equipment_at(r, weapon_slot) {
             if item.is_ranged_weapon(r) {
                 // TODO Varying ranges for ranged weapons?
-                range = THROW_DIST as usize;
+                range = THROW_RANGE as usize;
             }
         }
 

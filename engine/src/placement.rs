@@ -115,6 +115,10 @@ impl Placement {
         }
     }
 
+    pub fn get(&self, e: &Entity) -> Option<Place> {
+        self.places.get(e).copied()
+    }
+
     pub fn contains(&self, container: &Entity, e: &Entity) -> bool {
         for i in self.entities_in(container) {
             if e == &i {
