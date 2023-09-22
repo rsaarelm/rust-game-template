@@ -8,7 +8,12 @@ use regex::Regex;
 /// sized segments.
 fn split_fitting(max_width: usize, text: &str) -> (&str, &str) {
     // Can't consume anything if width is zero.
-    debug_assert!(max_width > 0);
+    assert!(max_width > 0);
+
+    // Text fits in a single line and has no newlines, return as is.
+    if text.chars().count() <= max_width && !text.chars().any(|c| c == '\n') {
+        return (text, "");
+    }
 
     // Position of end of text that fits in split-off line.
     let mut line_end = None;
@@ -48,7 +53,7 @@ fn split_fitting(max_width: usize, text: &str) -> (&str, &str) {
         Some(n) => n,
     };
 
-    // Cut off the white space in between split lines.
+    // Cut off the whitespace in between split lines.
     // Start with the assumption that the whole remaining string is
     // whitespace, truncate in the loop.
     let mut whitespace_span = text[line_end..].len();
@@ -284,6 +289,12 @@ All mimsy were the borogoves,
                 "      And the mome raths",
                 "outgrabe."
             ]
+        );
+
+        assert_eq!(
+            split(28, "Really cancel the quitting of the stopping?",)
+                .collect::<Vec<_>>(),
+            vec!["Really cancel the quitting", "of the stopping?"]
         );
     }
 
