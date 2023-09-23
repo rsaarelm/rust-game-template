@@ -1,4 +1,6 @@
 use derive_deref::Deref;
+use engine::Action;
+use glam::ivec2;
 use navni::{Key, KeyTyped};
 use serde::{Deserialize, Serialize};
 use util::{IndexMap, Layout};
@@ -34,6 +36,10 @@ pub enum InputAction {
     BecomePlayer,
     Quicksave,
     Quickload,
+    ScrollNorth,
+    ScrollSouth,
+    ScrollWest,
+    ScrollEast,
 }
 
 #[derive(Clone, Deref, Eq, PartialEq, Serialize, Deserialize)]
@@ -81,6 +87,10 @@ impl Default for InputMap {
             ("Ret", BecomePlayer),
             ("F5", Quicksave),
             ("F9", Quickload),
+            ("S-Up", ScrollNorth),
+            ("S-Left", ScrollWest),
+            ("S-Down", ScrollSouth),
+            ("S-Right", ScrollEast),
         ] {
             ret.insert(
                 k.parse::<KeyTyped>()
@@ -119,5 +129,25 @@ impl InputMap {
         self.0
             .iter()
             .find_map(|(k, v)| (*v == action).then_some(*k))
+    }
+}
+
+impl TryFrom<InputAction> for Action {
+    type Error = ();
+
+    fn try_from(value: InputAction) -> Result<Self, Self::Error> {
+        use InputAction::*;
+        match value {
+            North => Ok(Action::Bump(ivec2(0, -1))),
+            South => Ok(Action::Bump(ivec2(0, 1))),
+            West => Ok(Action::Bump(ivec2(-1, 0))),
+            East => Ok(Action::Bump(ivec2(1, 0))),
+            FireNorth => Ok(Action::Shoot(ivec2(0, -1))),
+            FireSouth => Ok(Action::Shoot(ivec2(0, 1))),
+            FireWest => Ok(Action::Shoot(ivec2(-1, 0))),
+            FireEast => Ok(Action::Shoot(ivec2(1, 0))),
+            Pass => Ok(Action::Pass),
+            _ => Err(()),
+        }
     }
 }

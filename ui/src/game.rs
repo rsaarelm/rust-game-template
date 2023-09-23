@@ -552,6 +552,10 @@ impl Game {
             }
             Quicksave => {}
             Quickload => {}
+            ScrollNorth => {}
+            ScrollEast => {}
+            ScrollSouth => {}
+            ScrollWest => {}
         }
     }
 
