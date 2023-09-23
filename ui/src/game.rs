@@ -4,9 +4,10 @@ use util::{s4, s8, Layout, SameThread};
 
 use crate::{anim, command::Part, prelude::*, Command, CommandState, InputMap};
 
-// Target size, looks nice on a 1080p display.
-const WIDTH: u32 = 120;
-const HEIGHT: u32 = 36;
+// Maximum GUI terminal size.
+// Get just about to a size where a whole sector fits on map screen.
+const WIDTH: u32 = 150;
+const HEIGHT: u32 = 45;
 
 /// Toplevel context object for game state.
 pub struct Game {
