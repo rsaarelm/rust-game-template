@@ -199,8 +199,31 @@ impl<P: Pixel> Buffer<P> {
         }
     }
 
+    pub fn from_fn(width: u32, height: u32, f: impl Fn(i32, i32) -> P) -> Self {
+        let area = Rect::sized([width as i32, height as i32]);
+        let data = (0..(width * height) as usize)
+            .map(|i| {
+                let [x, y] = area.get(i);
+                f(x, y)
+            })
+            .collect();
+        Buffer {
+            width,
+            height,
+            data,
+        }
+    }
+
     pub fn pixels_mut(&mut self) -> impl Iterator<Item = &mut P> {
         self.data.iter_mut()
+    }
+
+    pub fn data(&self) -> &[P] {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut [P] {
+        &mut self.data
     }
 
     pub fn set_key_to_transparent(&mut self, key: P) {
