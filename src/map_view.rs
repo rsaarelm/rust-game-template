@@ -98,8 +98,9 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     // Coordinate space helpers.
-    let screen_to_wide_pos =
-        |screen_pos: [i32; 2]| v2(screen_pos) - v2(win.bounds().min()) + offset;
+    let screen_to_wide_pos = |screen_pos: [i32; 2]| {
+        v2(screen_pos) - v2(sector_win.bounds().min()) + offset
+    };
 
     let screen_to_loc_pos = |screen_pos: [i32; 2]| {
         // Get wide location pos corresponding to screen space pos.
