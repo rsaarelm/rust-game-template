@@ -62,16 +62,14 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
         scroll_offset(&win.area(), camera.unfold_wide(), &wide_sector_bounds);
 
     // Snap camera to view center.
-    let (c1, c2) =
-        Location::fold_wide_sides(offset + v2(win.area().dim()) / ivec2(2, 2));
+    let camera =
+        Location::fold_wide_sides(offset + v2(win.area().dim()) / ivec2(2, 2))
+            .0;
 
-    // The repositioning is a bit fiddly wrt. half-cell positions. This step
-    // is needed or there will be artifacts with horizontal scrolling.
-    if offset.x % 2 == 1 {
-        camera = c1;
-    } else {
-        camera = c2;
-    }
+    // Calculate offset again with new camera to cover for off-by-one problems
+    // from the half-cells.
+    let offset =
+        scroll_offset(&win.area(), camera.unfold_wide(), &wide_sector_bounds);
 
     // Camera has moved, return this as the action unless we end up with a
     // better one
