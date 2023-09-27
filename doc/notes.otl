@@ -1,0 +1,26 @@
+Misc notes about non-obvious bits
+Should eventually be sorted into a more coherent document
+For now I'm just writing these down as I run into them
+
+Async runner functions and display frames
+	Runner functions like run::explore, run::aim should do a draw().await early on to start a new frame
+	If they are triggered by an earlier runner and don't switch frame, they will be seeing the same keypress the previous frame saw
+	This causes the keypress to be used for two different actions
+
+Upstairs go north, downstairs go south on maps
+	Because north = up, south = down, visually
+
+ECS components for entities should have default values that make sense for "not defined for this entity"
+	Eg. if it's just a number, zero should be same as "not defined"
+	Wrap the type in Option if a missing value isn't clearly expressed otherwise
+	Enum-type components have a `None` value in the main enum just to avoid the extra layering of an Option around it
+		This might be bad design and need to be changed
+
+The widget idiom
+	Widgets are basically fancier IMGUI buttons, up to full game map view
+	The idea is to have complex UI logic inside them, but never do mutable actions directly when the widget is being rendered
+	Instead, the widget will return a typed value describing actions
+		This can be an enum sum of multiple different actions, in case of things like map view
+	The caller can then choose to perform the changes indicated by the return value or ignore it
+	This lets us have an active or an inactive map widget on screen, depending on what is done with the return value
+	Most of the complexity involved with the widget display is capsulated inside the draw command
