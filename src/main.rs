@@ -39,14 +39,15 @@ fn main() -> anyhow::Result<()> {
     }
     engine::register_mods(mods);
 
-    let seed = args
-        .seed
-        .unwrap_or_else(|| Logos::sample(&mut rand::thread_rng(), 10));
-    log::info!("seed: {seed}");
-
     navni::run(GAME_NAME, async {
         ui::init_game();
-        game().r = Runtime::new(WorldSpec::new(Logos::new("xyzzy"))).unwrap();
+
+        let seed = args.seed.unwrap_or_else(|| {
+            Logos::sample(&mut util::srng(&navni::now().to_le_bytes()), 10)
+        });
+        log::info!("seed: {seed}");
+
+        game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
         game().viewpoint = game()
             .r
             .player()
