@@ -362,6 +362,17 @@ mod test {
         }
     }
 
+    #[test]
+    fn seeding() {
+        // Check that seeding works the same way on all platforms.
+        let seed = Logos::new("xyzzyplugh");
+        let mut rng = crate::rng::srng(&seed);
+        assert_eq!(rng.gen_range(0..100), 80);
+        assert_eq!(rng.gen_range(0..100), 10);
+        assert_eq!(rng.gen_range(0..100), 56);
+        assert_eq!(rng.gen_range(0..100), 38);
+    }
+
     #[quickcheck]
     fn bytes_to_logos(bytes: Vec<u8>) -> bool {
         let logos = Logos::from_bytes(&bytes);
