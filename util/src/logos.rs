@@ -365,12 +365,24 @@ mod test {
     #[test]
     fn seeding() {
         // Check that seeding works the same way on all platforms.
-        let seed = Logos::new("xyzzyplugh");
+        let seed = Logos::new("squeamish ossifrage");
+
+        // Print the correct sequence to stderr if the test goes wrong.
         let mut rng = crate::rng::srng(&seed);
-        assert_eq!(rng.gen_range(0..100), 80);
+        eprintln!(
+            "The sequence should be {} {} {} {}",
+            rng.gen_range(0..100),
+            rng.gen_range(0..100),
+            rng.gen_range(0..100),
+            rng.gen_range(0..100)
+        );
+
+        // For real now.
+        let mut rng = crate::rng::srng(&seed);
         assert_eq!(rng.gen_range(0..100), 10);
-        assert_eq!(rng.gen_range(0..100), 56);
-        assert_eq!(rng.gen_range(0..100), 38);
+        assert_eq!(rng.gen_range(0..100), 11);
+        assert_eq!(rng.gen_range(0..100), 85);
+        assert_eq!(rng.gen_range(0..100), 17);
     }
 
     #[quickcheck]

@@ -49,8 +49,6 @@ pub mod text;
 
 mod unchecked_write;
 
-pub type FastHasher = rustc_hash::FxHasher;
-
 /// Map with an efficient hash function.
 pub use rustc_hash::FxHashMap as HashMap;
 
