@@ -36,4 +36,9 @@ Gamestate reproducibility
 		Different behavior on different platforms
 			Is the RNG same on 32-bit and 64-bit platforms?
 			Is the RNG same on big-endian and little-endian platforms?
+		Rely on a hash function that's not stable over platforms
+			FxHash hashing seems to vary between 32 and 64 bits
+			Use a specific named hash implementation like twox_hash
 	The util crate should provide a RNG that works the same on all platforms
+		The RNG algorithm needs to be known
+		Just going with "whatever the standard library provides" will break reproducibility if the standard library changes their algorithm
