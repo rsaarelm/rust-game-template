@@ -24,3 +24,16 @@ The widget idiom
 	The caller can then choose to perform the changes indicated by the return value or ignore it
 	This lets us have an active or an inactive map widget on screen, depending on what is done with the return value
 	Most of the complexity involved with the widget display is capsulated inside the draw command
+
+Gamestate reproducibility
+	The game must end up in the exact same state in every run on every platform given the same initial RNG seed and sequence of player inputs
+	Ways to break state reproducibility
+		Rely on the iteration order of a Hash based container at any point
+			Avoid HashMap and HashSet in map generation or determinining the order of acting entities
+			Use BTreeMap/Set or IndexMap/Set instead
+		Mixing user interface actions or wall clock time with game mechanics
+			Have the runtime use its own RNG and don't have UI affect it by any other means than pushing command inputs to runtime
+		Different behavior on different platforms
+			Is the RNG same on 32-bit and 64-bit platforms?
+			Is the RNG same on big-endian and little-endian platforms?
+	The util crate should provide a RNG that works the same on all platforms
