@@ -576,6 +576,13 @@ impl Game {
 
     pub fn replace_runtime(&mut self, r: Runtime) {
         self.r = r;
+
+        // If player was in the middle of a long action when game was saved,
+        // abort that. It's confusing to load back into game where the player
+        // is running around.
+        if let Some(p) = self.current_active() {
+            p.clear_goal(self);
+        }
     }
 
     fn update_camera(&mut self) {
