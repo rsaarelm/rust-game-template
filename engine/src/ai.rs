@@ -147,7 +147,7 @@ impl Entity {
         }
 
         // We've got a pathfinding task from loc to dest.
-        if loc == dest {
+        if loc.follow(r) == dest.follow(r) {
             // Drop out if already arrived.
             return None;
         }
