@@ -227,6 +227,10 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
             ret = Some(DirectCommand(act));
         } else if a == InputAction::Cycle {
             ret = Some(NextEntity);
+        } else if a == InputAction::BecomePlayer {
+            if let Some(p) = game().current_active() {
+                ret = Some(BecomePlayer(p));
+            }
         }
     }
 
