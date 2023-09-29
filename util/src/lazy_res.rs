@@ -1,4 +1,8 @@
-use std::{fmt, ops::Deref, sync::OnceLock};
+use std::{
+    fmt,
+    ops::Deref,
+    sync::{Arc, OnceLock},
+};
 
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -10,7 +14,7 @@ use serde::{Deserialize, Serialize, Serializer};
 ///
 /// Failing to parse the resource causes a runtime panic.
 #[derive(Clone, Default)]
-pub struct LazyRes<S, T>(S, OnceLock<T>);
+pub struct LazyRes<S, T>(S, Arc<OnceLock<T>>);
 
 impl<S, T> LazyRes<S, T> {
     pub fn new(seed: impl Into<S>) -> Self {
