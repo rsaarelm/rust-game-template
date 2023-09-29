@@ -474,6 +474,7 @@ impl Game {
             Throw => {}
             Use => {}
             QuitGame => {}
+            ForfeitRun => {}
             Cancel => {
                 if let Some(p) = self.current_active() {
                     if p.is_player(self) {
@@ -597,7 +598,7 @@ impl Game {
         }
     }
 
-    pub fn quit(&mut self) {
+    pub fn forfeit(&mut self) {
         while let Some(c) = self.current_active() {
             c.die(self, None);
         }

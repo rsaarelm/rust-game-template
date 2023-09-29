@@ -174,6 +174,12 @@ impl Widget for StatusPanel {
         writeln!(cur);
         command_help(&mut cur, Cancel, "cancel");
 
+        cur.pos.y = win.height() - 1;
+        cur.pos.x = 0;
+        if cur.print_button("forfeit run") {
+            actions2.push(ForfeitRun);
+        }
+
         // There should be at most one input action caught up in these, return
         // that as the widget return value.
         actions.into_iter().chain(actions2).next()

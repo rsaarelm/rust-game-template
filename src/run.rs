@@ -74,17 +74,6 @@ pub async fn explore() {
             }
         }
 
-        if navni::keypress() == "C-c".parse().unwrap() {
-            break;
-        }
-
-        if navni::keypress() == "C-q".parse().unwrap() {
-            if ask("Really abandon your game?").await {
-                game().quit();
-                break;
-            }
-        }
-
         match input_press().or(side_action) {
             Some(InputAction::Inventory) if !side.is_zero() => {
                 match inventory_choice(&side).await {
@@ -154,6 +143,15 @@ pub async fn explore() {
                     if !game().autofight(p) {
                         game().act(Goal::StartAutoexplore);
                     }
+                }
+            }
+            Some(InputAction::QuitGame) => {
+                break;
+            }
+            Some(InputAction::ForfeitRun) => {
+                if ask("Really forfeit your game?").await {
+                    game().forfeit();
+                    break;
                 }
             }
             _ => {}
