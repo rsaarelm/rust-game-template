@@ -127,8 +127,10 @@ impl Game {
         // Update camera in case engine tick moved player.
         self.update_camera();
 
-        // Clear message buffer if any key is pressed.
-        if navni::keypress().is_some() {
+        // Clear message buffer if any key is pressed or the mouse is clicked.
+        if navni::keypress().is_some()
+            || matches!(navni::mouse_state(), MouseState::Release(_, _, _))
+        {
             self.msg.clear();
         }
 
