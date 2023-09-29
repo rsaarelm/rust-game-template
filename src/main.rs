@@ -42,12 +42,45 @@ fn main() -> anyhow::Result<()> {
     navni::run(GAME_NAME, async {
         ui::init_game();
 
-        let seed = args.seed.unwrap_or_else(|| {
-            Logos::sample(&mut util::srng(&navni::now().to_le_bytes()), 10)
-        });
-        log::info!("seed: {seed}");
+        // Restore game or init a new one.
+        loop {
+            match game().load(GAME_NAME) {
+                Ok(None) => {
+                    // No save file found, initialize a new game.
+                    let seed = args.seed.unwrap_or_else(|| {
+                        Logos::sample(
+                            &mut util::srng(&navni::now().to_le_bytes()),
+                            10,
+                        )
+                    });
+                    log::info!("seed: {seed}");
 
-        game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
+                    game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
+
+                    msg!("Welcome to {}!", GAME_NAME);
+                }
+                Ok(Some(save)) => {
+                    // Load the save.
+                    game().replace_runtime(save);
+                    msg!("Welcome back!");
+                }
+                Err(_) => {
+                    game().draw().await;
+                    if crate::run::ask("Corrupt save file detected. Delete it?")
+                        .await
+                    {
+                        game().delete_save(GAME_NAME);
+                        continue;
+                    } else {
+                        // Can't load the save file and can't clobber it, exiting
+                        // game.
+                        return;
+                    }
+                }
+            }
+            break;
+        }
+
         game().viewpoint = game()
             .r
             .player()
@@ -58,6 +91,13 @@ fn main() -> anyhow::Result<()> {
         navni::set_palette(&ui::LIGHT_PALETTE);
 
         run::explore().await;
+
+        // Save the game if we exited with the game still running.
+        if !game().is_game_over() {
+            game().save(GAME_NAME);
+        } else {
+            game().delete_save(GAME_NAME);
+        }
     });
 
     Ok(())

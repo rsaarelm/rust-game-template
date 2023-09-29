@@ -65,8 +65,22 @@ pub async fn explore() {
             game().process_action(side_action);
         }
 
+        // Hack: Explicitly save the game when esc is pressed.
+        // Allows
+        if navni::keypress() == "Esc".parse().unwrap() {
+            game().save(crate::GAME_NAME);
+            msg!("Game saved.");
+        }
+
         if navni::keypress() == "C-c".parse().unwrap() {
             break;
+        }
+
+        if navni::keypress() == "C-q".parse().unwrap() {
+            if ask("Really abandon your game?").await {
+                game().quit();
+                break;
+            }
         }
 
         match input_press().or(side_action) {
@@ -242,7 +256,7 @@ async fn aim(main: &Window) -> Option<IVec2> {
     None
 }
 
-async fn ask(msg: impl Into<Cow<'_, str>>) -> bool {
+pub async fn ask(msg: impl Into<Cow<'_, str>>) -> bool {
     let dialog = ConfirmationDialog::new(msg);
     let mut win = Window::root().center(dialog.preferred_size().unwrap());
     win.foreground_col = X::BROWN;

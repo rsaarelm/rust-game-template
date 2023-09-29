@@ -1,3 +1,4 @@
+use anyhow::Result;
 use engine::prelude::*;
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
@@ -488,8 +489,6 @@ impl Game {
                     }
                 }
             }
-            Quicksave => {}
-            Quickload => {}
             ScrollNorth => {}
             ScrollEast => {}
             ScrollSouth => {}
@@ -545,14 +544,38 @@ impl Game {
             .expect("writing save failed");
     }
 
-    pub fn load(&mut self, game_name: &str) {
+    pub fn delete_save(&self, game_name: &str) {
+        if navni::Directory::data(game_name)
+            .expect("data dir not found")
+            .exists("saved.idm")
+        {
+            navni::Directory::data(game_name)
+                .expect("data dir not found")
+                .delete("saved.idm")
+                .expect("deleting save failed");
+        }
+    }
+
+    /// Return Ok(Some(save)) if save file is found and parsed successfully.
+    /// Return Ok(None) if there is no save file. Return an error if save file
+    /// is present but could not be parsed.
+    pub fn load(&mut self, game_name: &str) -> Result<Option<Runtime>> {
         if let Ok(save) = navni::Directory::data(game_name)
             .expect("data dir not found")
             .read("saved.idm")
         {
-            let r = idm::from_str(&save).expect("corrupt save file");
-            self.r = r;
+            // Return an error if deserialization fails.
+            match idm::from_str(&save) {
+                Err(e) => Err(e.into()),
+                Ok(r) => Ok(Some(r)),
+            }
+        } else {
+            Ok(None)
         }
+    }
+
+    pub fn replace_runtime(&mut self, r: Runtime) {
+        self.r = r;
     }
 
     fn update_camera(&mut self) {
@@ -563,6 +586,16 @@ impl Game {
                 self.planned_path.clear();
             }
         }
+    }
+
+    pub fn quit(&mut self) {
+        while let Some(c) = self.current_active() {
+            c.die(self, None);
+        }
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.current_active().is_none()
     }
 }
 
