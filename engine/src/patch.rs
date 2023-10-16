@@ -5,7 +5,7 @@ use derive_deref::Deref;
 use serde::{Deserialize, Serialize, Serializer};
 use util::{_String, s4, s8};
 
-use crate::{data::StaticGerm, placement::Place, prelude::*, Rect};
+use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -365,7 +365,7 @@ pub struct Spawn(String);
 
 impl Spawn {
     pub fn preferred_tile(&self) -> Tile {
-        self.0.parse::<StaticGerm>().unwrap().preferred_tile()
+        self.0.parse::<StaticSeed>().unwrap().preferred_tile()
     }
 
     pub fn spawn(

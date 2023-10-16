@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use util::{s4, RngExt};
 
-use crate::{prelude::*, Data, Germ, Patch, Rect, Spawn};
+use crate::{prelude::*, Data, EntitySeed, Patch, Rect, Spawn};
 
 #[derive(Copy, Clone, Default)]
 pub struct Level {

@@ -70,7 +70,7 @@ pub struct Monster {
     pub min_depth: u32,
 }
 
-impl Germ for Monster {
+impl EntitySeed for Monster {
     fn build(&self, r: &mut Runtime) -> Entity {
         Entity(r.ecs.spawn((
             Icon(self.icon),
@@ -105,7 +105,7 @@ pub struct Item {
     pub power: Option<Power>,
 }
 
-impl Germ for Item {
+impl EntitySeed for Item {
     fn build(&self, r: &mut Runtime) -> Entity {
         Entity(r.ecs.spawn((
             Icon(self.kind.icon()),
@@ -117,14 +117,14 @@ impl Germ for Item {
 }
 
 /// Values that specify new entities to be created.
-pub trait Germ {
+pub trait EntitySeed {
     fn build(&self, r: &mut Runtime) -> Entity;
 
     /// What kind of terrain does this thing like to spawn on.
     ///
     /// Usually things spawn on ground, but eg. aquatic monsters might be
     /// spawning on water instead. Having this lets us do maps where the
-    /// terrain cell is not specified for germ locations.
+    /// terrain cell is not specified for seed locations.
     fn preferred_tile(&self) -> Tile {
         Tile::Ground
     }
@@ -145,23 +145,23 @@ pub trait Germ {
     }
 }
 
-pub type StaticGerm = &'static (dyn Germ + Sync + 'static);
+pub type StaticSeed = &'static (dyn EntitySeed + Sync + 'static);
 
-impl FromStr for StaticGerm {
+impl FromStr for StaticSeed {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Magic switchboard that trawls the data files looking for named
         // things that can be spawned.
         if let Some(monster) = Data::get().bestiary.get(s) {
-            return Ok(monster as StaticGerm);
+            return Ok(monster as StaticSeed);
         }
 
         if let Some(item) = Data::get().armory.get(s) {
-            return Ok(item as StaticGerm);
+            return Ok(item as StaticSeed);
         }
 
-        bail!("Unknown germ {s:?}")
+        bail!("Unknown seed {s:?}")
     }
 }
 

@@ -32,7 +32,7 @@ mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
 mod data;
-pub use data::{register_mods, Data, Germ};
+pub use data::{register_mods, Data, EntitySeed};
 
 pub mod ecs;
 

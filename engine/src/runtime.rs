@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{
-    data::StaticGerm, ecs::*, placement::Place, prelude::*, Fov, Placement,
+    data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
     Terrain, World, WorldSpec,
 };
 
@@ -389,10 +389,10 @@ impl Runtime {
         place: impl Into<Place>,
         name: &str,
     ) -> Option<Entity> {
-        let germ: StaticGerm = name.parse().ok()?;
-        let ret = germ.build(self);
+        let seed: StaticSeed = name.parse().ok()?;
+        let ret = seed.build(self);
 
-        // Names are map keys so they're not stored in the germ, assign the
+        // Names are map keys so they're not stored in the seed, assign the
         // name here.
         ret.set(self, crate::ecs::Name(name.into()));
         ret.place(self, place);
