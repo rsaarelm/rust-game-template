@@ -2,6 +2,22 @@ Misc notes about non-obvious bits
 Should eventually be sorted into a more coherent document
 For now I'm just writing these down as I run into them
 
+Semantic commit tags
+	After https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
+	feat
+		New feature for the user, not a new feature for build script
+	fix
+		Bug fix for the user, not a fix to a build script
+	docs
+		Changes to the documentation
+	style
+		Formatting, missing semi colons, etc; no production code change
+	refactor
+		Refactoring production code, eg. renaming a variable
+	test
+		Adding missing tests, refactoring tests; no production code change
+	chore
+		Updating grunt tasks etc; no production code change
 Async runner functions and display frames
 	Runner functions like run::explore, run::aim should do a draw().await early on to start a new frame
 	If they are triggered by an earlier runner and don't switch frame, they will be seeing the same keypress the previous frame saw
