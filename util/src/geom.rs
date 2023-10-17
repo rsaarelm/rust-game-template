@@ -7,6 +7,16 @@ use std::{
 use glam::{ivec2, vec2, IVec2, IVec3, Vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
+/// Axis-aligned directions in 3D space, canonical order.
+pub const AXIS_DIRS: [IVec3; 6] = [
+    IVec3::from_array([0, -1, 0]),
+    IVec3::from_array([1, 0, 0]),
+    IVec3::from_array([0, 1, 0]),
+    IVec3::from_array([-1, 0, 0]),
+    IVec3::from_array([0, 0, -1]),
+    IVec3::from_array([0, 0, 1]),
+];
+
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
     use std::ops::Add;
