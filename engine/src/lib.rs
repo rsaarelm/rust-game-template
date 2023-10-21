@@ -31,6 +31,9 @@ pub use ai::Goal;
 mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
+mod block;
+pub use block::{Block, Tile};
+
 mod data;
 pub use data::{register_mods, Data, EntitySeed};
 

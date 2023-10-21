@@ -1,7 +1,7 @@
 use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::s4;
+use util::{s4, s8};
 
 use crate::{prelude::*, Grammatize, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -117,6 +117,138 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
+    pub fn default_voxel(&self) -> Option<Block> {
+        if self.z < 0 {
+            // Underground
+            Some(Block::Rock)
+        } else {
+            None
+        }
+    }
+
+    /// If the location contains a solid block that is exposed to open air in
+    /// at least one orthogonal or diagonal horizontal direction, return a
+    /// value indicating it's orthogonal wall connectivity mask, otherwise
+    /// return `None`.
+    ///
+    /// The mask is calculated here since wall tiles might be shaped by
+    /// connectivity when drawn.
+    fn wall_connectivity(&self, r: &impl AsRef<Runtime>) -> Option<usize> {
+        if !self.is_solid(r) {
+            return None;
+        }
+
+        let mut mask = 0;
+        let mut is_exposed = false;
+        for (i, loc) in s8::ns(*self).enumerate() {
+            if !loc.is_solid(r) {
+                is_exposed = true;
+            } else if i % 2 == 0 {
+                // Solid block in orthogonal direction, add to mask.
+                mask |= 1 << (i / 2);
+            }
+        }
+
+        is_exposed.then_some(mask)
+    }
+
+    pub fn voxel(&self, r: &impl AsRef<Runtime>) -> Option<Block> {
+        let r = r.as_ref();
+        r.tile_terrain_overlay
+            .get(self)
+            .copied()
+            // TODO: Read from default map.
+            // .or_else(|| r.world.voxel(self))
+            .unwrap_or_else(|| self.default_voxel())
+    }
+
+    // Get the map tile that corresponds to the location.
+    pub fn tile(&self, r: &impl AsRef<Runtime>) -> Option<Tile> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+        ) {
+            // Solid 3-voxel stack, the only case that makes a proper wall.
+            //
+            // Look for a voxel with an exposed side to show as wall.
+            (true, true, true) => {
+                for loc in [*self, self.above(), self.below()] {
+                    if let Some(mask) = loc.wall_connectivity(r) {
+                        return Some(Tile::Wall {
+                            block: loc.voxel(r).unwrap(),
+                            connectivity: mask,
+                        });
+                    }
+                }
+
+                // No exposed wall fronts, make it solid mass.
+                Some(Tile::Solid(self.voxel(r).unwrap()))
+            }
+            // Raised floor.
+            (false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
+            // Regular floor
+            (_, false, true) => {
+                Some(Tile::Floor(self.below().voxel(r).unwrap()))
+            }
+            // Depressed floor, check further down if there's surface.
+            (_, _, false) => self.below().below().voxel(r).map(Tile::Floor),
+        }
+    }
+
+    /// Return whether the voxel can be entered, whether or not you have
+    /// floor underneath.
+    pub fn can_be_entered(&self, r: &impl AsRef<Runtime>) -> bool {
+        matches!(self.voxel(r), None | Some(Block::Door))
+    }
+
+    /// Return whether the voxel can be entered and has solid floor under it.
+    pub fn can_be_stepped_in(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.can_be_entered(r) && self.below().is_solid(r)
+    }
+
+    pub fn is_solid(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.voxel(r).map_or(false, |b| b.is_solid())
+    }
+
+    fn above(&self) -> Self {
+        let mut ret = *self;
+        ret.z += 1;
+        ret
+    }
+
+    fn below(&self) -> Self {
+        let mut ret = *self;
+        ret.z -= 1;
+        ret
+    }
+
+    /// Look for the valid neighboring floor adjacent to current location.
+    ///
+    /// Can step up or down one Z level. Returns `None` if terrain is blocked.
+    pub fn step(
+        &self,
+        r: &impl AsRef<Runtime>,
+        dir: IVec2,
+    ) -> Option<Location> {
+        let loc = *self + dir;
+        let above = loc.above();
+        let below = loc.below();
+
+        if loc.can_be_stepped_in(r) {
+            Some(loc)
+        } else if above.can_be_stepped_in(r) {
+            // Above takes precedence over below since it's drawn on top of
+            // below on screen.
+            Some(above)
+        } else if below.can_be_stepped_in(r) {
+            Some(below)
+        } else {
+            None
+        }
+    }
+
+    #[deprecated]
     pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
         let r = r.as_ref();
         r.tile_terrain_overlay
@@ -128,6 +260,7 @@ impl Location {
 
     /// Get actual tiles from visible cells, assume ground for unexplored
     /// cell.
+    #[deprecated]
     pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
         if self.is_explored(r) {
             self.map_tile(r)
@@ -136,9 +269,15 @@ impl Location {
         }
     }
 
+    #[deprecated]
     pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
         let r = r.as_mut();
         r.tile_terrain_overlay.insert(*self, t);
+    }
+
+    pub fn set_voxel(&self, r: &mut impl AsMut<Runtime>, v: Option<Block>) {
+        let r = r.as_mut();
+        r.terrain_overlay.insert(*self, v);
     }
 
     /// Tile setter that doesn't cover functional terrain.
@@ -235,7 +374,8 @@ impl Location {
     }
 
     pub fn vec_towards(&self, other: &Location) -> Option<IVec2> {
-        if self.z == other.z {
+        // Allow 1 Z-level offsets, but no more, as a fuzzy same-level-ness.
+        if (self.z - other.z).abs() <= 1 {
             Some((*other - *self).truncate())
         } else {
             None
@@ -253,6 +393,7 @@ impl Location {
 
     /// Try to reconstruct step towards adjacent other location. Handles
     /// folding.
+    // FIXME Figure out how this should work with voxels
     pub fn find_step_towards(
         &self,
         r: &impl AsRef<Runtime>,
@@ -274,6 +415,7 @@ impl Location {
 
     /// Follow upstairs, downstairs and possible other portals until you end
     /// up at a non-portaling location starting from this location.
+    #[deprecated]
     pub fn follow(&self, r: &impl AsRef<Runtime>) -> Location {
         let path = || {
             let mut p = Some(*self);
@@ -301,6 +443,7 @@ impl Location {
         path().last().unwrap_or(*self)
     }
 
+    #[deprecated]
     pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         match self.map_tile(r) {
             MapTile::Upstairs => Some(*self + ivec3(0, 0, 1)),
@@ -324,6 +467,47 @@ impl Location {
     }
 
     /// Return the four neighbors to this location in an arbitrary order.
+    pub fn perturbed_neighbors_4(
+        &self,
+        r: &impl AsRef<Runtime>,
+    ) -> Vec<Location> {
+        let mut rng = util::srng(self);
+        let mut dirs: Vec<Location> = self.neighbors_4(r).collect();
+        dirs.shuffle(&mut rng);
+        dirs
+    }
+
+    pub fn neighbors_4<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Location> + 'a {
+        // Alternate biasing based on location so algs will perform zig-zags
+        // on diagonals.
+        const H4: [IVec2; 4] = [
+            IVec2::from_array([1, 0]),
+            IVec2::from_array([-1, 0]),
+            IVec2::from_array([0, 1]),
+            IVec2::from_array([0, -1]),
+        ];
+
+        const V4: [IVec2; 4] = [
+            IVec2::from_array([0, 1]),
+            IVec2::from_array([0, -1]),
+            IVec2::from_array([1, 0]),
+            IVec2::from_array([-1, 0]),
+        ];
+        let o = *self;
+        if ivec2(self.x as i32, self.y as i32).prefer_horizontals_here() {
+            &H4
+        } else {
+            &V4
+        }
+        .iter()
+        .filter_map(move |d| o.step(r, *d))
+    }
+
+    /// Return the four neighbors to this location in an arbitrary order.
+    #[deprecated]
     pub fn perturbed_flat_neighbors_4(&self) -> Vec<Location> {
         let mut rng = util::srng(self);
         let mut dirs: Vec<Location> =
@@ -332,6 +516,8 @@ impl Location {
         dirs
     }
 
+    // TODO: Voxel version, check steppability in each direction
+    #[deprecated]
     pub fn flat_neighbors_4(&self) -> impl Iterator<Item = Location> {
         // Alternate biasing based on location so algs will perform zig-zags
         // on diagonals.
@@ -358,6 +544,7 @@ impl Location {
         .map(move |d| o + *d)
     }
 
+    #[deprecated]
     pub fn fold_neighbors_4<'a>(
         &self,
         r: &'a Runtime,
@@ -372,6 +559,7 @@ impl Location {
     }
 
     /// Find the closest pathable location on neighboring sector.
+    // TODO Fix for voxels
     pub fn path_dest_to_neighboring_sector(
         &self,
         r: &impl AsRef<Runtime>,

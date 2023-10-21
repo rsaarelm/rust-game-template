@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{
-    data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
-    TileTerrain, World, WorldSpec,
+    data::StaticSeed, ecs::*, placement::Place, prelude::*,
+    terrain::TileTerrain, Fov, Placement, Terrain, World, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -17,7 +17,11 @@ pub struct Runtime {
     /// Lazily instantiated static world structure.
     pub(crate) world: LazyRes<WorldSpec, World>,
     /// Terrain modifications made on world during runtime.
+
+    #[deprecated]
     pub(crate) tile_terrain_overlay: TileTerrain,
+
+    pub(crate) terrain_overlay: Terrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
@@ -46,6 +50,7 @@ impl Default for Runtime {
             player: Default::default(),
             world: Default::default(),
             tile_terrain_overlay: Default::default(),
+            terrain_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),

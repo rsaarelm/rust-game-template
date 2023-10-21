@@ -6,6 +6,7 @@ use crate::{prelude::*, Atlas};
 /// Game world terrain tiles.
 #[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
 #[serde(try_from = "Atlas", into = "Atlas")]
+#[deprecated]
 pub struct TileTerrain(HashMap<Location, MapTile>);
 
 impl TryFrom<Atlas> for TileTerrain {
@@ -27,5 +28,37 @@ impl TryFrom<Atlas> for TileTerrain {
 impl From<TileTerrain> for Atlas {
     fn from(map: TileTerrain) -> Self {
         Atlas::from_iter(map.0)
+    }
+}
+
+#[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
+#[serde(try_from = "Atlas", into = "Atlas")]
+pub struct Terrain(HashMap<Location, Option<Block>>);
+
+impl TryFrom<Atlas> for Terrain {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Atlas) -> Result<Self, Self::Error> {
+        let mut ret = Terrain::default();
+
+        for (loc, c) in value.iter() {
+            let voxel = if c == '.' {
+                None
+            } else {
+                Some(Block::try_from(c)?)
+            };
+
+            ret.insert(loc, voxel);
+        }
+        Ok(ret)
+    }
+}
+
+impl From<Terrain> for Atlas {
+    fn from(map: Terrain) -> Self {
+        Atlas::from_iter(map.0.into_iter().map(|(p, v)| match v {
+            None => (p, '.'),
+            Some(b) => (p, b.into()),
+        }))
     }
 }

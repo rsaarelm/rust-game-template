@@ -1,0 +1,74 @@
+use anyhow::bail;
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+// 2D representation for a top-down view of voxel location.
+pub enum Tile {
+    /// Floor seen from above.
+    Floor(Block),
+    /// Wall seen from the side.
+    Wall {
+        block: Block,
+        // 4-bit mask to connections to adjacent walls.
+        connectivity: usize,
+    },
+    /// Inside a solid mass, not visible from any direction.
+    Solid(Block),
+}
+
+/// Possible contents for a voxel.
+#[derive(
+    Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
+)]
+pub enum Block {
+    #[default]
+    Rock,
+    Grass,
+    Door,
+    Glass,
+    Water,
+    Magma,
+}
+
+use Block::*;
+
+impl Block {
+    pub fn is_solid(self) -> bool {
+        matches!(self, Rock | Grass | Glass)
+    }
+
+    pub fn blocks_sight(self) -> bool {
+        matches!(self, Rock | Grass | Magma | Door)
+    }
+}
+
+// NB. Char '.' is reserved for "empty space", don't use it for any block
+
+impl TryFrom<char> for Block {
+    type Error = anyhow::Error;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '*' => Ok(Rock),
+            ';' => Ok(Grass),
+            '|' => Ok(Door),
+            '+' => Ok(Glass),
+            '~' => Ok(Water),
+            '&' => Ok(Magma),
+            _ => bail!("Bad block {value:?}"),
+        }
+    }
+}
+
+impl From<Block> for char {
+    fn from(value: Block) -> Self {
+        match value {
+            Rock => '*',
+            Grass => ';',
+            Door => '|',
+            Glass => '+',
+            Water => '~',
+            Magma => '&',
+        }
+    }
+}
