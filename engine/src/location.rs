@@ -117,9 +117,9 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
         let r = r.as_ref();
-        r.terrain_overlay
+        r.tile_terrain_overlay
             .get(self)
             .copied()
             .or_else(|| r.world.tile(self))
@@ -128,24 +128,26 @@ impl Location {
 
     /// Get actual tiles from visible cells, assume ground for unexplored
     /// cell.
-    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
         if self.is_explored(r) {
-            self.tile(r)
+            self.map_tile(r)
         } else {
-            Tile::Ground
+            MapTile::Ground
         }
     }
 
-    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
         let r = r.as_mut();
-        r.terrain_overlay.insert(*self, t);
+        r.tile_terrain_overlay.insert(*self, t);
     }
 
     /// Tile setter that doesn't cover functional terrain.
-    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
         let r = r.as_mut();
-        if self.tile(r) == Tile::Ground || self.tile(r).is_decoration() {
-            r.terrain_overlay.insert(*self, t);
+        if self.map_tile(r) == MapTile::Ground
+            || self.map_tile(r).is_decoration()
+        {
+            r.tile_terrain_overlay.insert(*self, t);
         }
     }
 
@@ -195,21 +197,21 @@ impl Location {
     }
 
     pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
-        !self.tile(r).blocks_movement()
+        !self.map_tile(r).blocks_movement()
     }
 
     pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
-        match self.tile(r) {
+        match self.map_tile(r) {
             // Door is held open by someone passing through.
-            Tile::Door if self.mob_at(r).is_some() => false,
+            MapTile::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_shot(),
         }
     }
 
     pub fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
-        match self.tile(r) {
+        match self.map_tile(r) {
             // Door is held open by someone passing through.
-            Tile::Door if self.mob_at(r).is_some() => false,
+            MapTile::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_sight(),
         }
     }
@@ -300,9 +302,9 @@ impl Location {
     }
 
     pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
-        match self.tile(r) {
-            Tile::Upstairs => Some(*self + ivec3(0, 0, 1)),
-            Tile::Downstairs => Some(*self + ivec3(0, 0, -1)),
+        match self.map_tile(r) {
+            MapTile::Upstairs => Some(*self + ivec3(0, 0, 1)),
+            MapTile::Downstairs => Some(*self + ivec3(0, 0, -1)),
             _ => None,
         }
     }
@@ -322,7 +324,7 @@ impl Location {
     }
 
     /// Return the four neighbors to this location in an arbitrary order.
-    pub fn perturbed_neighbors_4(&self) -> Vec<Location> {
+    pub fn perturbed_flat_neighbors_4(&self) -> Vec<Location> {
         let mut rng = util::srng(self);
         let mut dirs: Vec<Location> =
             s4::DIR.iter().map(|&d| *self + d).collect();
@@ -330,7 +332,7 @@ impl Location {
         dirs
     }
 
-    pub fn neighbors_4(&self) -> impl Iterator<Item = Location> {
+    pub fn flat_neighbors_4(&self) -> impl Iterator<Item = Location> {
         // Alternate biasing based on location so algs will perform zig-zags
         // on diagonals.
         const H4: [IVec2; 4] = [
@@ -360,7 +362,7 @@ impl Location {
         &self,
         r: &'a Runtime,
     ) -> impl Iterator<Item = Location> + 'a {
-        self.neighbors_4().map(move |loc| loc.follow(r))
+        self.flat_neighbors_4().map(move |loc| loc.follow(r))
     }
 
     pub fn astar_heuristic(&self, other: &Location) -> usize {

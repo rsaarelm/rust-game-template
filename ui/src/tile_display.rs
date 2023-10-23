@@ -80,7 +80,7 @@ fn wallform(r: &impl AsRef<Runtime>, p: IVec2) -> Option<usize> {
 
 /// Show the interpolated and shaped map terrain cell in the given wide
 /// unfolded coordinate position.
-pub fn terrain_cell(
+pub fn flat_terrain_cell(
     r: &impl AsRef<Runtime>,
     wide_loc_pos: impl Into<IVec2>,
 ) -> CharCell {
@@ -90,15 +90,15 @@ pub fn terrain_cell(
 
     match tile(r, wide_loc_pos) {
         // TODO wallforming
-        Tile::Wall => {
+        MapTile::Wall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(DOUBLE_LINE[i])
             } else {
                 CharCell::c(' ')
             }
         }
-        Tile::Ground => CharCell::c(' '),
-        Tile::Grass => {
+        MapTile::Ground => CharCell::c(' '),
+        MapTile::Grass => {
             const GRASS_SPARSENESS: usize = 3;
             if is_centered
                 && srng(&wide_loc_pos).gen_range(0..GRASS_SPARSENESS) == 0
@@ -108,7 +108,7 @@ pub fn terrain_cell(
                 CharCell::c(' ')
             }
         }
-        Tile::LowWall => {
+        MapTile::LowWall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(SHARP_CORNERS[i])
             } else if is_centered {
@@ -117,34 +117,34 @@ pub fn terrain_cell(
                 CharCell::c(' ')
             }
         }
-        Tile::Door => {
+        MapTile::Door => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(CROSSED[i])
             } else {
                 CharCell::c('+')
             }
         }
-        Tile::Water => CharCell::c(if is_centered { '~' } else { ' ' })
+        MapTile::Water => CharCell::c(if is_centered { '~' } else { ' ' })
             .col(X::NAVY)
             .inv(),
-        Tile::Magma => CharCell::c(if is_centered { '~' } else { ' ' })
+        MapTile::Magma => CharCell::c(if is_centered { '~' } else { ' ' })
             .col(X::MAROON)
             .inv(),
-        Tile::Upstairs => {
+        MapTile::Upstairs => {
             if is_centered {
                 CharCell::c('↑')
             } else {
                 CharCell::c(' ')
             }
         }
-        Tile::Downstairs => {
+        MapTile::Downstairs => {
             if is_centered {
                 CharCell::c('↓')
             } else {
                 CharCell::c(' ')
             }
         }
-        Tile::Gore => {
+        MapTile::Gore => {
             CharCell::c(match srng(&wide_loc_pos).gen_range(0..=10) {
                 d if d < 4 => ',',
                 d if d < 7 => '\'',
@@ -154,11 +154,11 @@ pub fn terrain_cell(
             })
             .col(X::MAROON)
         }
-        Tile::Exit => CharCell::c('░'),
+        MapTile::Exit => CharCell::c('░'),
     }
 }
 
-fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> Tile {
+fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> MapTile {
     let p = wide_loc_pos;
 
     if p.x % 2 == 0 {

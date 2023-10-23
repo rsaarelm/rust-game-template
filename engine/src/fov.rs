@@ -112,8 +112,8 @@ impl Runtime {
             }
 
             // Fog sticks to itself and walls
-            (!c1.is_explored(self) || c1.tile(self).is_wall())
-                && (!c2.is_explored(self) || c2.tile(self).is_wall())
+            (!c1.is_explored(self) || c1.map_tile(self).is_wall())
+                && (!c2.is_explored(self) || c2.map_tile(self).is_wall())
         }
     }
 }

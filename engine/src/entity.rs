@@ -157,9 +157,9 @@ impl Entity {
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile {
+    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> MapTile {
         // Return a different tile if entity is aquatic or another weird type.
-        Tile::Ground
+        MapTile::Ground
     }
 
     pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
@@ -214,7 +214,7 @@ impl Entity {
             return false;
         }
         if self.is_item(r)
-            && (loc.item_at(r).is_some() || loc.tile(r).is_exit())
+            && (loc.item_at(r).is_some() || loc.map_tile(r).is_exit())
         {
             return false;
         }
@@ -244,7 +244,7 @@ impl Entity {
         let start = map.get(&loc).copied().unwrap_or(usize::MAX);
 
         if let Some((best, n)) = loc
-            .neighbors_4()
+            .flat_neighbors_4()
             .filter_map(|loc| {
                 // Don't walk into enemies.
                 if let Some(mob) = loc.mob_at(r) {
@@ -310,7 +310,7 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.decorate_tile(r, Tile::Gore);
+                loc.decorate_tile(r, MapTile::Gore);
             }
 
             // Drop stuff.

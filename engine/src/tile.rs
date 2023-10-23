@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
     Copy, Clone, Default, Eq, PartialEq, Debug, Serialize, Deserialize,
 )]
 #[serde(try_from = "char", into = "char")]
-pub enum Tile {
+pub enum MapTile {
     #[default]
     Wall,
     Ground,
@@ -20,9 +20,9 @@ pub enum Tile {
     Exit,
 }
 
-use Tile::*;
+use MapTile::*;
 
-impl Tile {
+impl MapTile {
     pub fn blocks_sight(self) -> bool {
         matches!(self, Wall | Door)
     }
@@ -76,12 +76,12 @@ impl Tile {
     /// terrain on a double-width map.
     ///
     /// ```
-    /// use engine::Tile;
+    /// use engine::MapTile;
     ///
-    /// assert_eq!(Tile::Water.mix(Tile::Magma), Tile::Magma);
-    /// assert_eq!(Tile::Grass.mix(Tile::Ground), Tile::Ground);
+    /// assert_eq!(MapTile::Water.mix(MapTile::Magma), MapTile::Magma);
+    /// assert_eq!(MapTile::Grass.mix(MapTile::Ground), MapTile::Ground);
     /// ```
-    pub fn mix(self, other: Tile) -> Self {
+    pub fn mix(self, other: MapTile) -> Self {
         match (self, other) {
             (x, y) if x == y => x,
             // All defined matches are an earlier terrain type matched against
@@ -101,7 +101,7 @@ impl Tile {
     }
 }
 
-impl TryFrom<char> for Tile {
+impl TryFrom<char> for MapTile {
     type Error = &'static str;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -122,8 +122,8 @@ impl TryFrom<char> for Tile {
     }
 }
 
-impl From<Tile> for char {
-    fn from(val: Tile) -> Self {
+impl From<MapTile> for char {
+    fn from(val: MapTile) -> Self {
         // NB. This must match Tile's TryFrom inputs above.
         match val {
             Ground => '.',

@@ -5,7 +5,7 @@ use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{
     data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
-    Terrain, World, WorldSpec,
+    TileTerrain, World, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -17,7 +17,7 @@ pub struct Runtime {
     /// Lazily instantiated static world structure.
     pub(crate) world: LazyRes<WorldSpec, World>,
     /// Terrain modifications made on world during runtime.
-    pub(crate) terrain_overlay: Terrain,
+    pub(crate) tile_terrain_overlay: TileTerrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
@@ -45,7 +45,7 @@ impl Default for Runtime {
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
             world: Default::default(),
-            terrain_overlay: Default::default(),
+            tile_terrain_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
@@ -263,7 +263,7 @@ impl Runtime {
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
-                loc.neighbors_4()
+                loc.flat_neighbors_4()
                     .filter(|loc2| {
                         (!loc2.is_explored(self) || loc2.is_walkable(self))
                             && loc2.sector() == loc.sector()
@@ -281,7 +281,7 @@ impl Runtime {
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
-                loc.neighbors_4()
+                loc.flat_neighbors_4()
                     .filter(|loc2| {
                         loc2.is_walkable(self) && loc2.sector() == loc.sector()
                     })
@@ -300,7 +300,7 @@ impl Runtime {
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
-                loc.perturbed_neighbors_4()
+                loc.perturbed_flat_neighbors_4()
                     .into_iter()
                     .filter(|loc2| {
                         loc2.is_walkable(self) && loc2.sector() == loc.sector()

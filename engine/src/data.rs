@@ -125,8 +125,8 @@ pub trait EntitySeed {
     /// Usually things spawn on ground, but eg. aquatic monsters might be
     /// spawning on water instead. Having this lets us do maps where the
     /// terrain cell is not specified for seed locations.
-    fn preferred_tile(&self) -> Tile {
-        Tile::Ground
+    fn preferred_tile(&self) -> MapTile {
+        MapTile::Ground
     }
 
     fn rarity(&self) -> u32 {

@@ -10,7 +10,7 @@ use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
-    pub terrain: IndexMap<IVec2, Tile>,
+    pub terrain: IndexMap<IVec2, MapTile>,
     pub spawns: IndexMap<IVec2, Spawn>,
     pub entrance: Option<IVec2>,
 }
@@ -31,7 +31,7 @@ impl Patch {
         }
     }
 
-    pub fn set_terrain(&mut self, pos: impl Into<IVec2>, t: Tile) {
+    pub fn set_terrain(&mut self, pos: impl Into<IVec2>, t: MapTile) {
         self.terrain.insert(pos.into(), t);
     }
 
@@ -43,12 +43,12 @@ impl Patch {
         Rect::from_points_inclusive(
             self.terrain
                 .iter()
-                .filter_map(|(&p, &t)| (t != Tile::Wall).then_some(p)),
+                .filter_map(|(&p, &t)| (t != MapTile::Wall).then_some(p)),
         )
     }
 
     fn is_solid(&self, pos: IVec2) -> bool {
-        self.terrain.get(&pos).map_or(true, |&t| t == Tile::Wall)
+        self.terrain.get(&pos).map_or(true, |&t| t == MapTile::Wall)
     }
 
     fn has_tunnel_support(&self, pos: IVec2) -> bool {
@@ -70,7 +70,7 @@ impl Patch {
     pub fn is_tunnel(&self, pos: IVec2) -> bool {
         self.has_tunnel_support(pos)
             && self.spawns.get(&pos).is_none()
-            && self.terrain.get(&pos) == Some(&Tile::Ground)
+            && self.terrain.get(&pos) == Some(&MapTile::Ground)
     }
 
     pub fn valid_tunnels_from(
@@ -119,7 +119,7 @@ impl Patch {
     pub fn downstairs_pos(&self) -> Option<IVec2> {
         self.terrain
             .iter()
-            .find(|(_, &t)| t == Tile::Downstairs)
+            .find(|(_, &t)| t == MapTile::Downstairs)
             .map(|(&p, _)| p)
     }
 
@@ -135,7 +135,7 @@ impl Patch {
             };
 
             // Both cells are defined, but both are wall. Walls can merge.
-            if current == Tile::Wall && t == Tile::Wall {
+            if current == MapTile::Wall && t == MapTile::Wall {
                 continue;
             }
 
@@ -151,8 +151,8 @@ impl Patch {
         true
     }
 
-    pub fn tiles(&self) -> impl Iterator<Item = (IVec2, Tile)> + '_ {
-        let overlay: HashMap<IVec2, Tile> = self
+    pub fn tiles(&self) -> impl Iterator<Item = (IVec2, MapTile)> + '_ {
+        let overlay: HashMap<IVec2, MapTile> = self
             .spawns
             .iter()
             .map(|(&p, s)| (p, s.preferred_tile()))
@@ -215,7 +215,7 @@ impl TryFrom<((PatchData,), String)> for Patch {
                 if c == '@' {
                     entrance = Some(p);
                     // Assume that player always stands on regular ground.
-                    terrain.insert(p, Tile::Ground);
+                    terrain.insert(p, MapTile::Ground);
                 } else if let Some(s) = data.legend.get(&c) {
                     spawns.insert(p, s.clone());
                     // NB. Spawn data can't be safely accessed at the point
@@ -225,8 +225,8 @@ impl TryFrom<((PatchData,), String)> for Patch {
                     // rewrite the terrain in patch applying stage if the
                     // concrete spawn turns out to want something weird
                     // instead.
-                    terrain.insert(p, Tile::Ground);
-                } else if let Ok(t) = Tile::try_from(c) {
+                    terrain.insert(p, MapTile::Ground);
+                } else if let Ok(t) = MapTile::try_from(c) {
                     terrain.insert(p, t);
                 } else {
                     bail!("Bad patch char {c:?}");
@@ -364,7 +364,7 @@ impl Serialize for Patch {
 pub struct Spawn(String);
 
 impl Spawn {
-    pub fn preferred_tile(&self) -> Tile {
+    pub fn preferred_tile(&self) -> MapTile {
         self.0.parse::<StaticSeed>().unwrap().preferred_tile()
     }
 

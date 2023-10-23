@@ -71,10 +71,10 @@ mod runtime;
 pub use runtime::Runtime;
 
 mod terrain;
-pub use terrain::Terrain;
+pub use terrain::TileTerrain;
 
 mod tile;
-pub use tile::Tile;
+pub use tile::MapTile;
 
 mod time;
 pub use time::Instant;
