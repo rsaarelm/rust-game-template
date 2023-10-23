@@ -99,9 +99,9 @@ pub fn terrain_cell(
         }
         Tile::Ground => CharCell::c(' '),
         Tile::Grass => {
-            const GRASS_SPARSITY: usize = 3;
+            const GRASS_SPARSENESS: usize = 3;
             if is_centered
-                && srng(&wide_loc_pos).gen_range(0..GRASS_SPARSITY) == 0
+                && srng(&wide_loc_pos).gen_range(0..GRASS_SPARSENESS) == 0
             {
                 CharCell::c(',').col(X::GREEN)
             } else {
