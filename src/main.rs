@@ -57,6 +57,14 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
 
+                    Location::new(11, 10, 0)
+                        .set_voxel(game(), Some(Block::Rock));
+                    Location::new(11, 10, 1)
+                        .set_voxel(game(), Some(Block::Rock));
+
+                    Location::new(9, 10, -1).set_voxel(game(), None);
+                    Location::new(9, 10, -2).set_voxel(game(), None);
+
                     msg!("Welcome to {}!", GAME_NAME);
                 }
                 Ok(Some(save)) => {

@@ -79,7 +79,9 @@ impl Runtime {
         }
 
         if let Some(entrance) = ret.world.entrance() {
-            ret.spawn_player(entrance);
+            // TODO: Reactivate once voxels are working.
+            //ret.spawn_player(entrance);
+            ret.spawn_player(Location::new(10, 10, 0));
         } else {
             bail!("world does not specify player entry point");
         }

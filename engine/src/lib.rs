@@ -74,7 +74,7 @@ mod runtime;
 pub use runtime::Runtime;
 
 mod terrain;
-pub use terrain::TileTerrain;
+pub use terrain::Terrain;
 
 mod tile;
 pub use tile::MapTile;

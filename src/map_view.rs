@@ -87,7 +87,8 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     // Draw main map contents, animations and fog of war.
     draw_map(r, &sector_win, offset);
     game().draw_ground_anims(&sector_win, offset);
-    draw_fog(r, &sector_win, offset);
+    // TODO: Bring back fog of war
+    //draw_fog(r, &sector_win, offset);
     game().draw_sky_anims(&sector_win, offset);
 
     // Highlight planned path.
@@ -241,7 +242,7 @@ fn draw_map(r: &Runtime, win: &Window, offset: IVec2) {
     for draw_pos in win.area().into_iter().map(v2) {
         let p = draw_pos + offset;
 
-        win.put(draw_pos, ui::flat_terrain_cell(r, p));
+        win.put(draw_pos, ui::terrain_cell(r, p));
 
         if let Some(loc) = Location::fold_wide(p) {
             if let Some(e) = loc.mob_at(r) {

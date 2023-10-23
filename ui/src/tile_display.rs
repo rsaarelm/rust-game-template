@@ -78,8 +78,34 @@ fn wallform(r: &impl AsRef<Runtime>, p: IVec2) -> Option<usize> {
     Some(ret)
 }
 
+pub fn terrain_cell(
+    r: &impl AsRef<Runtime>,
+    wide_loc_pos: impl Into<IVec2>,
+) -> CharCell {
+    use {Block::*, Tile::*};
+    let wide_loc_pos = wide_loc_pos.into();
+
+    // TODO: Draw stuff in the in-between cells too.
+    if let Some(loc) = Location::fold_wide(wide_loc_pos) {
+        let tile = loc.tile(r);
+
+        match tile {
+            None => CharCell::c('█'),
+            // TODO: Floors that look like stuff.
+            Some(Floor(_)) => CharCell::c(' '),
+            Some(Wall { connectivity, .. }) => {
+                CharCell::c(DOUBLE_LINE[connectivity])
+            }
+            Some(Solid(_)) => CharCell::c('░'),
+        }
+    } else {
+        CharCell::default()
+    }
+}
+
 /// Show the interpolated and shaped map terrain cell in the given wide
 /// unfolded coordinate position.
+#[deprecated]
 pub fn flat_terrain_cell(
     r: &impl AsRef<Runtime>,
     wide_loc_pos: impl Into<IVec2>,
