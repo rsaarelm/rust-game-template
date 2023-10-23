@@ -29,6 +29,21 @@ const CROSSED: [char; 16] = [
     '╪', '+', '╪', '+', '+', '+', '+', '+',
 ];
 
+// ▲▶▼◀
+/// Slopes upwards from a high floor.
+#[rustfmt::skip]
+const UP_SLOPE: [char; 16] = [
+    ' ', '▼', '◀', '◆', '▲', '◆', '◆', '◆',
+    '▶', '◆', '◆', '◆', '◆', '◆', '◆', '◆',
+];
+
+/// Slopes downward from a low floor.
+#[rustfmt::skip]
+const DOWN_SLOPE: [char; 16] = [
+    ' ', '▲', '▶', '●', '▼', '●', '●', '●',
+    '◀', '●', '●', '●', '●', '●', '●', '●',
+];
+
 /// Return 4-bit wallform connectivity shape for center cell.
 /// Return none if the wall cell shouldn't be shown at all.
 fn wallform(r: &impl AsRef<Runtime>, p: IVec2) -> Option<usize> {
@@ -93,6 +108,12 @@ pub fn terrain_cell(
             None => CharCell::c('█'),
             // TODO: Floors that look like stuff.
             Some(Floor(_)) => CharCell::c(' '),
+            Some(LowFloor { connectivity, .. }) => {
+                CharCell::c(DOWN_SLOPE[connectivity])
+            }
+            Some(HighFloor { connectivity, .. }) => {
+                CharCell::c(UP_SLOPE[connectivity])
+            }
             Some(Wall { connectivity, .. }) => {
                 CharCell::c(DOUBLE_LINE[connectivity])
             }

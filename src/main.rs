@@ -42,6 +42,9 @@ fn main() -> anyhow::Result<()> {
     navni::run(GAME_NAME, async {
         ui::init_game();
 
+        // TODO: Bring back saving when we're done with debug
+        game().delete_save(GAME_NAME);
+
         // Restore game or init a new one.
         loop {
             match game().load(GAME_NAME) {
@@ -61,9 +64,27 @@ fn main() -> anyhow::Result<()> {
                         .set_voxel(game(), Some(Block::Rock));
                     Location::new(11, 10, 1)
                         .set_voxel(game(), Some(Block::Rock));
+                    Location::new(11, 11, 0)
+                        .set_voxel(game(), Some(Block::Rock));
+                    Location::new(11, 11, 1)
+                        .set_voxel(game(), Some(Block::Rock));
 
+                    // Dig a pit
                     Location::new(9, 10, -1).set_voxel(game(), None);
                     Location::new(9, 10, -2).set_voxel(game(), None);
+
+                    // Dig a slope
+                    Location::new(10, 11, -1).set_voxel(game(), None);
+                    //Location::new(10, 12, -1).set_voxel(game(), None);
+                    Location::new(10, 12, -2).set_voxel(game(), None);
+                    Location::new(10, 12, 0)
+                        .set_voxel(game(), Some(Block::Rock));
+                    Location::new(10, 12, 1)
+                        .set_voxel(game(), Some(Block::Rock));
+                    Location::new(11, 12, 0)
+                        .set_voxel(game(), Some(Block::Rock));
+                    Location::new(11, 12, 1)
+                        .set_voxel(game(), Some(Block::Rock));
 
                     msg!("Welcome to {}!", GAME_NAME);
                 }

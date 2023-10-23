@@ -6,12 +6,16 @@ use serde::{Deserialize, Serialize};
 pub enum Tile {
     /// Floor seen from above.
     Floor(Block),
+
+    /// Floor below base level, may have connections to unseen layer below.
+    LowFloor { block: Block, connectivity: usize },
+
+    /// Floor above base level, may have connections to unseen layer above.
+    HighFloor { block: Block, connectivity: usize },
+
     /// Wall seen from the side.
-    Wall {
-        block: Block,
-        // 4-bit mask to connections to adjacent walls.
-        connectivity: usize,
-    },
+    Wall { block: Block, connectivity: usize },
+
     /// Inside a solid mass, not visible from any direction.
     Solid(Block),
 }

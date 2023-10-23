@@ -186,14 +186,53 @@ impl Location {
                 Some(Tile::Solid(self.voxel(r).unwrap()))
             }
             // Raised floor.
-            (false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
+            //(false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
+            (false, true, _) => Some(Tile::HighFloor {
+                block: self.voxel(r).unwrap(),
+                connectivity: self.above().high_connectivity(r),
+            }),
             // Regular floor
             (_, false, true) => {
                 Some(Tile::Floor(self.below().voxel(r).unwrap()))
             }
             // Depressed floor, check further down if there's surface.
-            (_, _, false) => self.below().below().voxel(r).map(Tile::Floor),
+            (_, _, false) => {
+                self.below().below().voxel(r).map(|b| Tile::LowFloor {
+                    block: b,
+                    connectivity: self.below().low_connectivity(r),
+                })
+            }
         }
+    }
+
+    /// 4-bit mask that has 1 on direction with a step up.
+    fn high_connectivity(&self, r: &impl AsRef<Runtime>) -> usize {
+        s4::DIR
+            .iter()
+            .enumerate()
+            .map(|(i, &d)| {
+                if self.step(r, d).map_or(false, |loc| loc.z > self.z) {
+                    1 << i
+                } else {
+                    0
+                }
+            })
+            .sum()
+    }
+
+    /// 4-bit mask that has 1 on direction with a step down.
+    fn low_connectivity(&self, r: &impl AsRef<Runtime>) -> usize {
+        s4::DIR
+            .iter()
+            .enumerate()
+            .map(|(i, &d)| {
+                if self.step(r, d).map_or(false, |loc| loc.z < self.z) {
+                    1 << i
+                } else {
+                    0
+                }
+            })
+            .sum()
     }
 
     /// Return whether the voxel can be entered, whether or not you have
