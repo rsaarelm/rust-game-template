@@ -169,10 +169,10 @@ impl Location {
             self.is_solid(r),
             self.below().is_solid(r),
         ) {
-            // Solid 3-voxel stack, the only case that makes a proper wall.
+            // Solid topside stack, makes a proper wall.
             //
             // Look for a voxel with an exposed side to show as wall.
-            (true, true, true) => {
+            (true, true, _) => {
                 for loc in [*self, self.above(), self.below()] {
                     if let Some(mask) = loc.wall_connectivity(r) {
                         return Some(Tile::Wall {
