@@ -126,6 +126,14 @@ impl Location {
         }
     }
 
+    fn is_exposed_wall(&self, r: &impl AsRef<Runtime>) -> bool {
+        if !self.is_solid(r) {
+            return false;
+        }
+
+        s8::ns(*self).any(|loc| !loc.is_solid(r))
+    }
+
     /// If the location contains a solid block that is exposed to open air in
     /// at least one orthogonal or diagonal horizontal direction, return a
     /// value indicating it's orthogonal wall connectivity mask, otherwise
@@ -143,8 +151,9 @@ impl Location {
         for (i, loc) in s8::ns(*self).enumerate() {
             if !loc.is_solid(r) {
                 is_exposed = true;
-            } else if i % 2 == 0 {
-                // Solid block in orthogonal direction, add to mask.
+            } else if i % 2 == 0 && loc.is_exposed_wall(r) {
+                // Solid block in orthogonal direction, add to mask if it's
+                // exposed.
                 mask |= 1 << (i / 2);
             }
         }
@@ -375,7 +384,7 @@ impl Location {
     }
 
     pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
-        !self.map_tile(r).blocks_movement()
+        !self.is_solid(r) && self.below().is_solid(r)
     }
 
     pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
