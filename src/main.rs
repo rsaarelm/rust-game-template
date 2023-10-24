@@ -60,31 +60,65 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
 
-                    Location::new(11, 10, 0)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(11, 10, 1)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(11, 11, 0)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(11, 11, 1)
-                        .set_voxel(game(), Some(Block::Rock));
-
-                    // Dig a pit
-                    Location::new(9, 10, -1).set_voxel(game(), None);
-                    Location::new(9, 10, -2).set_voxel(game(), None);
-
-                    // Dig a slope
-                    Location::new(10, 11, -1).set_voxel(game(), None);
-                    //Location::new(10, 12, -1).set_voxel(game(), None);
-                    Location::new(10, 12, -2).set_voxel(game(), None);
-                    Location::new(10, 12, 0)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(10, 12, 1)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(11, 12, 0)
-                        .set_voxel(game(), Some(Block::Rock));
-                    Location::new(11, 12, 1)
-                        .set_voxel(game(), Some(Block::Rock));
+                    for (i, layer) in [
+                        "\
+#####
+#####
+#####
+#####
+#####
+.....
+.....
+.....
+.....",
+                        "\
+#####
+#...#
+....#
+#...#
+#####
+.#...
+.....
+.....
+.....",
+                        "\
+#####
+#####
+#####
+###.#
+###.#
+#####
+#####
+#####
+#####",
+                        "\
+#####
+#####
+#####
+#####
+###.#
+#...#
+#...#
+#...#
+#####",
+                    ]
+                    .iter()
+                    .enumerate()
+                    {
+                        let z = 1 - i as i16;
+                        for (y, line) in layer.lines().enumerate() {
+                            let y = y as i16 + 4;
+                            for (x, c) in line.chars().enumerate() {
+                                let x = x as i16 + 8;
+                                let loc = Location::new(x, y, z);
+                                if c == '#' {
+                                    loc.set_voxel(game(), Some(Block::Rock));
+                                } else if c == '.' {
+                                    loc.set_voxel(game(), None);
+                                }
+                            }
+                        }
+                    }
 
                     msg!("Welcome to {}!", GAME_NAME);
                 }

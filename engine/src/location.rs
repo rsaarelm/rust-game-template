@@ -182,7 +182,7 @@ impl Location {
             //
             // Look for a voxel with an exposed side to show as wall.
             (true, true, _) => {
-                for loc in [*self, self.above(), self.below()] {
+                for loc in [self.above(), *self, self.below()] {
                     if let Some(mask) = loc.wall_connectivity(r) {
                         return Some(Tile::Wall {
                             block: loc.voxel(r).unwrap(),
