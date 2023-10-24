@@ -134,6 +134,10 @@ impl Location {
         s8::ns(*self).any(|loc| !loc.is_solid(r))
     }
 
+    fn has_exposed_top(&self, r: &impl AsRef<Runtime>) -> bool {
+        !self.above().is_solid(r)
+    }
+
     /// If the location contains a solid block that is exposed to open air in
     /// at least one orthogonal or diagonal horizontal direction, return a
     /// value indicating it's orthogonal wall connectivity mask, otherwise
@@ -146,12 +150,16 @@ impl Location {
             return None;
         }
 
+        let is_top = self.has_exposed_top(r);
+
         let mut mask = 0;
         let mut is_exposed = false;
         for (i, loc) in s8::ns(*self).enumerate() {
+            let matching_top = is_top || !loc.has_exposed_top(r);
+
             if !loc.is_solid(r) {
                 is_exposed = true;
-            } else if i % 2 == 0 && loc.is_exposed_wall(r) {
+            } else if i % 2 == 0 && loc.is_exposed_wall(r) && matching_top {
                 // Solid block in orthogonal direction, add to mask if it's
                 // exposed.
                 mask |= 1 << (i / 2);
@@ -182,7 +190,7 @@ impl Location {
             //
             // Look for a voxel with an exposed side to show as wall.
             (true, true, _) => {
-                for loc in [self.above(), *self, self.below()] {
+                for loc in [*self, self.above(), self.below()] {
                     if let Some(mask) = loc.wall_connectivity(r) {
                         return Some(Tile::Wall {
                             block: loc.voxel(r).unwrap(),
