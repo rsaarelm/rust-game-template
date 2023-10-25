@@ -97,30 +97,79 @@ pub fn terrain_cell(
     r: &impl AsRef<Runtime>,
     wide_loc_pos: impl Into<IVec2>,
 ) -> CharCell {
-    use {Block::*, Tile::*};
     let wide_loc_pos = wide_loc_pos.into();
 
-    // TODO: Draw stuff in the in-between cells too.
-    if let Some(loc) = Location::fold_wide(wide_loc_pos) {
-        let tile = loc.tile(r);
+    // XXX: This calls the same functions many times, could use a memoizing
+    // cache.
 
-        match tile {
+    if let Some(loc) = Location::fold_wide(wide_loc_pos) {
+        match loc.tile(r) {
             None => CharCell::c('█'),
-            // TODO: Floors that look like stuff.
-            Some(Floor(_)) => CharCell::c(' '),
-            Some(LowFloor { connectivity, .. }) => {
-                CharCell::c(DOWN_SLOPE[connectivity])
+            Some(Tile::Solid(_)) => {
+                let mut is_exposed = false;
+                let mut connectivity = 0;
+                for (i, loc) in s8::ns(loc).enumerate() {
+                    if matches!(loc.tile(r), Some(Tile::Solid(_))) {
+                        // Orthogonally connected walls contribute to mask.
+                        if i % 2 == 0
+                            && s8::ns(loc).any(|loc| {
+                                matches!(loc.tile(r), Some(Tile::Floor { .. }))
+                            })
+                        {
+                            connectivity |= 1 << (i / 2);
+                        }
+                    } else {
+                        // Orthogonal or diagonal open space makes the wall
+                        // visible.
+                        is_exposed = true;
+                    }
+                }
+                if is_exposed {
+                    CharCell::c(DOUBLE_LINE[connectivity])
+                } else {
+                    Default::default()
+                }
             }
-            Some(HighFloor { connectivity, .. }) => {
-                CharCell::c(UP_SLOPE[connectivity])
+
+            Some(Tile::Floor {
+                z, connectivity, ..
+            }) => {
+                if connectivity != 0 {
+                    if z == -1 {
+                        CharCell::c(DOWN_SLOPE[connectivity])
+                    } else if z == 1 {
+                        CharCell::c(UP_SLOPE[connectivity])
+                    } else {
+                        panic!("Nonzero connectivity at z=0");
+                    }
+                }
+                // Ghost wallforms for cliffy edges
+                else if let Some(mask) = loc.cliff_form(r) {
+                    CharCell::c(DOUBLE_LINE[mask]).col(X::BROWN)
+                } else {
+                    Default::default()
+                }
             }
-            Some(Wall { connectivity, .. }) => {
-                CharCell::c(DOUBLE_LINE[connectivity])
-            }
-            Some(Solid(_)) => CharCell::c('░'),
         }
     } else {
-        CharCell::default()
+        let (a, b) = (
+            terrain_cell(r, wide_loc_pos - ivec2(1, 0)),
+            terrain_cell(r, wide_loc_pos + ivec2(1, 0)),
+        );
+        let (c, d) = (
+            std::char::from_u32(a.c as u32).unwrap(),
+            std::char::from_u32(b.c as u32).unwrap(),
+        );
+
+        // Wall connectivity
+        if "═╚╔╠╩╦╬".contains(c) && "═╝╩╗╣╦╬".contains(d)
+        {
+            CharCell::c('═').col(a.foreground)
+        } else if c == '█' && d == '█' {
+            CharCell::c('█')
+        } else {
+            Default::default()
+        }
     }
 }
 

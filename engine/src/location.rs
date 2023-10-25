@@ -126,49 +126,6 @@ impl Location {
         }
     }
 
-    fn is_exposed_wall(&self, r: &impl AsRef<Runtime>) -> bool {
-        if !self.is_solid(r) {
-            return false;
-        }
-
-        s8::ns(*self).any(|loc| !loc.is_solid(r))
-    }
-
-    fn has_exposed_top(&self, r: &impl AsRef<Runtime>) -> bool {
-        !self.above().is_solid(r)
-    }
-
-    /// If the location contains a solid block that is exposed to open air in
-    /// at least one orthogonal or diagonal horizontal direction, return a
-    /// value indicating it's orthogonal wall connectivity mask, otherwise
-    /// return `None`.
-    ///
-    /// The mask is calculated here since wall tiles might be shaped by
-    /// connectivity when drawn.
-    fn wall_connectivity(&self, r: &impl AsRef<Runtime>) -> Option<usize> {
-        if !self.is_solid(r) {
-            return None;
-        }
-
-        let is_top = self.has_exposed_top(r);
-
-        let mut mask = 0;
-        let mut is_exposed = false;
-        for (i, loc) in s8::ns(*self).enumerate() {
-            let matching_top = is_top || !loc.has_exposed_top(r);
-
-            if !loc.is_solid(r) {
-                is_exposed = true;
-            } else if i % 2 == 0 && loc.is_exposed_wall(r) && matching_top {
-                // Solid block in orthogonal direction, add to mask if it's
-                // exposed.
-                mask |= 1 << (i / 2);
-            }
-        }
-
-        is_exposed.then_some(mask)
-    }
-
     pub fn voxel(&self, r: &impl AsRef<Runtime>) -> Option<Block> {
         let r = r.as_ref();
         r.terrain_overlay
@@ -179,7 +136,36 @@ impl Location {
             .unwrap_or_else(|| self.default_voxel())
     }
 
-    // Get the map tile that corresponds to the location.
+    fn is_cliff(&self, r: &impl AsRef<Runtime>) -> bool {
+        matches!(self.tile(r), Some(Tile::Floor { z: 1, .. }))
+            && s8::ns(*self).any(|loc| {
+                matches!(loc.tile(r), Some(Tile::Floor { z: -1, .. }))
+            })
+    }
+
+    /// Return whether this location produces a z+1 floor and at least one
+    /// 8-adjacent location produces a z-1 floor. Returns the mask of
+    /// 4-adjacent cliff tiles.
+    pub fn cliff_form(&self, r: &impl AsRef<Runtime>) -> Option<usize> {
+        if self.is_cliff(r) {
+            let mut mask = 0;
+            for (i, loc) in s4::ns(*self).enumerate() {
+                if loc.is_cliff(r) {
+                    mask |= 1 << i;
+                }
+            }
+            // XXX: Seems like you get mostly artifacts if the cliff bits seem
+            // fully unconnected.
+            if mask != 0 {
+                Some(mask)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn tile(&self, r: &impl AsRef<Runtime>) -> Option<Tile> {
         match (
             self.above().is_solid(r),
@@ -189,33 +175,25 @@ impl Location {
             // Solid topside stack, makes a proper wall.
             //
             // Look for a voxel with an exposed side to show as wall.
-            (true, true, _) => {
-                for loc in [*self, self.above(), self.below()] {
-                    if let Some(mask) = loc.wall_connectivity(r) {
-                        return Some(Tile::Wall {
-                            block: loc.voxel(r).unwrap(),
-                            connectivity: mask,
-                        });
-                    }
-                }
-
-                // No exposed wall fronts, make it solid mass.
-                Some(Tile::Solid(self.voxel(r).unwrap()))
-            }
+            (true, true, _) => Some(Tile::Solid(self.voxel(r).unwrap())),
             // Raised floor.
             //(false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
-            (false, true, _) => Some(Tile::HighFloor {
+            (false, true, _) => Some(Tile::Floor {
                 block: self.voxel(r).unwrap(),
+                z: 1,
                 connectivity: self.above().high_connectivity(r),
             }),
             // Regular floor
-            (_, false, true) => {
-                Some(Tile::Floor(self.below().voxel(r).unwrap()))
-            }
+            (_, false, true) => Some(Tile::Floor {
+                block: self.below().voxel(r).unwrap(),
+                z: 0,
+                connectivity: 0,
+            }),
             // Depressed floor, check further down if there's surface.
             (_, _, false) => {
-                self.below().below().voxel(r).map(|b| Tile::LowFloor {
+                self.below().below().voxel(r).map(|b| Tile::Floor {
                     block: b,
+                    z: -1,
                     connectivity: self.below().low_connectivity(r),
                 })
             }

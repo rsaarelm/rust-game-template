@@ -5,16 +5,16 @@ use serde::{Deserialize, Serialize};
 // 2D representation for a top-down view of voxel location.
 pub enum Tile {
     /// Floor seen from above.
-    Floor(Block),
+    Floor {
+        block: Block,
 
-    /// Floor below base level, may have connections to unseen layer below.
-    LowFloor { block: Block, connectivity: usize },
+        /// Relative depth. 0 is the current observation level.
+        z: i32,
 
-    /// Floor above base level, may have connections to unseen layer above.
-    HighFloor { block: Block, connectivity: usize },
-
-    /// Wall seen from the side.
-    Wall { block: Block, connectivity: usize },
+        /// Slope connectivity to unseen tiles above at z=1 and unseen tiles
+        /// below at z=-1. Should always be 0 at z=0.
+        connectivity: usize,
+    },
 
     /// Inside a solid mass, not visible from any direction.
     Solid(Block),
