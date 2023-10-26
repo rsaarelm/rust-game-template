@@ -104,7 +104,7 @@ pub fn terrain_cell(
 
     if let Some(loc) = Location::fold_wide(wide_loc_pos) {
         match loc.tile(r) {
-            None => CharCell::c('█'),
+            None => CharCell::c('░'),
             Some(Tile::Solid(_)) => {
                 let mut is_exposed = false;
                 let mut connectivity = 0;
@@ -165,8 +165,8 @@ pub fn terrain_cell(
         if "═╚╔╠╩╦╬".contains(c) && "═╝╩╗╣╦╬".contains(d)
         {
             CharCell::c('═').col(a.foreground)
-        } else if c == '█' && d == '█' {
-            CharCell::c('█')
+        } else if c == '░' && d == '░' {
+            CharCell::c('░')
         } else {
             Default::default()
         }
