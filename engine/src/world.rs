@@ -22,8 +22,9 @@ impl TryFrom<WorldSpec> for World {
     fn try_from(value: WorldSpec) -> Result<Self, Self::Error> {
         let mut rng = util::srng(&value.seed);
 
-        let mut patches = IndexMap::default();
+        let mut patches: IndexMap<Location, Patch> = IndexMap::default();
 
+        /*
         const MAX_DEPTH: u32 = 8;
 
         let mut prev_downstairs = None;
@@ -42,6 +43,7 @@ impl TryFrom<WorldSpec> for World {
             let z = -(depth as i16);
             patches.insert(Location::new(0, 0, z), map);
         }
+        */
 
         let mut terrain = HashMap::default();
         for (&loc, a) in &patches {
