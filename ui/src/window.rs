@@ -3,7 +3,7 @@ use glam::{ivec2, IVec2};
 use navni::{prelude::*, X256Color as X};
 use util::{s4, v2};
 
-use crate::{game, tile_display::SHARP_CORNERS};
+use crate::{game, tile_display::SINGLE_LINE};
 
 /// A view structure through which things can be drawn on a buffer.
 #[derive(Copy, Clone, Default)]
@@ -436,7 +436,7 @@ impl Window {
             // Take the old mask bits into account when doing the new mask.
             // Old mask preserves existing connections to box cells outside
             // the current window.
-            cell.set_c(SHARP_CORNERS[mask | old_mask]);
+            cell.set_c(SINGLE_LINE[mask | old_mask]);
             self.unbound_put(pos, cell);
         }
     }

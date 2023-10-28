@@ -6,9 +6,9 @@ use util::{s8, srng};
 use navni::X256Color as X;
 
 #[rustfmt::skip]
-pub(crate) const SHARP_CORNERS: [char; 16] = [
-    '│', '╵', '╶', '└', '╷', '│', '┌', '├',
-    '╴', '┘', '─', '┴', '┐', '┤', '┬', '┼',
+pub(crate) const SINGLE_LINE: [char; 16] = [
+    '│', '│', '─', '└', '│', '│', '┌', '├',
+    '─', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
 #[rustfmt::skip]
@@ -129,7 +129,7 @@ pub fn terrain_cell(
                 }
                 // Ghost wallforms for cliffy edges
                 else if let Some(mask) = loc.cliff_form(r) {
-                    CharCell::c(DOUBLE_LINE[mask]).col(X::BROWN)
+                    CharCell::c(SINGLE_LINE[mask]).col(X::BROWN)
                 } else {
                     Default::default()
                 }
@@ -149,6 +149,9 @@ pub fn terrain_cell(
         if "═╚╔╠╩╦╬".contains(c) && "═╝╩╗╣╦╬".contains(d)
         {
             CharCell::c('═').col(a.foreground)
+        } else if "─└┌├┴┼".contains(c) && "─┘┴┐┤┬┼".contains(d)
+        {
+            CharCell::c('─').col(a.foreground)
         } else if c == '░' && d == '░' {
             CharCell::c('░')
         } else {
@@ -190,7 +193,7 @@ pub fn flat_terrain_cell(
         }
         MapTile::LowWall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
-                CharCell::c(SHARP_CORNERS[i])
+                CharCell::c(SINGLE_LINE[i])
             } else if is_centered {
                 CharCell::c('∙')
             } else {
