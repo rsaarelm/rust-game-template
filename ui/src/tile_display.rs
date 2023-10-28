@@ -106,10 +106,9 @@ pub fn terrain_cell(
         match loc.tile(r) {
             None => CharCell::c('░'),
             Some(Tile::Solid(_)) => {
-                if let Some(connectivity) = util::wallform_mask(
-                    |p| matches!((loc + p).tile(r), Some(Tile::Solid(_))),
-                    [0, 0],
-                ) {
+                if let Some(connectivity) =
+                    util::wallform_mask(|p| (loc + p).is_wall_tile(r), [0, 0])
+                {
                     CharCell::c(DOUBLE_LINE[connectivity])
                 } else {
                     Default::default()

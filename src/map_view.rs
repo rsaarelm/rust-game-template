@@ -87,8 +87,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     // Draw main map contents, animations and fog of war.
     draw_map(r, &sector_win, offset);
     game().draw_ground_anims(&sector_win, offset);
-    // TODO: Bring back fog of war
-    //draw_fog(r, &sector_win, offset);
+    draw_fog(r, &sector_win, offset);
     game().draw_sky_anims(&sector_win, offset);
 
     // Highlight planned path.

@@ -200,6 +200,11 @@ impl Location {
         }
     }
 
+    /// Convenience method that's fast to call.
+    pub fn is_wall_tile(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.above().is_solid(r) && self.is_solid(r)
+    }
+
     /// Which locations should be marked as visible in FOV when traversing
     /// through this tile. This should match the visible space of the tile.
     /// The under-voxel is only included if it's not blocked by the middle
@@ -382,10 +387,21 @@ impl Location {
         self.sector_bounds().grow([1, 1], [1, 1])
     }
 
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+        self.fov_volume(r)
+            .into_iter()
+            .any(|loc| r.fov.contains(&loc))
+    }
+
     /// Location has been seen by an allied unit at some point.
     pub fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
-        let r = r.as_ref();
-        r.fov.contains(self)
+        if self.is_wall_tile(r) {
+            // Walls are visible if any neighbor is visible open terrain.
+            s8::ns(*self).any(|loc| loc.is_in_fov_set(r))
+        } else {
+            self.is_in_fov_set(r)
+        }
     }
 
     pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
