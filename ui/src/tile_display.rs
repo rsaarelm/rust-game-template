@@ -106,25 +106,10 @@ pub fn terrain_cell(
         match loc.tile(r) {
             None => CharCell::c('░'),
             Some(Tile::Solid(_)) => {
-                let mut is_exposed = false;
-                let mut connectivity = 0;
-                for (i, loc) in s8::ns(loc).enumerate() {
-                    if matches!(loc.tile(r), Some(Tile::Solid(_))) {
-                        // Orthogonally connected walls contribute to mask.
-                        if i % 2 == 0
-                            && s8::ns(loc).any(|loc| {
-                                matches!(loc.tile(r), Some(Tile::Floor { .. }))
-                            })
-                        {
-                            connectivity |= 1 << (i / 2);
-                        }
-                    } else {
-                        // Orthogonal or diagonal open space makes the wall
-                        // visible.
-                        is_exposed = true;
-                    }
-                }
-                if is_exposed {
+                if let Some(connectivity) = util::wallform_mask(
+                    |p| matches!((loc + p).tile(r), Some(Tile::Solid(_))),
+                    [0, 0],
+                ) {
                     CharCell::c(DOUBLE_LINE[connectivity])
                 } else {
                     Default::default()
