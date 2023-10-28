@@ -200,6 +200,25 @@ impl Location {
         }
     }
 
+    /// Which locations should be marked as visible in FOV when traversing
+    /// through this tile. This should match the visible space of the tile.
+    /// The under-voxel is only included if it's not blocked by the middle
+    /// voxel.
+    pub fn fov_volume(&self, r: &impl AsRef<Runtime>) -> Vec<Location> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+        ) {
+            (true, true, _) => vec![],
+            (true, false, true) => vec![*self],
+            (true, false, false) => vec![*self, self.below()],
+            (false, true, _) => vec![self.above()],
+            (false, false, true) => vec![self.above(), *self],
+            (false, false, false) => vec![self.above(), *self, self.below()],
+        }
+    }
+
     /// 4-bit mask that has 1 on direction with a step up.
     fn high_connectivity(&self, r: &impl AsRef<Runtime>) -> usize {
         s4::DIR
