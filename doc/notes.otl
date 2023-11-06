@@ -70,3 +70,5 @@ IDM things
 	String blocks sometimes use NBSP as left padding for things saved in IDM files, since IDM does not consider NBSP as indentation
 	When writing code that generates this, always escape NBSP chars as \u{00a0} instead of emitting a literal NBSP character in the code
 	People reading the code can't tell the difference between a literal NBSP and ASCII space on sight, so the code can be very confusing if they don't know about the NBSP trick
+	IDM style is to use kebab-case with field naming, use `#[serde(rename_all = "kebab-case")]` on struct and enum declarations
+	Serialized structs are expected to omit fields that have a default value, use `#[serde(default)]` on struct declarations
