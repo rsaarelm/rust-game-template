@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::Logos;
@@ -97,4 +99,33 @@ impl WorldSpec {
     pub fn new(seed: Logos) -> Self {
         WorldSpec { seed }
     }
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct RegionData {
+    legend: BTreeMap<char, Vec<SectorSpec>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SectorSpec {
+    Generate(MapGen),
+    Level(((PatchData,), String)),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MapGen {
+    Water,
+    Grassland,
+    Forest,
+    Mountains,
+}
+
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct PatchData {
+    name: String,
+    legend: BTreeMap<char, Spawn>,
 }
