@@ -166,6 +166,22 @@ impl Location {
         }
     }
 
+    /// If there is a tile floor location (an empty voxel above a filled
+    /// voxel) that corresponds to the given location, snap to that location.
+    pub fn snap_to_floor(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+            self.below().below().is_solid(r),
+        ) {
+            (false, true, _, _) => Some(self.above()),
+            (_, false, true, _) => Some(*self),
+            (_, _, false, true) => Some(self.below()),
+            _ => None,
+        }
+    }
+
     pub fn tile(&self, r: &impl AsRef<Runtime>) -> Option<Tile> {
         match (
             self.above().is_solid(r),
@@ -289,21 +305,13 @@ impl Location {
         r: &impl AsRef<Runtime>,
         dir: IVec2,
     ) -> Option<Location> {
-        let loc = *self + dir;
-        let above = loc.above();
-        let below = loc.below();
-
-        if loc.can_be_stepped_in(r) {
-            Some(loc)
-        } else if above.can_be_stepped_in(r) {
-            // Above takes precedence over below since it's drawn on top of
-            // below on screen.
-            Some(above)
-        } else if below.can_be_stepped_in(r) {
-            Some(below)
-        } else {
-            None
+        if let Some(loc) = (*self + dir).snap_to_floor(r) {
+            if loc.can_be_stepped_in(r) {
+                return Some(loc);
+            }
         }
+
+        None
     }
 
     #[deprecated]
