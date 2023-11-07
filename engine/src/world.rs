@@ -110,8 +110,14 @@ pub struct RegionData {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SectorSpec {
+    /// A procgen level
     Generate(MapGen),
+    /// A prefab level
     Level(((PatchData,), String)),
+    /// Branch a new stack off to the side
+    Branch(Vec<SectorSpec>),
+    /// A sequence of applying the same constructor multiple times.
+    Repeat(u32, Box<SectorSpec>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -121,6 +127,7 @@ pub enum MapGen {
     Grassland,
     Forest,
     Mountains,
+    Dungeon,
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
