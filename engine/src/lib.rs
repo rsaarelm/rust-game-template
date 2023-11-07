@@ -83,7 +83,7 @@ mod time;
 pub use time::Instant;
 
 mod world;
-pub use world::{RegionData, World, WorldSpec};
+pub use world::{OldWorld, RegionData, WorldSpec};
 
 pub type Rect = util::Rect<i32>;
 

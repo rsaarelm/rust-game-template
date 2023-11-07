@@ -9,7 +9,8 @@ use crate::{mapgen::Level, prelude::*, Patch, Spawn};
 /// Fixed-format data that specifies the contents of the initial game world.
 /// Created from `WorldSpec`.
 #[derive(Clone, Default)]
-pub struct World {
+#[deprecated]
+pub struct OldWorld {
     /// PRNG seed used
     seed: Logos,
     /// Map generation artifacts specifying terrain and entity spawns.
@@ -18,7 +19,7 @@ pub struct World {
     terrain: HashMap<Location, MapTile>,
 }
 
-impl TryFrom<WorldSpec> for World {
+impl TryFrom<WorldSpec> for OldWorld {
     type Error = anyhow::Error;
 
     fn try_from(value: WorldSpec) -> Result<Self, Self::Error> {
@@ -54,7 +55,7 @@ impl TryFrom<WorldSpec> for World {
             }
         }
 
-        Ok(World {
+        Ok(OldWorld {
             seed: value.seed,
             patches,
             terrain,
@@ -62,7 +63,7 @@ impl TryFrom<WorldSpec> for World {
     }
 }
 
-impl World {
+impl OldWorld {
     pub fn spawns(&self) -> impl Iterator<Item = (Location, &'_ Spawn)> + '_ {
         self.patches.iter().flat_map(|(&loc, a)| {
             a.spawns.iter().map(move |(&p, s)| (loc + p, s))

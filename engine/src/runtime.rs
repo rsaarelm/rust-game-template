@@ -5,7 +5,7 @@ use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{
     data::StaticSeed, ecs::*, placement::Place, prelude::*,
-    terrain::TileTerrain, Fov, Placement, Terrain, World, WorldSpec,
+    terrain::TileTerrain, Fov, OldWorld, Placement, Terrain, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -15,7 +15,7 @@ pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
     /// Lazily instantiated static world structure.
-    pub(crate) world: LazyRes<WorldSpec, World>,
+    pub(crate) world: LazyRes<WorldSpec, OldWorld>,
     /// Terrain modifications made on world during runtime.
 
     #[deprecated]
@@ -60,7 +60,7 @@ impl Default for Runtime {
 
 impl Runtime {
     pub fn new(w: WorldSpec) -> Result<Self> {
-        let world: LazyRes<WorldSpec, World> = LazyRes::new(w);
+        let world: LazyRes<WorldSpec, OldWorld> = LazyRes::new(w);
         let rng = util::srng(world.seed());
 
         let mut ret = Runtime {
