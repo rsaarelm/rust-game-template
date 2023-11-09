@@ -1,10 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
+use glam::IVec3;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::Logos;
 
-use crate::{mapgen::Level, prelude::*, Patch, Spawn};
+use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Spawn};
+
+// Just the origin corner location for the sector for now, can be replaced
+// with a proper type later.
+pub type Sector = Location;
 
 /// Fixed-format data that specifies the contents of the initial game world.
 /// Created from `WorldSpec`.
@@ -14,12 +19,12 @@ pub struct OldWorld {
     /// PRNG seed used
     seed: Logos,
     /// Map generation artifacts specifying terrain and entity spawns.
-    patches: IndexMap<Location, Patch>,
+    patches: IndexMap<Location, OldPatch>,
     /// Replicates data from `patches` in a more efficiently accessible form.
     terrain: HashMap<Location, MapTile>,
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct World {
     /// PRNG seed used.
@@ -27,10 +32,10 @@ pub struct World {
     /// Scenario data used to initialize this world.
     scenario: Region,
     /// Entities that have been spawned once from this world.
-    spawn_history: BTreeSet<Location>,
+    spawn_history: IndexSet<(Location, Spawn)>,
     /// Terrain that has been changed during runtime.
     // TODO: Use an atlas type here to save it neatly
-    voxel_overlay: HashMap<Location, Voxel>,
+    terrain_overlay: HashMap<Location, Voxel>,
 
     #[serde(skip)]
     skeleton: Skeleton,
@@ -40,7 +45,14 @@ pub struct World {
 
 impl World {
     pub fn new(seed: Logos, scenario: Region) -> anyhow::Result<Self> {
-        todo!()
+        // Fail construction if new World is created with an invalid scenario.
+        let mut ret = World {
+            seed,
+            scenario,
+            ..Default::default()
+        };
+        ret.construct_skeleton()?;
+        Ok(ret)
     }
 
     /// Populate the world cache around the given location.
@@ -53,7 +65,35 @@ impl World {
     /// will not cause further entity spawn requests to fire. You are expected
     /// to call this around the current player position every frame.
     pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
+        // We can get a World via deserialization that has an undetected
+        // invalid scenario, it will cause a panic at this point.
+        self.construct_skeleton().expect("Invalid scenario data");
         todo!()
+    }
+
+    fn construct_skeleton(&mut self) -> anyhow::Result<()> {
+        if self.skeleton.is_empty() {
+            self.skeleton =
+                Skeleton::new(&mut util::srng(&self.seed), &self.scenario)?;
+        }
+        Ok(())
+    }
+
+    pub fn voxel(&self, loc: Location) -> Voxel {
+        if let Some(&mutated) = self.terrain_overlay.get(&loc) {
+            return mutated;
+        }
+
+        if let Some(&cached) = self.terrain_cache.get(&loc) {
+            return cached;
+        }
+
+        // Default terrain, solid rock underground and empty air overground.
+        if loc.z() < 0 {
+            Some(Block::Rock)
+        } else {
+            None
+        }
     }
 }
 
@@ -63,7 +103,7 @@ impl TryFrom<WorldSpec> for OldWorld {
     fn try_from(value: WorldSpec) -> Result<Self, Self::Error> {
         let mut rng = util::srng(&value.seed);
 
-        let mut patches: IndexMap<Location, Patch> = IndexMap::default();
+        let mut patches: IndexMap<Location, OldPatch> = IndexMap::default();
 
         /*
         const MAX_DEPTH: u32 = 8;
@@ -130,6 +170,7 @@ impl OldWorld {
 /// in save files. Expansion is highly context-dependent, may use prefab maps
 /// or procedural generation.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[deprecated]
 pub struct WorldSpec {
     seed: Logos,
 }
@@ -140,9 +181,25 @@ impl WorldSpec {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+enum GenerationStatus {
+    /// Sector and its surroundings have been generated. When a `Core` sector is
+    /// queried, nothing is done.
+    Core,
+    /// Sector is generated, but is at the edge of ungenerated space. When a
+    /// `Rim` sector is queried, it is made into `Core` and further `Rim`
+    /// sectors are generated around it.
+    Rim,
+}
+
 /// Internal representation of the region spec, a world skeleton.
-#[derive(Clone, Default)]
-struct Skeleton {}
+#[derive(Default)]
+struct Skeleton {
+    /// Sectors that have been generated.
+    sector_status: HashMap<Sector, GenerationStatus>,
+
+    generators: HashMap<Sector, Box<dyn MapGenerator>>,
+}
 
 impl Skeleton {
     pub fn new(
@@ -159,25 +216,40 @@ impl Skeleton {
     }
 }
 
+pub trait MapGenerator {
+    fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch>;
+}
+
+/// Bounds and topology definition for map generation.
+pub struct Lot {
+    /// Volume in space in which the map should be generated.
+    volume: Cube,
+
+    /// Connection flags to the six neighbors. If the bit is set for a given
+    /// edge, the map generator is expected to generate a connection in that
+    /// direction. The bit order is NESWDU.
+    connections: u8,
+}
+
 pub type Region = ((RegionData,), String);
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct RegionData {
-    legend: BTreeMap<char, Vec<SectorSpec>>,
+    legend: BTreeMap<char, Vec<RegionSegment>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum SectorSpec {
+pub enum RegionSegment {
     /// A procgen level
     Generate(MapGen),
     /// A prefab level
     Level(((PatchData,), String)),
     /// Branch a new stack off to the side
-    Branch(Vec<SectorSpec>),
+    Branch(Vec<RegionSegment>),
     /// A sequence of applying the same constructor multiple times.
-    Repeat(u32, Box<SectorSpec>),
+    Repeat(u32, Box<RegionSegment>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
