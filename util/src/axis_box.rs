@@ -52,7 +52,7 @@ pub struct AxisBox<T, const N: usize> {
 }
 
 impl<T, const N: usize> AxisBox<T, N> {
-    /// Faster than `Ab::new`, but does not check that dimensions are
+    /// Faster than `AxisBox::new`, but does not check that dimensions are
     /// positive.
     ///
     /// # Safety
@@ -209,7 +209,7 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
     /// Return the product of the components of the dimension vector of the
     /// axis box.
     ///
-    /// NB. This can overflow easily with large multidimensional axis box.
+    /// NB. This can overflow easily with large multidimensional axis boxes.
     pub fn volume(&self) -> T {
         (0..N)
             .map(move |i| self.p1[i] - self.p0[i])
