@@ -20,6 +20,8 @@ pub enum Tile {
     Solid(Block),
 }
 
+pub type Voxel = Option<Block>;
+
 /// Possible contents for a voxel.
 #[derive(
     Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,

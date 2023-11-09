@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -17,6 +17,44 @@ pub struct OldWorld {
     patches: IndexMap<Location, Patch>,
     /// Replicates data from `patches` in a more efficiently accessible form.
     terrain: HashMap<Location, MapTile>,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct World {
+    /// PRNG seed used.
+    seed: Logos,
+    /// Scenario data used to initialize this world.
+    scenario: Region,
+    /// Entities that have been spawned once from this world.
+    spawn_history: BTreeSet<Location>,
+    /// Terrain that has been changed during runtime.
+    // TODO: Use an atlas type here to save it neatly
+    voxel_overlay: HashMap<Location, Voxel>,
+
+    #[serde(skip)]
+    skeleton: Skeleton,
+    #[serde(skip)]
+    terrain_cache: HashMap<Location, Voxel>,
+}
+
+impl World {
+    pub fn new(seed: Logos, scenario: Region) -> anyhow::Result<Self> {
+        todo!()
+    }
+
+    /// Populate the world cache around the given location.
+    ///
+    /// The world cache will not have contents until the populate method is
+    /// called. The method will also return a list of entities that need to be
+    /// spawned in the area surrounding the location.
+    ///
+    /// Calling this repeatedly for the same location will exit quickly and
+    /// will not cause further entity spawn requests to fire. You are expected
+    /// to call this around the current player position every frame.
+    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
+        todo!()
+    }
 }
 
 impl TryFrom<WorldSpec> for OldWorld {
@@ -101,6 +139,27 @@ impl WorldSpec {
         WorldSpec { seed }
     }
 }
+
+/// Internal representation of the region spec, a world skeleton.
+#[derive(Clone, Default)]
+struct Skeleton {}
+
+impl Skeleton {
+    pub fn new(
+        rng: &mut (impl Rng + ?Sized),
+        scenario: &Region,
+    ) -> anyhow::Result<Self> {
+        todo!()
+    }
+
+    /// Call this to quickly determine if the skeleton hasn't been initialized
+    /// yet after loading a game.
+    pub fn is_empty(&self) -> bool {
+        todo!()
+    }
+}
+
+pub type Region = ((RegionData,), String);
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]

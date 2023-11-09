@@ -117,6 +117,7 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
+    #[deprecated] // This should be Runtime::world-side
     pub fn default_voxel(&self) -> Option<Block> {
         if self.z < 0 {
             // Underground
