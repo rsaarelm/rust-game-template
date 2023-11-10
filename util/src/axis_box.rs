@@ -359,6 +359,20 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
 
         [Self::new(self.p0, s1), Self::new(s0, self.p1)]
     }
+
+    /// Clamp a vector type into the bounds of the box.
+    pub fn clamp<E>(&self, val: E) -> E
+    where
+        E: From<[T; N]> + Into<[T; N]>,
+    {
+        let mut val = val.into();
+        for i in 0..N {
+            val[i] = pmax(self.p0[i], val[i]);
+            val[i] = pmin(self.p1[i], val[i]);
+        }
+
+        E::from(val)
+    }
 }
 
 impl<T, const N: usize> AxisBox<T, N>
