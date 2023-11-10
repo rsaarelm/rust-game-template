@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use anyhow::bail;
-use derive_deref::Deref;
+use derive_more::Deref;
 use util::{text, Noun, Sentence};
 
 use crate::prelude::*;

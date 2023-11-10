@@ -2,7 +2,7 @@
 
 use std::{cell::RefCell, collections::BTreeMap, fmt};
 
-use derive_deref::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut};
 use hecs::{
     serialize::row::{self, SerializeContext},
     EntityBuilder, EntityRef,

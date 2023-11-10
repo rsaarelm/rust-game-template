@@ -1,4 +1,4 @@
-use derive_deref::Deref;
+use derive_more::Deref;
 use engine::Action;
 use glam::ivec2;
 use navni::{Key, KeyTyped};

@@ -1,7 +1,7 @@
 //! Generic entity logic.
 use std::{fmt, str::FromStr};
 
-use derive_deref::Deref;
+use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use util::{Logos, Noun};

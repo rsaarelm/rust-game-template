@@ -1,7 +1,7 @@
 use std::{fmt, hash::Hash, str::FromStr};
 
 use anyhow::bail;
-use derive_deref::Deref;
+use derive_more::Deref;
 use itertools::Itertools;
 use rand::prelude::*;
 use serde_with::{DeserializeFromStr, SerializeDisplay};

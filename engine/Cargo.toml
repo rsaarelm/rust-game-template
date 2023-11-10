@@ -7,7 +7,7 @@ build = "build.rs"
 
 [dependencies]
 anyhow = "1"
-derive_deref = "1"
+derive_more = "0.99"
 fdeflate = "0.3"
 fov = { path = "../fov" }
 glam = { version = "0.24", features = ["serde"] }

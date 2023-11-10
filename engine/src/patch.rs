@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::bail;
-use derive_deref::Deref;
+use derive_more::Deref;
 use serde::{Deserialize, Serialize, Serializer};
 use util::{_String, s4, s8};
 

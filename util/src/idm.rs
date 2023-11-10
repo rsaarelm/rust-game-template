@@ -1,7 +1,7 @@
 use std::{borrow::Borrow, fmt, fs, path::Path, str::FromStr};
 
 use anyhow::{anyhow, Result};
-use derive_deref::Deref;
+use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 

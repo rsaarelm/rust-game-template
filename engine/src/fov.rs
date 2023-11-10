@@ -1,6 +1,6 @@
 //! Logic for revealing unexplored game terrain
 
-use derive_deref::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
 
 use crate::{prelude::*, BitAtlas};
