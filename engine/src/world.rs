@@ -1,15 +1,45 @@
 use std::collections::BTreeMap;
 
-use glam::IVec3;
+use derive_more::{Add, Deref, From};
+use glam::{ivec3, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::Logos;
 
 use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Spawn};
 
-// Just the origin corner location for the sector for now, can be replaced
-// with a proper type later.
-pub type Sector = Location;
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Hash,
+    Debug,
+    Deref,
+    Add,
+    From,
+    Serialize,
+    Deserialize,
+)]
+pub struct Sector(IVec3);
+
+impl From<Location> for Sector {
+    fn from(value: Location) -> Self {
+        Sector(ivec3(
+            (value.x() as i32).div_floor(SECTOR_WIDTH),
+            (value.y() as i32).div_floor(SECTOR_HEIGHT),
+            (value.z() as i32).div_floor(SECTOR_DEPTH),
+        ))
+    }
+}
+
+impl From<Sector> for Cube {
+    fn from(value: Sector) -> Self {
+        let sector_size = ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
+        let origin = *value * ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
+        Cube::new(origin, origin + sector_size)
+    }
+}
 
 /// Fixed-format data that specifies the contents of the initial game world.
 /// Created from `WorldSpec`.

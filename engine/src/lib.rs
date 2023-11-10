@@ -6,6 +6,8 @@
 pub const SECTOR_WIDTH: i32 = 52;
 /// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 39;
+/// How many Z-layers does a sector consist of.
+pub const SECTOR_DEPTH: i32 = 2;
 
 /// How far can the player see.
 pub const FOV_RADIUS: i32 = 10;

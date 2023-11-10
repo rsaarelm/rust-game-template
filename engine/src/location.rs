@@ -36,6 +36,14 @@ impl Location {
 }
 
 impl Location {
+    pub fn x(&self) -> i16 {
+        self.x
+    }
+
+    pub fn y(&self) -> i16 {
+        self.y
+    }
+
     pub fn z(&self) -> i16 {
         self.z
     }
