@@ -4,9 +4,9 @@ use derive_more::{Add, Deref, From};
 use glam::{ivec3, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use util::Logos;
+use util::{v2, Logos};
 
-use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Spawn};
+use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Rect, Spawn};
 
 #[derive(
     Copy,
@@ -71,6 +71,65 @@ pub struct World {
     skeleton: Skeleton,
     #[serde(skip)]
     terrain_cache: HashMap<Location, Voxel>,
+}
+
+/// Snaps a stairwell position to its closest designated grid position for its
+/// Z-level.
+///
+/// To keep up and down stairs for a random level from ending up on the same
+/// x,y and creating an ungenerateable map, stairwells must alternate between
+/// black and white chessboard squares of a grid of 3x3 cells. Stairwells are
+/// also kept away from the very edge of the sector.
+fn snap_stairwell_position(pos: IVec3) -> IVec3 {
+    // TODO: Find largest chessboard box that's multiples of 6 large and fits
+    // inside a sector with at least one tile layer at the boundaries
+    let bounds = todo!();
+
+    snap_to_chessboard3(pos.z.div_floor(2), &bounds, pos.truncate())
+        .extend(pos.z)
+}
+
+/// Snap a point to the center of 3x3 "chessboard" squares within the area of
+/// `bounds`.
+///
+/// The point is snapped to "white" or "black" squares based on whether
+/// `parity` is even or odd.
+fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
+    // Chessboard square size.
+    const N: i32 = 3;
+    const N2: i32 = N * 2;
+
+    assert!(
+        {
+            let [w, h] = bounds.dim();
+            w > 0 && w % N2 == 0 && h > 0 && h % N2 == 0
+        },
+        "snap_to_chessboard3: bounds dimensions must be nonzero multiples of {N2}"
+    );
+
+    // Figure out the chessboard color the point falls.
+    let origin = v2(bounds.min());
+    let tile = pos - origin;
+    let color = (tile.x.div_floor(N) + tile.y.div_floor(N)).rem_euclid(2);
+
+    // Displace it to the next square over if it falls on the wrong pos for
+    // the current parity.
+    let adjusted_pos = if color != parity.rem_euclid(2) {
+        pos + ivec2(N, 0)
+    } else {
+        pos
+    };
+
+    // Snap point to center of square.
+    let tile = adjusted_pos - origin;
+    let adjusted_pos = origin
+        + ivec2(
+            tile.x.div_floor(N) * N + N / 2,
+            tile.y.div_floor(N) * N + N / 2,
+        );
+
+    // Finally wrap it to the bounds of the chessboard and we're done.
+    bounds.mod_proj(adjusted_pos)
 }
 
 impl World {
