@@ -41,6 +41,31 @@ impl From<Sector> for Cube {
     }
 }
 
+impl Sector {
+    /// Return the sector neighborhood which should have maps generated for it
+    /// when the central sector is being set up as an active play area.
+    fn cache_neighbors(&self) -> impl Iterator<Item = Sector> {
+        let s = *self;
+        // All 8 chess-metric neighbors plus above and below sectors. Should
+        // be enough to cover everything needed while moving around the center
+        // sector.
+        [
+            ivec3(0, -1, 0),
+            ivec3(1, -1, 0),
+            ivec3(1, 0, 0),
+            ivec3(1, 1, 0),
+            ivec3(0, 1, 0),
+            ivec3(-1, 1, 0),
+            ivec3(-1, 0, 0),
+            ivec3(-1, -1, 0),
+            ivec3(0, 0, -1),
+            ivec3(0, 0, 1),
+        ]
+        .into_iter()
+        .map(move |d| s + Sector(d))
+    }
+}
+
 /// Fixed-format data that specifies the contents of the initial game world.
 /// Created from `WorldSpec`.
 #[derive(Clone, Default)]
@@ -71,6 +96,59 @@ pub struct World {
     skeleton: Skeleton,
     #[serde(skip)]
     terrain_cache: HashMap<Location, Voxel>,
+}
+
+impl World {
+    pub fn new(seed: Logos, scenario: Region) -> anyhow::Result<Self> {
+        // Fail construction if new World is created with an invalid scenario.
+        let mut ret = World {
+            seed,
+            scenario,
+            ..Default::default()
+        };
+        ret.construct_skeleton()?;
+        Ok(ret)
+    }
+
+    /// Populate the world cache around the given location.
+    ///
+    /// The world cache will not have contents until the populate method is
+    /// called. The method will also return a list of entities that need to be
+    /// spawned in the area surrounding the location.
+    ///
+    /// Calling this repeatedly for the same location will exit quickly and
+    /// will not cause further entity spawn requests to fire. You are expected
+    /// to call this around the current player position every frame.
+    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
+        // We can get a World via deserialization that has an undetected
+        // invalid scenario, it will cause a panic at this point.
+        self.construct_skeleton().expect("Invalid scenario data");
+        todo!()
+    }
+
+    fn construct_skeleton(&mut self) -> anyhow::Result<()> {
+        if self.skeleton.is_empty() {
+            self.skeleton = Skeleton::new(&self.seed, &self.scenario)?;
+        }
+        Ok(())
+    }
+
+    pub fn voxel(&self, loc: Location) -> Voxel {
+        if let Some(&mutated) = self.terrain_overlay.get(&loc) {
+            return mutated;
+        }
+
+        if let Some(&cached) = self.terrain_cache.get(&loc) {
+            return cached;
+        }
+
+        // Default terrain, solid rock underground and empty air overground.
+        if loc.z() < 0 {
+            Some(Block::Rock)
+        } else {
+            None
+        }
+    }
 }
 
 /// Snaps a stairwell position to its closest designated grid position for its
@@ -130,60 +208,6 @@ fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
 
     // Finally wrap it to the bounds of the chessboard and we're done.
     bounds.mod_proj(adjusted_pos)
-}
-
-impl World {
-    pub fn new(seed: Logos, scenario: Region) -> anyhow::Result<Self> {
-        // Fail construction if new World is created with an invalid scenario.
-        let mut ret = World {
-            seed,
-            scenario,
-            ..Default::default()
-        };
-        ret.construct_skeleton()?;
-        Ok(ret)
-    }
-
-    /// Populate the world cache around the given location.
-    ///
-    /// The world cache will not have contents until the populate method is
-    /// called. The method will also return a list of entities that need to be
-    /// spawned in the area surrounding the location.
-    ///
-    /// Calling this repeatedly for the same location will exit quickly and
-    /// will not cause further entity spawn requests to fire. You are expected
-    /// to call this around the current player position every frame.
-    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
-        // We can get a World via deserialization that has an undetected
-        // invalid scenario, it will cause a panic at this point.
-        self.construct_skeleton().expect("Invalid scenario data");
-        todo!()
-    }
-
-    fn construct_skeleton(&mut self) -> anyhow::Result<()> {
-        if self.skeleton.is_empty() {
-            self.skeleton =
-                Skeleton::new(&mut util::srng(&self.seed), &self.scenario)?;
-        }
-        Ok(())
-    }
-
-    pub fn voxel(&self, loc: Location) -> Voxel {
-        if let Some(&mutated) = self.terrain_overlay.get(&loc) {
-            return mutated;
-        }
-
-        if let Some(&cached) = self.terrain_cache.get(&loc) {
-            return cached;
-        }
-
-        // Default terrain, solid rock underground and empty air overground.
-        if loc.z() < 0 {
-            Some(Block::Rock)
-        } else {
-            None
-        }
-    }
 }
 
 impl TryFrom<WorldSpec> for OldWorld {
@@ -291,17 +315,82 @@ struct Skeleton {
 }
 
 impl Skeleton {
-    pub fn new(
-        rng: &mut (impl Rng + ?Sized),
-        scenario: &Region,
-    ) -> anyhow::Result<Self> {
+    pub fn new(_seed: &Logos, scenario: &Region) -> anyhow::Result<Self> {
+        // seed is needed in the future when there are varying repeat lengths
+
+        // TODO convert Region into a map of generators here.
+
+        // TODO Way to encode connectivities, dungeong branches should not
+        // connect sideways in the middle even when they're side-to-side to
+        // another sector. Maybe preset volume boxes in generators values?
         todo!()
     }
 
     /// Call this to quickly determine if the skeleton hasn't been initialized
     /// yet after loading a game.
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.generators.is_empty()
+    }
+
+    fn lot(&self, sector: Sector) -> Lot {
+        let volume = Cube::from(sector);
+        // TODO: Connectivity setup.
+        Lot {
+            volume,
+            ..Default::default()
+        }
+    }
+
+    fn generate_for(&mut self, seed: &Logos, sector: Sector) -> Patch {
+        if let std::collections::hash_map::Entry::Vacant(e) =
+            self.sector_status.entry(sector)
+        {
+            e.insert(GenerationStatus::Rim);
+
+            if let Some(gen) = self.generators.get(&sector) {
+                // TODO: Better generation failure handling story...
+                // - Separate errors indicating bugs (should panic) from errors
+                // from inherently fallible map generation
+                // - Do a small number of tries (maybe just a single retry)
+                // for fallible generation, things should work right for the
+                // vast majority of time for all generators
+                // - Maybe have a final fallback of generating an empty room
+                // map if the generator keeps failing, and log this with
+                // log::error.
+                let mut rng = util::srng(&(seed, sector));
+                gen.run(&mut rng, &self.lot(sector))
+                    .expect("Map generation failed")
+            } else {
+                // This sector is just empty space and not part of the
+                // skeleton.
+                Default::default()
+            }
+        } else {
+            // This sector has already been generated once
+            Default::default()
+        }
+    }
+
+    /// Generate a patch of the content of not-previously-generated sectors in
+    /// the neighborhood of `sector`.
+    pub fn generate_around(&mut self, seed: &Logos, sector: Sector) -> Patch {
+        if let Some(GenerationStatus::Core) = self.sector_status.get(&sector) {
+            return Default::default();
+        }
+
+        // Build up a patch for all the nearby unconstructed sectors around
+        // the center sector.
+        let mut ret = Patch::default();
+
+        for sec in sector.cache_neighbors().chain(std::iter::once(sector)) {
+            ret += &self.generate_for(seed, sec);
+        }
+
+        // Mark the central sector as a core sector so we won't try to build
+        // around it the second time.
+        self.sector_status.insert(sector, GenerationStatus::Core);
+
+        ret
     }
 }
 
@@ -310,6 +399,7 @@ pub trait MapGenerator {
 }
 
 /// Bounds and topology definition for map generation.
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Lot {
     /// Volume in space in which the map should be generated.
     volume: Cube,
