@@ -8,9 +8,22 @@ use util::{_String, s4, s8};
 
 use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
     pub terrain: IndexMap<IVec3, Voxel>,
     pub spawns: IndexMap<IVec3, Spawn>,
+}
+
+impl std::ops::AddAssign<&Patch> for Patch {
+    fn add_assign(&mut self, rhs: &Patch) {
+        for (&p, &a) in &rhs.terrain {
+            self.terrain.insert(p, a);
+        }
+
+        for (&p, a) in &rhs.spawns {
+            self.spawns.insert(p, a.clone());
+        }
+    }
 }
 
 /// Specification for a 2D patch of the game world.
