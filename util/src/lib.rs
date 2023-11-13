@@ -1,6 +1,9 @@
 //! Unopinionated standalone utilities.
 #![feature(lazy_cell)]
 
+mod ascii_map;
+pub use ascii_map::AsciiMap;
+
 mod axis_box;
 pub use axis_box::{AxisBox, Cube, Element, LatticeBox, Rect};
 
