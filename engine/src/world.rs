@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use anyhow::bail;
 use derive_more::{Add, Deref, From};
 use glam::{ivec3, IVec3};
 use rand::prelude::*;
@@ -316,6 +317,8 @@ struct Skeleton {
 
 impl Skeleton {
     pub fn new(_seed: &Logos, scenario: &Region) -> anyhow::Result<Self> {
+        use RegionSegment::*;
+
         // seed is needed in the future when there are varying repeat lengths
 
         // TODO convert Region into a map of generators here.
@@ -323,7 +326,79 @@ impl Skeleton {
         // TODO Way to encode connectivities, dungeong branches should not
         // connect sideways in the middle even when they're side-to-side to
         // another sector. Maybe preset volume boxes in generators values?
-        todo!()
+
+        let mut ret = Skeleton::default();
+
+        for (y, line) in scenario.map.trim().lines().enumerate() {
+            for (x, c) in line.chars().enumerate() {
+                if c.is_whitespace() {
+                    continue;
+                }
+
+                let Some(stack) = scenario.legend.get(&c) else {
+                    bail!("Unknown sector char {c:?}");
+                };
+
+                // Determine starting height.
+                //
+                // It's usually 0 for ground level, but a stack can have
+                // multiple stacked site segments for a taller surface
+                // structure.
+
+                let mut surface_segments = 0;
+
+                for (i, s) in stack.iter().enumerate() {
+                    match s {
+                        Generate(gen) if i == 0 && gen.is_surface() => {
+                            surface_segments += 1;
+                            break;
+                        }
+                        Generate(_) if i == 0 => {
+                            bail!("Non-surface generator at top of stack for {c:?}");
+                        }
+                        Site(_) => {
+                            surface_segments += 1;
+                        }
+                        _ if surface_segments == 0 => {
+                            bail!("No surface segment for {c:?}");
+                        }
+                        _ => break,
+                    }
+                }
+
+                debug_assert!(surface_segments > 0);
+
+                let mut sec = Sector::from(ivec3(
+                    x as i32,
+                    y as i32,
+                    -1 - surface_segments,
+                ));
+
+                // Now build the thing.
+                for s in &stack {
+                    match s {
+                        Generate(gen) => {
+                            if sec.z >= 0 && !gen.is_surface() {
+                                bail!("Underground genenrator above surface for {c:?}");
+                            }
+                            if sec.z < 0 && gen.is_surface() {
+                                bail!("Surface genenrator below surface for {c:?}");
+                            }
+
+                            // TODO: Actually come up with a generator
+                            // instance for the MapGen variant and insert it
+                            // in ret.generators
+                        }
+                    }
+                }
+            }
+        }
+
+        if ret.generators.is_empty() {
+            bail!("No overworld sectors found");
+        }
+
+        Ok(ret)
     }
 
     /// Call this to quickly determine if the skeleton hasn't been initialized
@@ -468,6 +543,13 @@ pub enum MapGen {
     Forest,
     Mountains,
     Dungeon,
+}
+
+impl MapGen {
+    pub fn is_surface(&self) -> bool {
+        use MapGen::*;
+        matches!(self, Water | Grassland | Forest | Mountains)
+    }
 }
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
