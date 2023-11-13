@@ -320,11 +320,38 @@ pub struct Lot {
     connections: u8,
 }
 
-pub type Region = ((RegionData,), String);
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[serde(default, rename_all = "kebab-case", from = "((SerRegion,), String)")]
+pub struct Region {
+    map: String,
+    legend: BTreeMap<char, Vec<RegionSegment>>,
+}
+
+impl From<((SerRegion,), String)> for Region {
+    fn from(((value,), map): ((SerRegion,), String)) -> Self {
+        let mut ret = Region::from(value);
+
+        if !map.trim().is_empty() && ret.map.trim().is_empty() {
+            ret.map = map;
+        }
+
+        ret
+    }
+}
+
+impl From<SerRegion> for Region {
+    fn from(value: SerRegion) -> Self {
+        Region {
+            map: value.map,
+            legend: value.legend,
+        }
+    }
+}
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
-pub struct RegionData {
+struct SerRegion {
+    map: String,
     legend: BTreeMap<char, Vec<RegionSegment>>,
 }
 
@@ -333,8 +360,10 @@ pub struct RegionData {
 pub enum RegionSegment {
     /// A procgen level
     Generate(MapGen),
-    /// A prefab level
-    Level(((PatchData,), String)),
+    /// An above-ground prefab level
+    Site(((PatchData,), String)),
+    /// An underground prefab level
+    Vault(((PatchData,), String)),
     /// Branch a new stack off to the side
     Branch(Vec<RegionSegment>),
     /// A sequence of applying the same constructor multiple times.

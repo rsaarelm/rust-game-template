@@ -44,8 +44,7 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(scenario) = args.scenario {
         let scenario = util::dir_to_idm(scenario)?;
-        let scenario: ((engine::RegionData,), String) =
-            idm::from_str(&scenario.to_string())?;
+        let scenario: engine::Region = idm::from_str(&scenario.to_string())?;
         eprintln!("{}", idm::to_string(&scenario).unwrap());
         // TODO: Use the stuff from the scenario file.
         return Ok(());
