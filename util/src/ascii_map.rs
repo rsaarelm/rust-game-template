@@ -18,7 +18,60 @@ pub struct AsciiMap<T> {
 // would be annoying so I'll just go with this for now.
 
 impl<T> AsciiMap<T> {
+    pub fn new(map: String, legend: IndexMap<char, T>) -> Self {
+        // There might be white space messing with the where content starts,
+        // so do some extra work and make sure everything snaps to
+        let mut y_skip = 0;
+        let mut x_skip = std::usize::MAX;
+
+        let map = map.trim_end();
+
+        if map.is_empty() {
+            return AsciiMap {
+                map: map.to_owned(),
+                legend,
+            };
+        }
+
+        for line in map.lines() {
+            let line = line.trim_end();
+            if line.is_empty() {
+                y_skip += 1;
+                continue;
+            }
+
+            x_skip = x_skip
+                .min(line.chars().take_while(|c| c.is_whitespace()).count());
+        }
+
+        if y_skip > 0 || x_skip > 0 {
+            let mut trimmed_map = String::new();
+            for line in map.lines().skip(y_skip) {
+                debug_assert!(!line.is_empty());
+
+                for c in line.chars().skip(x_skip) {
+                    trimmed_map.push(c);
+                }
+                trimmed_map.push('\n');
+            }
+
+            AsciiMap {
+                map: trimmed_map,
+                legend,
+            }
+        } else {
+            AsciiMap {
+                map: map.to_owned(),
+                legend,
+            }
+        }
+    }
+
     /// Iterate the points and legend entries (if present) on the map.
+    ///
+    /// If any values are returned, at least one is guaranteed to have a
+    /// minimum y coordinate of 0 and at least one is guaranteed to have a
+    /// minimum x coordinate of 0.
     pub fn iter(&self) -> impl Iterator<Item = (IVec2, char, Option<&T>)> + '_ {
         self.map
             .trim()
@@ -47,22 +100,19 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for AsciiMap<T> {
 
 impl<T> From<((SerAsciiMap<T>,), String)> for AsciiMap<T> {
     fn from(((value,), map): ((SerAsciiMap<T>,), String)) -> Self {
-        let mut ret = AsciiMap::from(value);
+        let map = if value.map.trim().is_empty() && !map.trim().is_empty() {
+            map
+        } else {
+            value.map
+        };
 
-        if !map.trim().is_empty() && ret.map.trim().is_empty() {
-            ret.map = map;
-        }
-
-        ret
+        AsciiMap::new(map, value.legend)
     }
 }
 
 impl<T> From<SerAsciiMap<T>> for AsciiMap<T> {
     fn from(value: SerAsciiMap<T>) -> Self {
-        AsciiMap {
-            map: value.map,
-            legend: value.legend,
-        }
+        AsciiMap::new(value.map, value.legend)
     }
 }
 
