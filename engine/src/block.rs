@@ -48,7 +48,7 @@ impl Block {
     }
 }
 
-// NB. Char '.' is reserved for "empty space", don't use it for any block
+// NB. Char '_' is reserved for "empty space", don't use it for any block
 
 impl TryFrom<char> for Block {
     type Error = anyhow::Error;

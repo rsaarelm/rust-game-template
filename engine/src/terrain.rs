@@ -15,7 +15,7 @@ impl TryFrom<Atlas> for VoxelTerrain {
 
         for (loc, c) in value.iter() {
             let v = match c {
-                '.' => None,
+                '_' => None,
                 c => Some(Block::try_from(c)?),
             };
             ret.insert(loc, v);
@@ -27,7 +27,7 @@ impl TryFrom<Atlas> for VoxelTerrain {
 impl From<VoxelTerrain> for Atlas {
     fn from(map: VoxelTerrain) -> Self {
         Atlas::from_iter(map.0.iter().map(|(&loc, v)| match v {
-            None => (loc, '.'),
+            None => (loc, '_'),
             Some(b) => (loc, char::from(*b)),
         }))
     }
