@@ -378,12 +378,36 @@ impl Skeleton {
                             bail!("Surface genenrator below surface for {c:?}");
                         }
 
+                        log::error!(
+                            "TODO: Skipping procgen sector for world skeleton"
+                        );
                         // TODO: Actually come up with a generator
                         // instance for the MapGen variant and insert it
                         // in ret.generators
                     }
 
-                    _ => todo!(),
+                    Site(map) | Vault(map) => {
+                        if (sec.z >= 0) != matches!(s, Site(_)) {
+                            // The names are used to determine ground level
+                            // and must be consistently used.
+                            bail!("Underground site or above-ground vault");
+                        }
+
+                        // Finally some concrete stuff
+                        ret.generators.insert(sec, Box::new(map.clone()));
+                    }
+
+                    Branch(_) => {
+                        log::error!(
+                            "TODO: Implement dungeon branch generation"
+                        );
+                    }
+
+                    Repeat(_, _) => {
+                        log::error!(
+                            "TODO: Implement repeated sector generation"
+                        );
+                    }
                 }
             }
         }
@@ -485,7 +509,7 @@ pub type Region = AsciiMap<Vec<RegionSegment>>;
 #[serde(rename_all = "kebab-case")]
 pub enum RegionSegment {
     /// A procgen level
-    Generate(MapGen),
+    Generate(GenericSector),
     /// An above-ground prefab level
     Site(SectorMap),
     /// An underground prefab level
@@ -498,7 +522,7 @@ pub enum RegionSegment {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum MapGen {
+pub enum GenericSector {
     Water,
     Grassland,
     Forest,
@@ -506,11 +530,17 @@ pub enum MapGen {
     Dungeon,
 }
 
-impl MapGen {
+impl GenericSector {
     pub fn is_surface(&self) -> bool {
-        use MapGen::*;
+        use GenericSector::*;
         matches!(self, Water | Grassland | Forest | Mountains)
     }
 }
 
 type SectorMap = AsciiMap<Spawn>;
+
+impl MapGenerator for SectorMap {
+    fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+        todo!()
+    }
+}
