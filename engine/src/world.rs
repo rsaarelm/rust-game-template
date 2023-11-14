@@ -5,7 +5,7 @@ use derive_more::{Add, Deref, From};
 use glam::{ivec3, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use util::{v2, AsciiMap, Logos};
+use util::{v2, v3, AsciiMap, Logos};
 
 use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Rect, Spawn};
 
@@ -541,6 +541,25 @@ type SectorMap = AsciiMap<Spawn>;
 
 impl MapGenerator for SectorMap {
     fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
-        todo!()
+        let mut ret = Patch::default();
+        for (p, mut c, spawn) in self.iter() {
+            if p.x > lot.volume.width() || p.y > lot.volume.height() {
+                bail!("SectorMap won't fit on given lot");
+            }
+
+            let p = v3(lot.volume.min()) + p.extend(0);
+
+            if let Some(spawn) = spawn {
+                c = '.';
+                ret.spawns.insert(p, spawn.clone());
+            }
+
+            match c {
+                // TODO default terrain
+                x => bail!("Unknown terrain char {c:?}"),
+            }
+        }
+
+        Ok(ret)
     }
 }
