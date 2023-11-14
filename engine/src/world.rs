@@ -541,6 +541,8 @@ type SectorMap = AsciiMap<Spawn>;
 
 impl MapGenerator for SectorMap {
     fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+        use Block::*;
+
         let mut ret = Patch::default();
         for (p, mut c, spawn) in self.iter() {
             if p.x > lot.volume.width() || p.y > lot.volume.height() {
@@ -550,13 +552,39 @@ impl MapGenerator for SectorMap {
             let p = v3(lot.volume.min()) + p.extend(0);
 
             if let Some(spawn) = spawn {
+                // Assume spawns always spawn on top of regular floor.
                 c = '.';
                 ret.spawns.insert(p, spawn.clone());
             }
 
             match c {
-                // TODO default terrain
-                x => bail!("Unknown terrain char {c:?}"),
+                '.' => {
+                    // Make space and a floor.
+                    ret.terrain.insert(p, None);
+                    ret.terrain.insert(p + ivec3(0, 0, -1), Some(Rock));
+                }
+                '#' => {
+                    // Make a wall, make sure it's two cells tall to block
+                    // movement properly even when above the ground.
+                    ret.terrain.insert(p, Some(Rock));
+                    ret.terrain.insert(p + ivec3(0, 0, 1), Some(Rock));
+
+                    // And make a solid floor too just to be sure.
+                    ret.terrain.insert(p + ivec3(0, 0, -1), Some(Rock));
+                }
+                '<' => {
+                    // Upstairs, make a ramp but don't block the ceiling.
+                    // Assume the map generator above has made the hole
+                    // already.
+                    ret.terrain.insert(p, Some(Rock));
+                    ret.terrain.insert(p + ivec3(0, 0, -1), Some(Rock));
+                }
+                '>' => {
+                    // Downstairs, punch a hole in the floor.
+                    ret.terrain.insert(p, None);
+                    ret.terrain.insert(p + ivec3(0, 0, -1), None);
+                }
+                _ => bail!("Unknown terrain char {c:?}"),
             }
         }
 
