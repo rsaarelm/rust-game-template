@@ -276,6 +276,11 @@ pub fn v2(a: impl Into<glam::IVec2>) -> glam::IVec2 {
     a.into()
 }
 
+/// Helper function for very concise IVec3 initialization.
+pub fn v3(a: impl Into<glam::IVec3>) -> glam::IVec3 {
+    a.into()
+}
+
 pub trait VecExt: Sized + Default {
     /// Absolute size of vector in taxicab metric.
     fn taxi_len(&self) -> i32;
