@@ -325,12 +325,7 @@ impl Location {
 
     #[deprecated]
     pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
-        let r = r.as_ref();
-        r.tile_terrain_overlay
-            .get(self)
-            .copied()
-            .or_else(|| r.old_world.tile(self))
-            .unwrap_or_default()
+        Default::default()
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -345,24 +340,16 @@ impl Location {
     }
 
     #[deprecated]
-    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
-        let r = r.as_mut();
-        r.tile_terrain_overlay.insert(*self, t);
-    }
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {}
 
     pub fn set_voxel(&self, r: &mut impl AsMut<Runtime>, v: Option<Block>) {
         let r = r.as_mut();
-        r.terrain_overlay.insert(*self, v);
+        r.voxel_overlay.insert(*self, v);
     }
 
     /// Tile setter that doesn't cover functional terrain.
     pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
-        let r = r.as_mut();
-        if self.map_tile(r) == MapTile::Ground
-            || self.map_tile(r).is_decoration()
-        {
-            r.tile_terrain_overlay.insert(*self, t);
-        }
+        // TODO, implement this for voxels
     }
 
     /// Return location snapped to the origin of this location's sector.
