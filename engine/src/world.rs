@@ -604,7 +604,7 @@ impl GenericSector {
 type SectorMap = AsciiMap<Spawn>;
 
 impl MapGenerator for SectorMap {
-    fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+    fn run(&self, _rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
         use Block::*;
 
         let mut ret = Patch::default();
@@ -626,6 +626,10 @@ impl MapGenerator for SectorMap {
             }
 
             match c {
+                '_' => {
+                    // Make void
+                    ret.terrain.insert(p, None);
+                }
                 '.' => {
                     // Make space and a floor.
                     ret.terrain.insert(p, None);
@@ -639,6 +643,13 @@ impl MapGenerator for SectorMap {
 
                     // And make a solid floor too just to be sure.
                     ret.terrain.insert(p + ivec3(0, 0, -1), Some(Rock));
+                }
+                '*' => {
+                    // Make a wall without the solid floor under it.
+                    // Use next to stairwells to make downstairs work right
+                    ret.terrain.insert(p, Some(Rock));
+                    ret.terrain.insert(p + ivec3(0, 0, 1), Some(Rock));
+                    ret.terrain.insert(p + ivec3(0, 0, -1), None);
                 }
                 '<' => {
                     // Upstairs, make a ramp but don't block the ceiling.
