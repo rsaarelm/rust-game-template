@@ -739,6 +739,12 @@ impl From<(i16, i16, i16)> for Location {
     }
 }
 
+impl From<IVec3> for Location {
+    fn from(v: IVec3) -> Self {
+        Location::new(v.x as i16, v.y as i16, v.z as i16)
+    }
+}
+
 impl From<Location> for (i16, i16, i16) {
     fn from(val: Location) -> Self {
         (val.x, val.y, val.z)

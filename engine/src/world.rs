@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use anyhow::bail;
 use derive_more::{Add, Deref, From};
 use glam::{ivec3, IVec3};
@@ -7,7 +5,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::{v2, v3, AsciiMap, Logos};
 
-use crate::{mapgen::Level, prelude::*, Cube, OldPatch, Patch, Rect, Spawn};
+use crate::{prelude::*, Cube, OldPatch, Patch, Rect, Spawn};
 
 #[derive(
     Copy,
@@ -45,12 +43,13 @@ impl From<Sector> for Cube {
 impl Sector {
     /// Return the sector neighborhood which should have maps generated for it
     /// when the central sector is being set up as an active play area.
-    pub fn cache_neighbors(&self) -> impl Iterator<Item = Sector> {
+    pub fn cache_volume(&self) -> impl Iterator<Item = Sector> {
         let s = *self;
         // All 8 chess-metric neighbors plus above and below sectors. Should
         // be enough to cover everything needed while moving around the center
         // sector.
         [
+            ivec3(0, 0, 0),
             ivec3(0, -1, 0),
             ivec3(1, -1, 0),
             ivec3(1, 0, 0),
@@ -132,7 +131,19 @@ impl World {
         // We can get a World via deserialization that has an undetected
         // invalid scenario, it will cause a panic at this point.
         self.construct_skeleton().expect("Invalid scenario data");
-        todo!()
+        let patch =
+            self.skeleton.generate_around(&self.seed, Sector::from(loc));
+
+        for (p, v) in patch.terrain {
+            self.terrain_cache.insert(p.into(), v);
+        }
+
+        // TODO Remove the map if Location is ever replaced with a plain IVec3
+        patch
+            .spawns
+            .into_iter()
+            .map(|(p, s)| (Location::from(p), s))
+            .collect()
     }
 
     fn construct_skeleton(&mut self) -> anyhow::Result<()> {
@@ -517,7 +528,7 @@ impl Skeleton {
         // the center sector.
         let mut ret = Patch::default();
 
-        for sec in sector.cache_neighbors().chain(std::iter::once(sector)) {
+        for sec in sector.cache_volume() {
             ret += &self.generate_for(seed, sec);
         }
 
