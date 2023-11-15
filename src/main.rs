@@ -42,13 +42,13 @@ fn main() -> anyhow::Result<()> {
     }
     engine::register_mods(mods);
 
-    if let Some(scenario) = args.scenario {
-        let scenario = util::dir_to_idm(scenario)?;
-        let scenario: engine::Region = idm::from_str(&scenario.to_string())?;
-        eprintln!("{}", idm::to_string(&scenario).unwrap());
-        // TODO: Use the stuff from the scenario file.
-        return Ok(());
-    }
+    // Custom scenario loading.
+    let scenario = if let Some(path) = args.scenario {
+        let scenario = util::dir_to_idm(path)?;
+        Some(idm::from_str(&scenario.to_string())?)
+    } else {
+        None
+    };
 
     navni::run(GAME_NAME, async {
         ui::init_game();
@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
                     });
                     log::info!("seed: {seed}");
 
-                    game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
+                    game().r = Runtime::new(seed, scenario).unwrap();
 
                     for (i, layer) in [
                         "\

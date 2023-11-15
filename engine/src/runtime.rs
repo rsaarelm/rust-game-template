@@ -1,11 +1,12 @@
 use anyhow::{bail, Result};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, s8, GameRng, LazyRes};
+use util::{flood_fill_4, s8, GameRng, LazyRes, Logos};
 
 use crate::{
     data::StaticSeed, ecs::*, placement::Place, prelude::*,
-    terrain::TileTerrain, Fov, OldWorld, Placement, Terrain, WorldSpec,
+    terrain::TileTerrain, Data, Fov, OldWorld, Placement, Region, Terrain,
+    World, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -14,8 +15,12 @@ use crate::{
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
+
+    pub(crate) world: World,
+
+    #[deprecated]
     /// Lazily instantiated static world structure.
-    pub(crate) world: LazyRes<WorldSpec, OldWorld>,
+    pub(crate) old_world: LazyRes<WorldSpec, OldWorld>,
     /// Terrain modifications made on world during runtime.
 
     #[deprecated]
@@ -49,6 +54,7 @@ impl Default for Runtime {
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
             world: Default::default(),
+            old_world: Default::default(),
             tile_terrain_overlay: Default::default(),
             terrain_overlay: Default::default(),
             fov: Default::default(),
@@ -59,18 +65,26 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    pub fn new(w: WorldSpec) -> Result<Self> {
-        let world: LazyRes<WorldSpec, OldWorld> = LazyRes::new(w);
-        let rng = util::srng(world.seed());
+    pub fn new(seed: Logos, scenario: Option<Region>) -> Result<Self> {
+        // DEPRECATED, remove
+        let old_world: LazyRes<WorldSpec, OldWorld> =
+            LazyRes::new(WorldSpec::default());
+
+        let rng = util::srng(&seed);
+
+        let scenario = scenario.unwrap_or_else(|| Data::get().world.clone());
+
+        let world = World::new(seed, scenario)?;
 
         let mut ret = Runtime {
+            old_world,
             world,
             rng,
             ..Default::default()
         };
 
         let spawns: Vec<_> = ret
-            .world
+            .old_world
             .spawns()
             .map(|(p, s)| (p, s.clone()))
             .collect::<Vec<_>>();

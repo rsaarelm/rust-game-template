@@ -329,7 +329,7 @@ impl Location {
         r.tile_terrain_overlay
             .get(self)
             .copied()
-            .or_else(|| r.world.tile(self))
+            .or_else(|| r.old_world.tile(self))
             .unwrap_or_default()
     }
 

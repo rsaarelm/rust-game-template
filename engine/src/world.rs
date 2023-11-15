@@ -375,7 +375,7 @@ impl Skeleton {
 
             debug_assert!(surface_segments > 0);
 
-            let mut sec = Sector::from(pos.extend(-1 - surface_segments));
+            let mut sec = Sector::from(pos.extend(-1 + surface_segments));
 
             // Now build the thing.
             for s in stack {
@@ -390,10 +390,12 @@ impl Skeleton {
                 match s {
                     Generate(gen) => {
                         if sec.z >= 0 && !gen.is_surface() {
-                            bail!("Underground genenrator above surface for {c:?}");
+                            bail!(
+                                "Underground generator above surface for {c:?}"
+                            );
                         }
                         if sec.z < 0 && gen.is_surface() {
-                            bail!("Surface genenrator below surface for {c:?}");
+                            bail!("Surface generator below surface for {c:?}");
                         }
 
                         log::error!(
@@ -427,6 +429,8 @@ impl Skeleton {
                         );
                     }
                 }
+
+                sec = sec + Sector::from(ivec3(0, 0, -1));
             }
         }
 
