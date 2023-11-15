@@ -125,24 +125,9 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    #[deprecated] // This should be Runtime::world-side
-    pub fn default_voxel(&self) -> Option<Block> {
-        if self.z < 0 {
-            // Underground
-            Some(Block::Rock)
-        } else {
-            None
-        }
-    }
-
     pub fn voxel(&self, r: &impl AsRef<Runtime>) -> Option<Block> {
         let r = r.as_ref();
-        r.voxel_overlay
-            .get(self)
-            .copied()
-            // TODO: Read from default map.
-            // .or_else(|| r.world.voxel(self))
-            .unwrap_or_else(|| self.default_voxel())
+        r.world.voxel(*self)
     }
 
     fn is_cliff(&self, r: &impl AsRef<Runtime>) -> bool {
