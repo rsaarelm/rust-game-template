@@ -6,7 +6,7 @@ use anyhow::bail;
 use serde::Deserialize;
 use util::{IncrementalOutline, IndexMap, Outline, _String};
 
-use crate::{ecs::*, item::ItemKind, prelude::*, OldPatch};
+use crate::{ecs::*, item::ItemKind, prelude::*, OldPatch, Region};
 
 /// Static global game data.
 #[derive(Clone, Default, Debug, Deserialize)]
@@ -15,6 +15,7 @@ pub struct Data {
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
     pub vaults: IndexMap<_String, OldPatch>,
+    pub world: Region,
 }
 
 static DATA: OnceLock<Data> = OnceLock::new();
