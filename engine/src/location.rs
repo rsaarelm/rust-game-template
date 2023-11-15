@@ -137,7 +137,7 @@ impl Location {
 
     pub fn voxel(&self, r: &impl AsRef<Runtime>) -> Option<Block> {
         let r = r.as_ref();
-        r.terrain_overlay
+        r.voxel_overlay
             .get(self)
             .copied()
             // TODO: Read from default map.

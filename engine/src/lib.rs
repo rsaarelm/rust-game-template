@@ -76,7 +76,7 @@ mod runtime;
 pub use runtime::Runtime;
 
 mod terrain;
-pub use terrain::Terrain;
+pub use terrain::VoxelTerrain;
 
 mod tile;
 pub use tile::MapTile;

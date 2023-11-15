@@ -20,6 +20,12 @@ pub enum Tile {
     Solid(Block),
 }
 
+impl Tile {
+    pub fn is_wall(&self) -> bool {
+        matches!(self, Tile::Solid(_))
+    }
+}
+
 pub type Voxel = Option<Block>;
 
 /// Possible contents for a voxel.

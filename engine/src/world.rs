@@ -158,6 +158,18 @@ impl World {
             None
         }
     }
+
+    pub fn entrance(&self) -> Location {
+        // This mostly shouldn't happen since you generally get worlds with
+        // uninitialized caches when loading the game and care about entrance
+        // only when starting a new game. Still, it's a bit awkward.
+        assert!(
+            !self.skeleton.is_empty(),
+            "Querying entrance with uninitialized world cache"
+        );
+
+        self.skeleton.player_entrance
+    }
 }
 
 /// Snaps a stairwell position to its closest designated grid position for its

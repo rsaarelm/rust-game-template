@@ -4,9 +4,8 @@ use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, LazyRes, Logos};
 
 use crate::{
-    data::StaticSeed, ecs::*, placement::Place, prelude::*,
-    terrain::TileTerrain, Data, Fov, OldWorld, Placement, Region, Terrain,
-    World, WorldSpec,
+    data::StaticSeed, ecs::*, placement::Place, prelude::*, Data, Fov,
+    OldWorld, Placement, Region, VoxelTerrain, World, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -22,11 +21,7 @@ pub struct Runtime {
     /// Lazily instantiated static world structure.
     pub(crate) old_world: LazyRes<WorldSpec, OldWorld>,
     /// Terrain modifications made on world during runtime.
-
-    #[deprecated]
-    pub(crate) tile_terrain_overlay: TileTerrain,
-
-    pub(crate) terrain_overlay: Terrain,
+    pub(crate) voxel_overlay: VoxelTerrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
@@ -55,8 +50,7 @@ impl Default for Runtime {
             player: Default::default(),
             world: Default::default(),
             old_world: Default::default(),
-            tile_terrain_overlay: Default::default(),
-            terrain_overlay: Default::default(),
+            voxel_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
@@ -83,25 +77,9 @@ impl Runtime {
             ..Default::default()
         };
 
-        let spawns: Vec<_> = ret
-            .old_world
-            .spawns()
-            .map(|(p, s)| (p, s.clone()))
-            .collect::<Vec<_>>();
-        for (loc, s) in spawns {
-            s.spawn(&mut ret, loc);
-        }
-
-        // TODO: Reactivate once voxels are working.
-        /*
-        if let Some(entrance) = ret.world.entrance() {
-            ret.spawn_player(entrance);
-        } else {
-            bail!("world does not specify player entry point");
-        }
-        */
-
-        ret.spawn_player(Location::new(10, 10, 0));
+        let entrance = ret.world.entrance();
+        ret.populate_cache_around(entrance);
+        ret.spawn_player(entrance);
 
         Ok(ret)
     }
@@ -205,6 +183,12 @@ impl Runtime {
 
     pub fn live_entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.placement.all_entities()
+    }
+
+    pub(crate) fn populate_cache_around(&mut self, loc: Location) {
+        for (loc, s) in self.world.populate_around(loc) {
+            s.spawn(self, loc);
+        }
     }
 
     /// Update the crate state by one tick.
