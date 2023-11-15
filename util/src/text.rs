@@ -1,5 +1,6 @@
 use std::{iter, sync::LazyLock};
 
+use glam::{ivec2, IVec2};
 use regex::Regex;
 
 /// Split text at whitespace so it fits within `max_width`.
@@ -262,6 +263,36 @@ where
         templating = !templating;
     }
     Ok(ret)
+}
+
+/// Get the smallest common indentation depth of nonempty lines of text.
+///
+/// Both tabs and spaces are treated as a single unit of indentation.
+pub fn indentation(text: &str) -> usize {
+    text.lines()
+        .filter(|a| !a.trim().is_empty())
+        .map(|a| a.chars().take_while(|c| c.is_whitespace()).count())
+        .min()
+        .unwrap_or(0)
+}
+
+/// Return non-whitespace chars from a block of text mapped to their
+/// coordinates.
+///
+/// The text is trimmed so that the result set will have a minimum x
+/// coordinate and a minimum y coordinate at 0.
+pub fn char_grid(text: &str) -> impl Iterator<Item = (IVec2, char)> + '_ {
+    let x_skip = indentation(text);
+
+    text.lines()
+        .skip_while(|a| a.trim().is_empty())
+        .enumerate()
+        .flat_map(move |(y, line)| {
+            line.chars()
+                .skip(x_skip)
+                .enumerate()
+                .map(move |(x, c)| (ivec2(x as i32, y as i32), c))
+        })
 }
 
 #[cfg(test)]
