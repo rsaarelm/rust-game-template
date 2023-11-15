@@ -45,7 +45,7 @@ impl From<Sector> for Cube {
 impl Sector {
     /// Return the sector neighborhood which should have maps generated for it
     /// when the central sector is being set up as an active play area.
-    fn cache_neighbors(&self) -> impl Iterator<Item = Sector> {
+    pub fn cache_neighbors(&self) -> impl Iterator<Item = Sector> {
         let s = *self;
         // All 8 chess-metric neighbors plus above and below sectors. Should
         // be enough to cover everything needed while moving around the center
@@ -64,6 +64,14 @@ impl Sector {
         ]
         .into_iter()
         .map(move |d| s + Sector(d))
+    }
+
+    pub fn origin(&self) -> Location {
+        Location::new(
+            (self.x * SECTOR_WIDTH) as i16,
+            (self.y * SECTOR_HEIGHT) as i16,
+            (self.z * SECTOR_DEPTH) as i16,
+        )
     }
 }
 
@@ -313,6 +321,8 @@ struct Skeleton {
     sector_status: HashMap<Sector, GenerationStatus>,
 
     generators: HashMap<Sector, Box<dyn MapGenerator>>,
+
+    player_entrance: Location,
 }
 
 impl Skeleton {
@@ -321,13 +331,13 @@ impl Skeleton {
 
         // seed is needed in the future when there are varying repeat lengths
 
-        // TODO convert Region into a map of generators here.
-
         // TODO Way to encode connectivities, dungeong branches should not
         // connect sideways in the middle even when they're side-to-side to
         // another sector. Maybe preset volume boxes in generators values?
 
-        let mut ret = Skeleton::default();
+        let mut generators: HashMap<Sector, Box<dyn MapGenerator>> =
+            HashMap::default();
+        let mut player_entrance = None;
 
         for (pos, c, stack) in scenario.iter() {
             let Some(stack) = stack else {
@@ -369,6 +379,14 @@ impl Skeleton {
 
             // Now build the thing.
             for s in stack {
+                if let Some(pos) = s.player_entrance() {
+                    if player_entrance.is_some() {
+                        bail!("Multiple player locations specified");
+                    }
+
+                    player_entrance = Some(sec.origin() + pos);
+                }
+
                 match s {
                     Generate(gen) => {
                         if sec.z >= 0 && !gen.is_surface() {
@@ -383,7 +401,7 @@ impl Skeleton {
                         );
                         // TODO: Actually come up with a generator
                         // instance for the MapGen variant and insert it
-                        // in ret.generators
+                        // in generators
                     }
 
                     Site(map) | Vault(map) => {
@@ -394,7 +412,7 @@ impl Skeleton {
                         }
 
                         // Finally some concrete stuff
-                        ret.generators.insert(sec, Box::new(map.clone()));
+                        generators.insert(sec, Box::new(map.clone()));
                     }
 
                     Branch(_) => {
@@ -412,11 +430,19 @@ impl Skeleton {
             }
         }
 
-        if ret.generators.is_empty() {
+        if generators.is_empty() {
             bail!("No overworld sectors found");
         }
 
-        Ok(ret)
+        let Some(player_entrance) = player_entrance else {
+            bail!("No player entrance specified");
+        };
+
+        Ok(Skeleton {
+            generators,
+            player_entrance,
+            ..Default::default()
+        })
     }
 
     /// Call this to quickly determine if the skeleton hasn't been initialized
@@ -520,6 +546,17 @@ pub enum RegionSegment {
     Repeat(u32, Box<RegionSegment>),
 }
 
+impl RegionSegment {
+    fn player_entrance(&self) -> Option<IVec2> {
+        use RegionSegment::*;
+
+        if let Site(area) | Vault(area) = self {
+            return area.iter().find_map(|(p, c, _)| (c == '@').then_some(p));
+        }
+        None
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GenericSector {
@@ -550,6 +587,10 @@ impl MapGenerator for SectorMap {
             }
 
             let p = v3(lot.volume.min()) + p.extend(0);
+
+            if c == '@' {
+                c = '.';
+            }
 
             if let Some(spawn) = spawn {
                 // Assume spawns always spawn on top of regular floor.
