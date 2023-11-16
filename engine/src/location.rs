@@ -691,18 +691,12 @@ impl Location {
 
     /// Description for the general area of the location.
     pub fn region_name(&self, _r: &impl AsRef<Runtime>) -> String {
-        // TEMP hack
-        match self.z {
-            0 => return "Surface world".into(),
-            -1 => return "Stairwell".into(),
-            -2 => return "Cellar".into(),
-            1 => return "Up the ladder".into(),
-            2 => return "On the roof".into(),
-            _ => {}
+        if self.z >= 0 {
+            return "The surface world".into();
         }
 
-        let depth = -self.z;
-        format!("Mazes of Menace: {depth}")
+        let depth = (-self.z + 1) / 2;
+        format!("Underworld: {depth}")
     }
 
     pub fn damage(

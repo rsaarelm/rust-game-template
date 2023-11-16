@@ -71,66 +71,6 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(seed, scenario).unwrap();
 
-                    for (i, layer) in [
-                        "\
-#####
-#########
-#########
-#########
-#####
-.....
-.....
-.....
-.....",
-                        "\
-#####
-#...#####
-....##
-#.#.#####
-#####
-.#...
-.....
-.....
-.....",
-                        "\
-#####
-#####
-#####
-###.#
-###.#
-#####
-#####
-#####
-#####",
-                        "\
-#####
-#####
-#####
-#####
-###.#
-#...#
-#...#
-#...#
-#####",
-                    ]
-                    .iter()
-                    .enumerate()
-                    {
-                        let z = 1 - i as i16;
-                        for (y, line) in layer.lines().enumerate() {
-                            let y = y as i16 + 4;
-                            for (x, c) in line.chars().enumerate() {
-                                let x = x as i16 + 8;
-                                let loc = Location::new(x, y, z);
-                                if c == '#' {
-                                    loc.set_voxel(game(), Some(Block::Rock));
-                                } else if c == '.' {
-                                    loc.set_voxel(game(), None);
-                                }
-                            }
-                        }
-                    }
-
                     msg!("Welcome to {}!", GAME_NAME);
                 }
                 Ok(Some(save)) => {

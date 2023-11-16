@@ -121,7 +121,12 @@ impl World {
             self.skeleton.generate_around(&self.seed, Sector::from(loc));
 
         for (p, v) in patch.terrain {
-            self.terrain_cache.insert(p.into(), v);
+            let loc = Location::from(p); // TODO: Remove when Locations are IVec3
+
+            // Only cache terrain values if they differ from default
+            if v != self.default_terrain(loc) {
+                self.terrain_cache.insert(p.into(), v);
+            }
         }
 
         // TODO Remove the map if Location is ever replaced with a plain IVec3
@@ -139,6 +144,15 @@ impl World {
         Ok(())
     }
 
+    fn default_terrain(&self, loc: Location) -> Voxel {
+        // Solid rock underground and empty air overground.
+        if loc.z() < 0 {
+            Some(Block::Rock)
+        } else {
+            None
+        }
+    }
+
     pub fn voxel(&self, loc: Location) -> Voxel {
         if let Some(&mutated) = self.terrain_overlay.get(&loc) {
             return mutated;
@@ -148,12 +162,7 @@ impl World {
             return cached;
         }
 
-        // Default terrain, solid rock underground and empty air overground.
-        if loc.z() < 0 {
-            Some(Block::Rock)
-        } else {
-            None
-        }
+        self.default_terrain(loc)
     }
 
     pub fn set_voxel(&mut self, loc: Location, voxel: Voxel) {
