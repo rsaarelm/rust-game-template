@@ -79,12 +79,12 @@ impl Sector {
 pub struct World {
     /// PRNG seed used.
     seed: Logos,
-    /// Scenario data used to initialize this world.
-    scenario: Region,
     /// Entities that have been spawned once from this world.
     spawn_history: IndexSet<(Location, Spawn)>,
     /// Terrain that has been changed during runtime.
     terrain_overlay: VoxelTerrain,
+    /// Scenario data used to initialize this world.
+    scenario: Region,
 
     #[serde(skip)]
     skeleton: Skeleton,
@@ -120,8 +120,9 @@ impl World {
         let patch =
             self.skeleton.generate_around(&self.seed, Sector::from(loc));
 
+        // TODO: Remove the explicit conversions from IVec3 to Location when Location is converted into plain IVec3
         for (p, v) in patch.terrain {
-            let loc = Location::from(p); // TODO: Remove when Locations are IVec3
+            let loc = Location::from(p);
 
             // Only cache terrain values if they differ from default
             if v != self.default_terrain(loc) {
@@ -129,12 +130,18 @@ impl World {
             }
         }
 
-        // TODO Remove the map if Location is ever replaced with a plain IVec3
-        patch
-            .spawns
-            .into_iter()
-            .map(|(p, s)| (Location::from(p), s))
-            .collect()
+        let mut ret = Vec::new();
+
+        for (p, s) in patch.spawns {
+            let item = (Location::from(p), s);
+
+            if !self.spawn_history.contains(&item) {
+                self.spawn_history.insert(item.clone());
+                ret.push(item);
+            }
+        }
+
+        ret
     }
 
     fn construct_skeleton(&mut self) -> anyhow::Result<()> {
@@ -273,7 +280,7 @@ impl Skeleton {
 
         // seed is needed in the future when there are varying repeat lengths
 
-        // TODO Way to encode connectivities, dungeong branches should not
+        // TODO Way to encode connectivities, dungeon branches should not
         // connect sideways in the middle even when they're side-to-side to
         // another sector. Maybe preset volume boxes in generators values?
 

@@ -14,12 +14,11 @@ use crate::{
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
-
-    pub(crate) world: World,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
     pub(crate) rng: GameRng,
+    pub(crate) world: World,
 }
 
 impl AsRef<Runtime> for Runtime {
