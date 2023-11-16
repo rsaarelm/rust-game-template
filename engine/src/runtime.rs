@@ -1,11 +1,11 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, s8, GameRng, LazyRes, Logos};
+use util::{flood_fill_4, s8, GameRng, Logos};
 
 use crate::{
     data::StaticSeed, ecs::*, placement::Place, prelude::*, Data, Fov,
-    OldWorld, Placement, Region, VoxelTerrain, World, WorldSpec,
+    Placement, Region, World,
 };
 
 /// Main data container for game engine runtime.
@@ -16,12 +16,6 @@ pub struct Runtime {
     pub(crate) player: Option<Entity>,
 
     pub(crate) world: World,
-
-    #[deprecated]
-    /// Lazily instantiated static world structure.
-    pub(crate) old_world: LazyRes<WorldSpec, OldWorld>,
-    /// Terrain modifications made on world during runtime.
-    pub(crate) voxel_overlay: VoxelTerrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
@@ -49,8 +43,6 @@ impl Default for Runtime {
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
             world: Default::default(),
-            old_world: Default::default(),
-            voxel_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
@@ -60,10 +52,6 @@ impl Default for Runtime {
 
 impl Runtime {
     pub fn new(seed: Logos, scenario: Option<Region>) -> Result<Self> {
-        // DEPRECATED, remove
-        let old_world: LazyRes<WorldSpec, OldWorld> =
-            LazyRes::new(WorldSpec::default());
-
         let rng = util::srng(&seed);
 
         let scenario = scenario.unwrap_or_else(|| Data::get().world.clone());
@@ -71,7 +59,6 @@ impl Runtime {
         let world = World::new(seed, scenario)?;
 
         let mut ret = Runtime {
-            old_world,
             world,
             rng,
             ..Default::default()

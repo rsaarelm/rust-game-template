@@ -329,7 +329,7 @@ impl Location {
 
     pub fn set_voxel(&self, r: &mut impl AsMut<Runtime>, v: Option<Block>) {
         let r = r.as_mut();
-        r.voxel_overlay.insert(*self, v);
+        r.world.set_voxel(*self, v);
     }
 
     /// Tile setter that doesn't cover functional terrain.

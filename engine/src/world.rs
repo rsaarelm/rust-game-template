@@ -5,7 +5,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::{v2, v3, AsciiMap, Logos};
 
-use crate::{prelude::*, Cube, OldPatch, Patch, Rect, Spawn};
+use crate::{prelude::*, Cube, Patch, Rect, Spawn, VoxelTerrain};
 
 #[derive(
     Copy,
@@ -74,19 +74,6 @@ impl Sector {
     }
 }
 
-/// Fixed-format data that specifies the contents of the initial game world.
-/// Created from `WorldSpec`.
-#[derive(Clone, Default)]
-#[deprecated]
-pub struct OldWorld {
-    /// PRNG seed used
-    seed: Logos,
-    /// Map generation artifacts specifying terrain and entity spawns.
-    patches: IndexMap<Location, OldPatch>,
-    /// Replicates data from `patches` in a more efficiently accessible form.
-    terrain: HashMap<Location, MapTile>,
-}
-
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct World {
@@ -97,8 +84,7 @@ pub struct World {
     /// Entities that have been spawned once from this world.
     spawn_history: IndexSet<(Location, Spawn)>,
     /// Terrain that has been changed during runtime.
-    // TODO: Use an atlas type here to save it neatly
-    terrain_overlay: HashMap<Location, Voxel>,
+    terrain_overlay: VoxelTerrain,
 
     #[serde(skip)]
     skeleton: Skeleton,
@@ -168,6 +154,14 @@ impl World {
         } else {
             None
         }
+    }
+
+    pub fn set_voxel(&mut self, loc: Location, voxel: Voxel) {
+        // Anything explicitly set must be written into the overlay, even if
+        // it's the same as the default terrain and there's no cached terrain
+        // in place, because cached terrain could be later generated in this
+        // place and the overlay needs to be able to overwrite it then.
+        self.terrain_overlay.insert(loc, voxel);
     }
 
     pub fn entrance(&self) -> Location {
@@ -240,90 +234,6 @@ fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
 
     // Finally wrap it to the bounds of the chessboard and we're done.
     bounds.mod_proj(adjusted_pos)
-}
-
-impl TryFrom<WorldSpec> for OldWorld {
-    type Error = anyhow::Error;
-
-    fn try_from(value: WorldSpec) -> Result<Self, Self::Error> {
-        let mut rng = util::srng(&value.seed);
-
-        let mut patches: IndexMap<Location, OldPatch> = IndexMap::default();
-
-        /*
-        const MAX_DEPTH: u32 = 8;
-
-        let mut prev_downstairs = None;
-        for depth in 1..=MAX_DEPTH {
-            let mut level = Level::new(depth);
-            if depth < MAX_DEPTH {
-                level = level.with_downstairs();
-            }
-            if let Some(p) = prev_downstairs {
-                level = level.upstairs_at(p + ivec2(0, -1));
-            }
-
-            let map = level.sample(&mut rng);
-            prev_downstairs = map.downstairs_pos();
-
-            let z = -(depth as i16);
-            patches.insert(Location::new(0, 0, z), map);
-        }
-        */
-
-        let mut terrain = HashMap::default();
-        for (&loc, a) in &patches {
-            for (pos, t) in a.tiles() {
-                terrain.insert(loc + pos, t);
-            }
-        }
-
-        Ok(OldWorld {
-            seed: value.seed,
-            patches,
-            terrain,
-        })
-    }
-}
-
-impl OldWorld {
-    pub fn spawns(&self) -> impl Iterator<Item = (Location, &'_ Spawn)> + '_ {
-        self.patches.iter().flat_map(|(&loc, a)| {
-            a.spawns.iter().map(move |(&p, s)| (loc + p, s))
-        })
-    }
-
-    pub fn tile(&self, loc: &Location) -> Option<MapTile> {
-        self.terrain.get(loc).copied()
-    }
-
-    pub fn seed(&self) -> &Logos {
-        &self.seed
-    }
-
-    pub fn entrance(&self) -> Option<Location> {
-        for (&loc, a) in &self.patches {
-            if let Some(pos) = a.entrance {
-                return Some(loc + pos);
-            }
-        }
-        None
-    }
-}
-
-/// Compact description of what the initial game world is like. Will be stored
-/// in save files. Expansion is highly context-dependent, may use prefab maps
-/// or procedural generation.
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
-#[deprecated]
-pub struct WorldSpec {
-    seed: Logos,
-}
-
-impl WorldSpec {
-    pub fn new(seed: Logos) -> Self {
-        WorldSpec { seed }
-    }
 }
 
 #[derive(Copy, Clone, Debug)]

@@ -53,8 +53,6 @@ pub use item::EquippedAt;
 mod location;
 pub use location::{Location, SectorDir};
 
-mod mapgen;
-
 mod mob;
 pub use mob::Buff;
 
@@ -62,7 +60,7 @@ mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
 
 mod patch;
-pub use patch::{OldPatch, Patch, Spawn};
+pub use patch::{Patch, Spawn};
 
 mod placement;
 pub use placement::Placement;
@@ -85,7 +83,7 @@ mod time;
 pub use time::Instant;
 
 mod world;
-pub use world::{OldWorld, Region, World, WorldSpec};
+pub use world::{Region, World};
 
 pub type Rect = util::Rect<i32>;
 pub type Cube = util::Cube<i32>;
