@@ -221,9 +221,7 @@ impl Entity {
         if self.is_mob(r) && loc.mob_at(r).is_some() {
             return false;
         }
-        if self.is_item(r)
-            && (loc.item_at(r).is_some() || loc.map_tile(r).is_exit())
-        {
+        if self.is_item(r) && loc.item_at(r).is_some() {
             return false;
         }
 
@@ -318,7 +316,8 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.decorate_tile(r, MapTile::Gore);
+                // TODO: Splatter with voxel system
+                // loc.decorate_tile(r, MapTile::Gore);
             }
 
             // Drop stuff.

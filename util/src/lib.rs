@@ -14,7 +14,8 @@ pub use bits::{
 
 mod geom;
 pub use geom::{
-    bresenham_line, s4, s6, s8, v2, v3, PlottedPoint, VecExt, AXIS_DIRS,
+    bresenham_line, s4, s6, s8, v2, v3, wallform_mask, PlottedPoint, VecExt,
+    AXIS_DIRS,
 };
 
 mod grammar;

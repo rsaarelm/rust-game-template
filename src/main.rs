@@ -53,6 +53,9 @@ fn main() -> anyhow::Result<()> {
     navni::run(GAME_NAME, async {
         ui::init_game();
 
+        // TODO: Bring back saving when we're done with debug
+        game().delete_save(GAME_NAME);
+
         // Restore game or init a new one.
         loop {
             match game().load(GAME_NAME) {

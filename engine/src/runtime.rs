@@ -115,6 +115,8 @@ impl Runtime {
         self.player = Some(player);
         player.place(self, loc);
 
+        // TODO: Reactivate when voxels are debugged.
+        /*
         let party_spawns: Vec<(_, _)> = ["Ranger", "Monk", "Wizard"]
             .iter()
             .zip(self.perturbed_fill_positions(loc).skip(1))
@@ -158,6 +160,7 @@ impl Runtime {
             }
             npc.set_goal(self, Goal::FollowPlayer);
         }
+        */
     }
 
     pub fn player(&self) -> Option<Entity> {

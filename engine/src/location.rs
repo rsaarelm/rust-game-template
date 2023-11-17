@@ -1,7 +1,7 @@
 use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::s4;
+use util::{s4, s8};
 
 use crate::{prelude::*, Grammatize, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -36,6 +36,14 @@ impl Location {
 }
 
 impl Location {
+    pub fn x(&self) -> i16 {
+        self.x
+    }
+
+    pub fn y(&self) -> i16 {
+        self.y
+    }
+
     pub fn z(&self) -> i16 {
         self.z
     }
@@ -117,17 +125,197 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
+    pub fn voxel(&self, r: &impl AsRef<Runtime>) -> Option<Block> {
         let r = r.as_ref();
-        r.tile_terrain_overlay
-            .get(self)
-            .copied()
-            .or_else(|| r.world.tile(self))
-            .unwrap_or_default()
+        r.world.voxel(*self)
+    }
+
+    fn is_cliff(&self, r: &impl AsRef<Runtime>) -> bool {
+        matches!(self.tile(r), Some(Tile::Floor { z: 1, .. }))
+            && s8::ns(*self).any(|loc| {
+                matches!(loc.tile(r), Some(Tile::Floor { z: -1, .. }))
+            })
+    }
+
+    /// Return whether this location produces a z+1 floor and at least one
+    /// 8-adjacent location produces a z-1 floor. Returns the mask of
+    /// 4-adjacent cliff tiles.
+    pub fn cliff_form(&self, r: &impl AsRef<Runtime>) -> Option<usize> {
+        if self.is_cliff(r) {
+            let mut mask = 0;
+            for (i, loc) in s4::ns(*self).enumerate() {
+                if loc.is_cliff(r) {
+                    mask |= 1 << i;
+                }
+            }
+            // XXX: Seems like you get mostly artifacts if the cliff bits seem
+            // fully unconnected.
+            if mask != 0 {
+                Some(mask)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// If there is a tile floor location (an empty voxel above a filled
+    /// voxel) that corresponds to the given location, snap to that location.
+    pub fn snap_to_floor(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+            self.below().below().is_solid(r),
+        ) {
+            (false, true, _, _) => Some(self.above()),
+            (_, false, true, _) => Some(*self),
+            (_, _, false, true) => Some(self.below()),
+            _ => None,
+        }
+    }
+
+    pub fn tile(&self, r: &impl AsRef<Runtime>) -> Option<Tile> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+        ) {
+            // Solid topside stack, makes a proper wall.
+            //
+            // Look for a voxel with an exposed side to show as wall.
+            (true, true, _) => Some(Tile::Solid(self.voxel(r).unwrap())),
+            // Raised floor.
+            //(false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
+            (false, true, _) => Some(Tile::Floor {
+                block: self.voxel(r).unwrap(),
+                z: 1,
+                connectivity: self.above().high_connectivity(r),
+            }),
+            // Regular floor
+            (_, false, true) => Some(Tile::Floor {
+                block: self.below().voxel(r).unwrap(),
+                z: 0,
+                connectivity: 0,
+            }),
+            // Depressed floor, check further down if there's surface.
+            (_, _, false) => {
+                self.below().below().voxel(r).map(|b| Tile::Floor {
+                    block: b,
+                    z: -1,
+                    connectivity: self.below().low_connectivity(r),
+                })
+            }
+        }
+    }
+
+    /// Convenience method that's fast to call.
+    pub fn is_wall_tile(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.above().is_solid(r) && self.is_solid(r)
+    }
+
+    /// Which locations should be marked as visible in FOV when traversing
+    /// through this tile. This should match the visible space of the tile.
+    /// The under-voxel is only included if it's not blocked by the middle
+    /// voxel.
+    pub fn fov_volume(&self, r: &impl AsRef<Runtime>) -> Vec<Location> {
+        match (
+            self.above().is_solid(r),
+            self.is_solid(r),
+            self.below().is_solid(r),
+        ) {
+            (true, true, _) => vec![],
+            (true, false, true) => vec![*self],
+            (true, false, false) => vec![*self, self.below()],
+            (false, true, _) => vec![self.above()],
+            (false, false, true) => vec![self.above(), *self],
+            (false, false, false) => vec![self.above(), *self, self.below()],
+        }
+    }
+
+    /// 4-bit mask that has 1 on direction with a step up.
+    fn high_connectivity(&self, r: &impl AsRef<Runtime>) -> usize {
+        s4::DIR
+            .iter()
+            .enumerate()
+            .map(|(i, &d)| {
+                if self.step(r, d).map_or(false, |loc| loc.z > self.z) {
+                    1 << i
+                } else {
+                    0
+                }
+            })
+            .sum()
+    }
+
+    /// 4-bit mask that has 1 on direction with a step down.
+    fn low_connectivity(&self, r: &impl AsRef<Runtime>) -> usize {
+        s4::DIR
+            .iter()
+            .enumerate()
+            .map(|(i, &d)| {
+                if self.step(r, d).map_or(false, |loc| loc.z < self.z) {
+                    1 << i
+                } else {
+                    0
+                }
+            })
+            .sum()
+    }
+
+    /// Return whether the voxel can be entered, whether or not you have
+    /// floor underneath.
+    pub fn can_be_entered(&self, r: &impl AsRef<Runtime>) -> bool {
+        matches!(self.voxel(r), None | Some(Block::Door))
+    }
+
+    /// Return whether the voxel can be entered and has solid floor under it.
+    pub fn can_be_stepped_in(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.can_be_entered(r) && self.below().is_solid(r)
+    }
+
+    pub fn is_solid(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.voxel(r).map_or(false, |b| b.is_solid())
+    }
+
+    fn above(&self) -> Self {
+        let mut ret = *self;
+        ret.z += 1;
+        ret
+    }
+
+    fn below(&self) -> Self {
+        let mut ret = *self;
+        ret.z -= 1;
+        ret
+    }
+
+    /// Look for the valid neighboring floor adjacent to current location.
+    ///
+    /// Can step up or down one Z level. Returns `None` if terrain is blocked.
+    pub fn step(
+        &self,
+        r: &impl AsRef<Runtime>,
+        dir: IVec2,
+    ) -> Option<Location> {
+        if let Some(loc) = (*self + dir).snap_to_floor(r) {
+            if loc.can_be_stepped_in(r) {
+                return Some(loc);
+            }
+        }
+
+        None
+    }
+
+    #[deprecated]
+    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
+        Default::default()
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
     /// cell.
+    #[deprecated]
     pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
         if self.is_explored(r) {
             self.map_tile(r)
@@ -136,19 +324,17 @@ impl Location {
         }
     }
 
-    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
+    #[deprecated]
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {}
+
+    pub fn set_voxel(&self, r: &mut impl AsMut<Runtime>, v: Option<Block>) {
         let r = r.as_mut();
-        r.tile_terrain_overlay.insert(*self, t);
+        r.world.set_voxel(*self, v);
     }
 
     /// Tile setter that doesn't cover functional terrain.
     pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
-        let r = r.as_mut();
-        if self.map_tile(r) == MapTile::Ground
-            || self.map_tile(r).is_decoration()
-        {
-            r.tile_terrain_overlay.insert(*self, t);
-        }
+        // TODO, implement this for voxels
     }
 
     /// Return location snapped to the origin of this location's sector.
@@ -190,14 +376,25 @@ impl Location {
         self.sector_bounds().grow([1, 1], [1, 1])
     }
 
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+        self.fov_volume(r)
+            .into_iter()
+            .any(|loc| r.fov.contains(&loc))
+    }
+
     /// Location has been seen by an allied unit at some point.
     pub fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
-        let r = r.as_ref();
-        r.fov.contains(self)
+        if self.is_wall_tile(r) {
+            // Walls are visible if any neighbor is visible open terrain.
+            s8::ns(*self).any(|loc| loc.is_in_fov_set(r))
+        } else {
+            self.is_in_fov_set(r)
+        }
     }
 
     pub fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
-        !self.map_tile(r).blocks_movement()
+        !self.is_solid(r) && self.below().is_solid(r)
     }
 
     pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -235,7 +432,8 @@ impl Location {
     }
 
     pub fn vec_towards(&self, other: &Location) -> Option<IVec2> {
-        if self.z == other.z {
+        // Allow 1 Z-level offsets, but no more, as a fuzzy same-level-ness.
+        if (self.z - other.z).abs() <= 1 {
             Some((*other - *self).truncate())
         } else {
             None
@@ -253,6 +451,7 @@ impl Location {
 
     /// Try to reconstruct step towards adjacent other location. Handles
     /// folding.
+    // FIXME Figure out how this should work with voxels
     pub fn find_step_towards(
         &self,
         r: &impl AsRef<Runtime>,
@@ -274,6 +473,7 @@ impl Location {
 
     /// Follow upstairs, downstairs and possible other portals until you end
     /// up at a non-portaling location starting from this location.
+    #[deprecated]
     pub fn follow(&self, r: &impl AsRef<Runtime>) -> Location {
         let path = || {
             let mut p = Some(*self);
@@ -301,6 +501,7 @@ impl Location {
         path().last().unwrap_or(*self)
     }
 
+    #[deprecated]
     pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         match self.map_tile(r) {
             MapTile::Upstairs => Some(*self + ivec3(0, 0, 1)),
@@ -324,6 +525,47 @@ impl Location {
     }
 
     /// Return the four neighbors to this location in an arbitrary order.
+    pub fn perturbed_neighbors_4(
+        &self,
+        r: &impl AsRef<Runtime>,
+    ) -> Vec<Location> {
+        let mut rng = util::srng(self);
+        let mut dirs: Vec<Location> = self.neighbors_4(r).collect();
+        dirs.shuffle(&mut rng);
+        dirs
+    }
+
+    pub fn neighbors_4<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Location> + 'a {
+        // Alternate biasing based on location so algs will perform zig-zags
+        // on diagonals.
+        const H4: [IVec2; 4] = [
+            IVec2::from_array([1, 0]),
+            IVec2::from_array([-1, 0]),
+            IVec2::from_array([0, 1]),
+            IVec2::from_array([0, -1]),
+        ];
+
+        const V4: [IVec2; 4] = [
+            IVec2::from_array([0, 1]),
+            IVec2::from_array([0, -1]),
+            IVec2::from_array([1, 0]),
+            IVec2::from_array([-1, 0]),
+        ];
+        let o = *self;
+        if ivec2(self.x as i32, self.y as i32).prefer_horizontals_here() {
+            &H4
+        } else {
+            &V4
+        }
+        .iter()
+        .filter_map(move |d| o.step(r, *d))
+    }
+
+    /// Return the four neighbors to this location in an arbitrary order.
+    #[deprecated]
     pub fn perturbed_flat_neighbors_4(&self) -> Vec<Location> {
         let mut rng = util::srng(self);
         let mut dirs: Vec<Location> =
@@ -332,6 +574,8 @@ impl Location {
         dirs
     }
 
+    // TODO: Voxel version, check steppability in each direction
+    #[deprecated]
     pub fn flat_neighbors_4(&self) -> impl Iterator<Item = Location> {
         // Alternate biasing based on location so algs will perform zig-zags
         // on diagonals.
@@ -358,6 +602,7 @@ impl Location {
         .map(move |d| o + *d)
     }
 
+    #[deprecated]
     pub fn fold_neighbors_4<'a>(
         &self,
         r: &'a Runtime,
@@ -372,6 +617,7 @@ impl Location {
     }
 
     /// Find the closest pathable location on neighboring sector.
+    // TODO Fix for voxels
     pub fn path_dest_to_neighboring_sector(
         &self,
         r: &impl AsRef<Runtime>,
@@ -445,8 +691,12 @@ impl Location {
 
     /// Description for the general area of the location.
     pub fn region_name(&self, _r: &impl AsRef<Runtime>) -> String {
-        let depth = -self.z;
-        format!("Mazes of Menace: {depth}")
+        if self.z >= 0 {
+            return "The surface world".into();
+        }
+
+        let depth = (-self.z + 1) / 2;
+        format!("Underworld: {depth}")
     }
 
     pub fn damage(
@@ -465,6 +715,12 @@ impl Location {
 impl From<(i16, i16, i16)> for Location {
     fn from((x, y, z): (i16, i16, i16)) -> Self {
         Location { x, y, z }
+    }
+}
+
+impl From<IVec3> for Location {
+    fn from(v: IVec3) -> Self {
+        Location::new(v.x as i16, v.y as i16, v.z as i16)
     }
 }
 

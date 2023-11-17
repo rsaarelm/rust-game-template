@@ -40,14 +40,11 @@ impl Runtime {
             origin: Location,
             r: &'a Runtime,
             radius: i32,
-            is_edge: bool,
         }
 
         impl<'a> PartialEq for FovState<'a> {
             fn eq(&self, other: &Self) -> bool {
-                self.origin == other.origin
-                    && self.radius == other.radius
-                    && self.is_edge == other.is_edge
+                self.origin == other.origin && self.radius == other.radius
             }
         }
 
@@ -59,12 +56,7 @@ impl Runtime {
                 r: &'a Runtime,
                 radius: i32,
             ) -> FovState<'a> {
-                FovState {
-                    origin,
-                    r,
-                    radius,
-                    is_edge: false,
-                }
+                FovState { origin, r, radius }
             }
         }
 
@@ -72,29 +64,24 @@ impl Runtime {
             type Vector = glam::IVec2;
 
             fn advance(&self, offset: Self::Vector) -> Option<Self> {
-                if self.is_edge {
-                    return None;
-                }
-
                 if offset.taxi_len() > self.radius {
                     return None;
                 }
 
-                let loc = self.origin + offset;
-
-                if !self.origin.has_same_screen_as(&loc) {
-                    // Do not create any FOV outside of current sector.
+                if (self.origin + offset).is_wall_tile(self.r) {
                     return None;
                 }
 
-                let is_edge = loc.blocks_sight(self.r);
-
-                Some(FovState { is_edge, ..*self })
+                Some(*self)
             }
         }
 
-        fov::Square::new(FovState::new(loc, self, radius))
-            .map(|(v, s)| (v, s.origin + v))
+        fov::Square::new(FovState::new(loc, self, radius)).flat_map(|(v, s)| {
+            (s.origin + v)
+                .fov_volume(self)
+                .into_iter()
+                .map(move |loc| (v, loc))
+        })
     }
 
     /// Return whether fog of war should be drawn at the given wide coordinate
