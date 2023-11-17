@@ -24,6 +24,9 @@ struct Args {
         help = "Comma-separarted list of mod files to apply"
     )]
     mods: Vec<PathBuf>,
+
+    #[arg(long, help = "Scenario file to load")]
+    scenario: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -38,6 +41,14 @@ fn main() -> anyhow::Result<()> {
         mods.push(md);
     }
     engine::register_mods(mods);
+
+    // Custom scenario loading.
+    let scenario = if let Some(path) = args.scenario {
+        let scenario = util::dir_to_idm(path)?;
+        Some(idm::from_str(&scenario.to_string())?)
+    } else {
+        None
+    };
 
     navni::run(GAME_NAME, async {
         ui::init_game();
@@ -55,7 +66,7 @@ fn main() -> anyhow::Result<()> {
                     });
                     log::info!("seed: {seed}");
 
-                    game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
+                    game().r = Runtime::new(seed, scenario).unwrap();
 
                     msg!("Welcome to {}!", GAME_NAME);
                 }

@@ -6,6 +6,8 @@
 pub const SECTOR_WIDTH: i32 = 52;
 /// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 39;
+/// How many Z-layers does a sector consist of.
+pub const SECTOR_DEPTH: i32 = 2;
 
 /// How far can the player see.
 pub const FOV_RADIUS: i32 = 10;
@@ -48,8 +50,6 @@ pub use item::EquippedAt;
 mod location;
 pub use location::{Location, SectorDir};
 
-mod mapgen;
-
 mod mob;
 pub use mob::Buff;
 
@@ -71,7 +71,7 @@ mod runtime;
 pub use runtime::Runtime;
 
 mod terrain;
-pub use terrain::TileTerrain;
+pub use terrain::VoxelTerrain;
 
 mod tile;
 pub use tile::MapTile;
@@ -80,9 +80,10 @@ mod time;
 pub use time::Instant;
 
 mod world;
-pub use world::{World, WorldSpec};
+pub use world::{Region, World};
 
 pub type Rect = util::Rect<i32>;
+pub type Cube = util::Cube<i32>;
 
 pub enum ScenarioStatus {
     Ongoing,

@@ -2,22 +2,42 @@ use std::collections::BTreeMap;
 
 use anyhow::bail;
 use derive_more::Deref;
+use glam::IVec3;
 use serde::{Deserialize, Serialize, Serializer};
 use util::{_String, s4, s8};
 
 use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 
-/// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Patch {
+    pub terrain: IndexMap<IVec3, Voxel>,
+    pub spawns: IndexMap<IVec3, Spawn>,
+}
+
+impl std::ops::AddAssign<&Patch> for Patch {
+    fn add_assign(&mut self, rhs: &Patch) {
+        for (&p, &a) in &rhs.terrain {
+            self.terrain.insert(p, a);
+        }
+
+        for (&p, a) in &rhs.spawns {
+            self.spawns.insert(p, a.clone());
+        }
+    }
+}
+
+/// Specification for a 2D patch of the game world.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[deprecated]
+pub struct OldPatch {
     pub terrain: IndexMap<IVec2, MapTile>,
     pub spawns: IndexMap<IVec2, Spawn>,
     pub entrance: Option<IVec2>,
 }
 
-impl Patch {
+impl OldPatch {
     /// Merge another patch into this.
-    pub fn merge(&mut self, offset: IVec2, other: Patch) {
+    pub fn merge(&mut self, offset: IVec2, other: OldPatch) {
         for (p, t) in other.terrain {
             self.terrain.insert(p + offset, t);
         }
@@ -125,7 +145,7 @@ impl Patch {
 
     // See if the patch can be placed in given offset without clobbering
     // existing area.
-    pub fn can_place(&self, offset: IVec2, other: &Patch) -> bool {
+    pub fn can_place(&self, offset: IVec2, other: &OldPatch) -> bool {
         // TODO: avoid placements where more than one consecutive chunk is
         // taken from open edge.
         for (&p, &t) in &other.terrain {
@@ -196,7 +216,7 @@ pub struct PatchData {
     pub legend: BTreeMap<char, Spawn>,
 }
 
-impl TryFrom<((PatchData,), String)> for Patch {
+impl TryFrom<((PatchData,), String)> for OldPatch {
     type Error = anyhow::Error;
 
     fn try_from(
@@ -234,7 +254,7 @@ impl TryFrom<((PatchData,), String)> for Patch {
             }
         }
 
-        Ok(Patch {
+        Ok(OldPatch {
             terrain,
             spawns,
             entrance,
@@ -242,8 +262,8 @@ impl TryFrom<((PatchData,), String)> for Patch {
     }
 }
 
-impl From<&Patch> for ((PatchData,), String) {
-    fn from(value: &Patch) -> Self {
+impl From<&OldPatch> for ((PatchData,), String) {
+    fn from(value: &OldPatch) -> Self {
         const LEGEND_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                                        abcdefghijklmnopqrstuvwxyz\
                                        αβγδεζηθικλμξπρστφχψω\
@@ -329,17 +349,17 @@ impl From<&Patch> for ((PatchData,), String) {
     }
 }
 
-impl<'de> Deserialize<'de> for Patch {
+impl<'de> Deserialize<'de> for OldPatch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         let data = <((PatchData,), String)>::deserialize(deserializer)?;
-        Patch::try_from(data).map_err(serde::de::Error::custom)
+        OldPatch::try_from(data).map_err(serde::de::Error::custom)
     }
 }
 
-impl Serialize for Patch {
+impl Serialize for OldPatch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -400,7 +420,7 @@ mod test {
 ##@##
  ###";
 
-        let p: Patch = idm::from_str(PATCH).unwrap();
+        let p: OldPatch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
         assert_eq!(PATCH, reser.trim_end());
     }
@@ -418,9 +438,9 @@ mod test {
 ##@##
  ###";
 
-        let p: Patch = idm::from_str(PATCH).unwrap();
+        let p: OldPatch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
-        let p2: Patch = idm::from_str(&reser).unwrap();
+        let p2: OldPatch = idm::from_str(&reser).unwrap();
         assert_eq!(p, p2);
     }
 }

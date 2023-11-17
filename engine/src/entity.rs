@@ -151,9 +151,17 @@ impl Entity {
     }
 
     fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
         self.scan_fov(r);
         // Equipped items become unequipped.
         self.set(r, EquippedAt::None);
+
+        if self.is_player(r) {
+            if let Some(loc) = self.loc(r) {
+                r.populate_cache_around(loc);
+            }
+        }
     }
 
     /// Return the type of terrain the entity is expected to spawn in.

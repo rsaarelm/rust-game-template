@@ -1,11 +1,11 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, s8, GameRng, LazyRes};
+use util::{flood_fill_4, s8, GameRng, Logos};
 
 use crate::{
-    data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
-    TileTerrain, World, WorldSpec,
+    data::StaticSeed, ecs::*, placement::Place, prelude::*, Data, Fov,
+    Placement, Region, World,
 };
 
 /// Main data container for game engine runtime.
@@ -14,14 +14,11 @@ use crate::{
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
-    /// Lazily instantiated static world structure.
-    pub(crate) world: LazyRes<WorldSpec, World>,
-    /// Terrain modifications made on world during runtime.
-    pub(crate) tile_terrain_overlay: TileTerrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
     pub(crate) rng: GameRng,
+    pub(crate) world: World,
 }
 
 impl AsRef<Runtime> for Runtime {
@@ -45,7 +42,6 @@ impl Default for Runtime {
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
             world: Default::default(),
-            tile_terrain_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
@@ -54,9 +50,12 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    pub fn new(w: WorldSpec) -> Result<Self> {
-        let world: LazyRes<WorldSpec, World> = LazyRes::new(w);
-        let rng = util::srng(world.seed());
+    pub fn new(seed: Logos, scenario: Option<Region>) -> Result<Self> {
+        let rng = util::srng(&seed);
+
+        let scenario = scenario.unwrap_or_else(|| Data::get().world.clone());
+
+        let world = World::new(seed, scenario)?;
 
         let mut ret = Runtime {
             world,
@@ -64,20 +63,9 @@ impl Runtime {
             ..Default::default()
         };
 
-        let spawns: Vec<_> = ret
-            .world
-            .spawns()
-            .map(|(p, s)| (p, s.clone()))
-            .collect::<Vec<_>>();
-        for (loc, s) in spawns {
-            s.spawn(&mut ret, loc);
-        }
-
-        if let Some(entrance) = ret.world.entrance() {
-            ret.spawn_player(entrance);
-        } else {
-            bail!("world does not specify player entry point");
-        }
+        let entrance = ret.world.entrance();
+        ret.populate_cache_around(entrance);
+        ret.spawn_player(entrance);
 
         Ok(ret)
     }
@@ -178,6 +166,12 @@ impl Runtime {
 
     pub fn live_entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.placement.all_entities()
+    }
+
+    pub(crate) fn populate_cache_around(&mut self, loc: Location) {
+        for (loc, s) in self.world.populate_around(loc) {
+            s.spawn(self, loc);
+        }
     }
 
     /// Update the crate state by one tick.
