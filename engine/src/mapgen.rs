@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use util::{s4, RngExt};
 
-use crate::{prelude::*, Data, EntitySeed, Patch, Rect, Spawn};
+use crate::{prelude::*, Data, EntitySeed, FlatPatch, Rect, Spawn};
 
 #[derive(Copy, Clone, Default)]
 pub struct Level {
@@ -61,8 +61,8 @@ impl Level {
     }
 
     /// Generate a random rectangular room.
-    fn room(&self, rng: &mut (impl Rng + ?Sized)) -> Patch {
-        let mut ret = Patch::default();
+    fn room(&self, rng: &mut (impl Rng + ?Sized)) -> FlatPatch {
+        let mut ret = FlatPatch::default();
 
         let w = rng.gen_range(2..=10);
         let h = rng.gen_range(2..=10);
@@ -90,10 +90,10 @@ impl Level {
     }
 }
 
-impl Distribution<Patch> for Level {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Patch {
+impl Distribution<FlatPatch> for Level {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> FlatPatch {
         let level_area = Rect::sized([SECTOR_WIDTH, SECTOR_HEIGHT]);
-        let mut ret = Patch::default();
+        let mut ret = FlatPatch::default();
 
         if let Some(p) = self.upstairs {
             ret.set_terrain(p, MapTile::Upstairs);

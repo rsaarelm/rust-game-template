@@ -57,7 +57,7 @@ mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
 
 mod patch;
-pub use patch::{Patch, Spawn};
+pub use patch::{FlatPatch, Spawn};
 
 mod placement;
 pub use placement::Placement;

@@ -9,15 +9,15 @@ use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Patch {
+pub struct FlatPatch {
     pub terrain: IndexMap<IVec2, MapTile>,
     pub spawns: IndexMap<IVec2, Spawn>,
     pub entrance: Option<IVec2>,
 }
 
-impl Patch {
+impl FlatPatch {
     /// Merge another patch into this.
-    pub fn merge(&mut self, offset: IVec2, other: Patch) {
+    pub fn merge(&mut self, offset: IVec2, other: FlatPatch) {
         for (p, t) in other.terrain {
             self.terrain.insert(p + offset, t);
         }
@@ -125,7 +125,7 @@ impl Patch {
 
     // See if the patch can be placed in given offset without clobbering
     // existing area.
-    pub fn can_place(&self, offset: IVec2, other: &Patch) -> bool {
+    pub fn can_place(&self, offset: IVec2, other: &FlatPatch) -> bool {
         // TODO: avoid placements where more than one consecutive chunk is
         // taken from open edge.
         for (&p, &t) in &other.terrain {
@@ -196,7 +196,7 @@ pub struct PatchData {
     pub legend: BTreeMap<char, Spawn>,
 }
 
-impl TryFrom<((PatchData,), String)> for Patch {
+impl TryFrom<((PatchData,), String)> for FlatPatch {
     type Error = anyhow::Error;
 
     fn try_from(
@@ -234,7 +234,7 @@ impl TryFrom<((PatchData,), String)> for Patch {
             }
         }
 
-        Ok(Patch {
+        Ok(FlatPatch {
             terrain,
             spawns,
             entrance,
@@ -242,8 +242,8 @@ impl TryFrom<((PatchData,), String)> for Patch {
     }
 }
 
-impl From<&Patch> for ((PatchData,), String) {
-    fn from(value: &Patch) -> Self {
+impl From<&FlatPatch> for ((PatchData,), String) {
+    fn from(value: &FlatPatch) -> Self {
         const LEGEND_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                                        abcdefghijklmnopqrstuvwxyz\
                                        αβγδεζηθικλμξπρστφχψω\
@@ -329,17 +329,17 @@ impl From<&Patch> for ((PatchData,), String) {
     }
 }
 
-impl<'de> Deserialize<'de> for Patch {
+impl<'de> Deserialize<'de> for FlatPatch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         let data = <((PatchData,), String)>::deserialize(deserializer)?;
-        Patch::try_from(data).map_err(serde::de::Error::custom)
+        FlatPatch::try_from(data).map_err(serde::de::Error::custom)
     }
 }
 
-impl Serialize for Patch {
+impl Serialize for FlatPatch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -400,7 +400,7 @@ mod test {
 ##@##
  ###";
 
-        let p: Patch = idm::from_str(PATCH).unwrap();
+        let p: FlatPatch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
         assert_eq!(PATCH, reser.trim_end());
     }
@@ -418,9 +418,9 @@ mod test {
 ##@##
  ###";
 
-        let p: Patch = idm::from_str(PATCH).unwrap();
+        let p: FlatPatch = idm::from_str(PATCH).unwrap();
         let reser = idm::to_string(&p).unwrap();
-        let p2: Patch = idm::from_str(&reser).unwrap();
+        let p2: FlatPatch = idm::from_str(&reser).unwrap();
         assert_eq!(p, p2);
     }
 }

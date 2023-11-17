@@ -2,7 +2,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use util::Logos;
 
-use crate::{mapgen::Level, prelude::*, Patch, Spawn};
+use crate::{mapgen::Level, prelude::*, FlatPatch, Spawn};
 
 /// Fixed-format data that specifies the contents of the initial game world.
 /// Created from `WorldSpec`.
@@ -11,7 +11,7 @@ pub struct World {
     /// PRNG seed used
     seed: Logos,
     /// Map generation artifacts specifying terrain and entity spawns.
-    patches: IndexMap<Location, Patch>,
+    patches: IndexMap<Location, FlatPatch>,
     /// Replicates data from `patches` in a more efficiently accessible form.
     terrain: HashMap<Location, MapTile>,
 }
