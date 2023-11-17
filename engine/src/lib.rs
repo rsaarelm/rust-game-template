@@ -57,7 +57,7 @@ mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
 
 mod patch;
-pub use patch::{FlatPatch, Spawn};
+pub use patch::{FlatPatch, Patch, Spawn};
 
 mod placement;
 pub use placement::Placement;
@@ -83,6 +83,7 @@ mod world;
 pub use world::{World, WorldSpec};
 
 pub type Rect = util::Rect<i32>;
+pub type Cube = util::Cube<i32>;
 
 pub enum ScenarioStatus {
     Ongoing,

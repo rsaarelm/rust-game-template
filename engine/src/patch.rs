@@ -7,6 +7,9 @@ use util::{_String, s4, s8};
 
 use crate::{data::StaticSeed, placement::Place, prelude::*, Rect};
 
+// TODO Replace with a 3D patch struct in the future
+pub type Patch = (Location, FlatPatch);
+
 /// Specification for a 2D patch of the game world.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FlatPatch {

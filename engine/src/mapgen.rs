@@ -1,7 +1,25 @@
 use rand::prelude::*;
 use util::{s4, RngExt};
 
-use crate::{prelude::*, Data, EntitySeed, FlatPatch, Rect, Spawn};
+use crate::{
+    prelude::*, Cube, Data, EntitySeed, FlatPatch, Patch, Rect, Spawn,
+};
+
+pub trait MapGenerator {
+    fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch>;
+}
+
+/// Bounds and topology definition for map generation.
+#[derive(Copy, Clone, Debug, Default)]
+pub struct Lot {
+    /// Volume in space in which the map should be generated.
+    _volume: Cube,
+
+    /// Connection flags to the six neighbors. If the bit is set for a given
+    /// edge, the map generator is expected to generate a connection in that
+    /// direction. The bit order is NESWDU.
+    _connections: u8,
+}
 
 #[derive(Copy, Clone, Default)]
 pub struct Level {
