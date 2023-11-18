@@ -1,18 +1,17 @@
 [package]
-name = "engine"
+name = "content"
 version = "0.1.0"
 edition = "2021"
-description = "Core game logic"
+description = "Game content datatypes and generation"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1"
-content = { path = "../content" }
 derive_more = "0.99"
 fdeflate = "0.3"
-fov = { path = "../fov" }
 glam = { version = "0.24", features = ["serde"] }
-hecs = { version = "0.10", features = ["row-serialize"] }
 idm = "0.4"
+indexmap = { version = "2", features = ["serde"] }
 log = "0.4"
 pathfinding = "4"
 rand = "0.8"
@@ -24,7 +23,3 @@ util = { path = "../util" }
 [build-dependencies]
 fdeflate = "0.3"
 util = { path = "../util" }
-
-[dev-dependencies]
-quickcheck = "1"
-quickcheck_macros = "1"

@@ -1,54 +1,34 @@
 //! Special powers entities can use
 
+use content::{Power, Rect};
 use serde::{Deserialize, Serialize};
 use util::{s8, v2};
 
 use crate::{
     ecs::{Powers, Wounds},
     prelude::*,
-    Rect, FOV_RADIUS,
+    FOV_RADIUS,
 };
 
-#[derive(
-    Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
-)]
-#[serde(rename_all = "kebab-case")]
-pub enum Power {
-    BerserkRage,
-    CallLightning,
-    Confusion,
-    Fireball,
-    MagicMapping,
-    HealSelf,
-}
-
-use Power::*;
-
-impl Power {
-    pub fn needs_aim(self) -> bool {
-        matches!(self, Confusion | Fireball)
-    }
-
-    pub fn invoke(
-        self,
-        r: &mut impl AsMut<Runtime>,
+impl Runtime {
+    pub fn invoke_power(
+        &mut self,
+        power: Power,
         perp: Option<Entity>,
         loc: Location,
         v: IVec2,
     ) {
-        let r = r.as_mut();
-        match self {
+        use Power::*;
+        match power {
             BerserkRage => msg!("TODO!"),
-            CallLightning => r.lightning(perp, loc),
-            Confusion => r.confusion(perp, loc, v),
-            Fireball => r.fireball(perp, loc, v),
-            MagicMapping => r.magic_map(perp, loc),
-            HealSelf => r.heal(perp, loc),
+            CallLightning => self.lightning(perp, loc),
+            Confusion => self.confusion(perp, loc, v),
+            Fireball => self.fireball(perp, loc, v),
+            MagicMapping => self.magic_map(perp, loc),
+            HealSelf => self.heal(perp, loc),
         }
     }
-}
 
-impl Runtime {
     /// Raycast for a hittable target given a starting position, a direction
     /// and a maximum range.
     ///
@@ -242,7 +222,7 @@ impl Entity {
     ) {
         let r = r.as_mut();
         let Some(loc) = self.loc(r) else { return };
-        power.invoke(r, Some(*self), loc, v);
+        r.invoke_power(power, Some(*self), loc, v);
         self.complete_turn(r);
     }
 }

@@ -2,6 +2,7 @@
 
 use std::{cell::RefCell, collections::BTreeMap, fmt};
 
+use content::{EquippedAt, ItemKind, Power};
 use derive_more::{Deref, DerefMut};
 use hecs::{
     serialize::row::{self, SerializeContext},
@@ -14,12 +15,7 @@ use serde::{
 };
 use util::InString;
 
-use crate::{
-    item::{EquippedAt, ItemKind},
-    power::{Power, PowerState},
-    prelude::*,
-    Buff, Goal,
-};
+use crate::{power::PowerState, prelude::*, Buff, Goal};
 
 macro_rules! components {
     {

@@ -1,9 +1,8 @@
+use content::{Cube, Data, Rect};
 use rand::prelude::*;
 use util::{s4, RngExt};
 
-use crate::{
-    prelude::*, Cube, Data, EntitySeed, FlatPatch, Patch, Rect, Spawn,
-};
+use crate::{prelude::*, EntitySeed, FlatPatch, Patch, Spawn};
 
 pub trait MapGenerator {
     fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch>;
@@ -86,15 +85,15 @@ impl Level {
         let h = rng.gen_range(2..=10);
 
         // Set corners as undiggable.
-        ret.set_terrain([-1, -1], MapTile::Wall);
-        ret.set_terrain([w, -1], MapTile::Wall);
-        ret.set_terrain([-1, h], MapTile::Wall);
-        ret.set_terrain([w, h], MapTile::Wall);
+        ret.set_terrain([-1, -1], Tile::Wall);
+        ret.set_terrain([w, -1], Tile::Wall);
+        ret.set_terrain([-1, h], Tile::Wall);
+        ret.set_terrain([w, h], Tile::Wall);
 
         ret.entrance = Some(ivec2(rng.gen_range(0..w), rng.gen_range(0..h)));
 
         for p in Rect::sized([w, h]) {
-            ret.set_terrain(p, MapTile::Ground);
+            ret.set_terrain(p, Tile::Ground);
             if rng.one_chance_in(60) && Some(p.into()) != ret.entrance {
                 if rng.one_chance_in(3) {
                     ret.add_spawn(p, self.item(rng));
@@ -114,15 +113,15 @@ impl Distribution<FlatPatch> for Level {
         let mut ret = FlatPatch::default();
 
         if let Some(p) = self.upstairs {
-            ret.set_terrain(p, MapTile::Upstairs);
-            ret.set_terrain(p + ivec2(0, 1), MapTile::Ground);
+            ret.set_terrain(p, Tile::Upstairs);
+            ret.set_terrain(p + ivec2(0, 1), Tile::Ground);
 
             // Undiggable enclosure.
-            ret.set_terrain(p + ivec2(-1, 0), MapTile::Wall);
-            ret.set_terrain(p + ivec2(1, 0), MapTile::Wall);
-            ret.set_terrain(p + ivec2(-1, -1), MapTile::Wall);
-            ret.set_terrain(p + ivec2(0, -1), MapTile::Wall);
-            ret.set_terrain(p + ivec2(1, -1), MapTile::Wall);
+            ret.set_terrain(p + ivec2(-1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(-1, -1), Tile::Wall);
+            ret.set_terrain(p + ivec2(0, -1), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, -1), Tile::Wall);
         }
 
         'placement: for _ in 0..rng.gen_range(6..18) {
@@ -173,16 +172,16 @@ impl Distribution<FlatPatch> for Level {
                 for p in path {
                     if !map.terrain.get(&p).map_or(false, |t| t.is_walkable()) {
                         if prev.is_none() {
-                            map.set_terrain(p, MapTile::Door);
+                            map.set_terrain(p, Tile::Door);
                         } else {
-                            map.set_terrain(p, MapTile::Ground);
+                            map.set_terrain(p, Tile::Ground);
                         }
                         prev = Some(p);
                     }
                 }
 
                 if let Some(prev) = prev {
-                    map.set_terrain(prev, MapTile::Door);
+                    map.set_terrain(prev, Tile::Door);
                 }
 
                 ret = map;
@@ -205,15 +204,15 @@ impl Distribution<FlatPatch> for Level {
             // fallible function.
             let p = *posns.choose(rng).expect("couldn't place downstairs");
 
-            ret.set_terrain(p, MapTile::Downstairs);
-            ret.set_terrain(p + ivec2(0, -1), MapTile::Ground);
+            ret.set_terrain(p, Tile::Downstairs);
+            ret.set_terrain(p + ivec2(0, -1), Tile::Ground);
 
             // Undiggable enclosure.
-            ret.set_terrain(p + ivec2(-1, 0), MapTile::Wall);
-            ret.set_terrain(p + ivec2(1, 0), MapTile::Wall);
-            ret.set_terrain(p + ivec2(-1, 1), MapTile::Wall);
-            ret.set_terrain(p + ivec2(0, 1), MapTile::Wall);
-            ret.set_terrain(p + ivec2(1, 1), MapTile::Wall);
+            ret.set_terrain(p + ivec2(-1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 0), Tile::Wall);
+            ret.set_terrain(p + ivec2(-1, 1), Tile::Wall);
+            ret.set_terrain(p + ivec2(0, 1), Tile::Wall);
+            ret.set_terrain(p + ivec2(1, 1), Tile::Wall);
         }
 
         ret

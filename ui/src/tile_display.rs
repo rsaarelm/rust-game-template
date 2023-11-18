@@ -90,15 +90,15 @@ pub fn flat_terrain_cell(
 
     match tile(r, wide_loc_pos) {
         // TODO wallforming
-        MapTile::Wall => {
+        Tile::Wall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(DOUBLE_LINE[i])
             } else {
                 CharCell::c(' ')
             }
         }
-        MapTile::Ground => CharCell::c(' '),
-        MapTile::Grass => {
+        Tile::Ground => CharCell::c(' '),
+        Tile::Grass => {
             const GRASS_SPARSENESS: usize = 3;
             if is_centered
                 && srng(&wide_loc_pos).gen_range(0..GRASS_SPARSENESS) == 0
@@ -108,7 +108,7 @@ pub fn flat_terrain_cell(
                 CharCell::c(' ')
             }
         }
-        MapTile::LowWall => {
+        Tile::LowWall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(SHARP_CORNERS[i])
             } else if is_centered {
@@ -117,34 +117,34 @@ pub fn flat_terrain_cell(
                 CharCell::c(' ')
             }
         }
-        MapTile::Door => {
+        Tile::Door => {
             if let Some(i) = wallform(r, wide_loc_pos) {
                 CharCell::c(CROSSED[i])
             } else {
                 CharCell::c('+')
             }
         }
-        MapTile::Water => CharCell::c(if is_centered { '~' } else { ' ' })
+        Tile::Water => CharCell::c(if is_centered { '~' } else { ' ' })
             .col(X::NAVY)
             .inv(),
-        MapTile::Magma => CharCell::c(if is_centered { '~' } else { ' ' })
+        Tile::Magma => CharCell::c(if is_centered { '~' } else { ' ' })
             .col(X::MAROON)
             .inv(),
-        MapTile::Upstairs => {
+        Tile::Upstairs => {
             if is_centered {
                 CharCell::c('↑')
             } else {
                 CharCell::c(' ')
             }
         }
-        MapTile::Downstairs => {
+        Tile::Downstairs => {
             if is_centered {
                 CharCell::c('↓')
             } else {
                 CharCell::c(' ')
             }
         }
-        MapTile::Gore => {
+        Tile::Gore => {
             CharCell::c(match srng(&wide_loc_pos).gen_range(0..=10) {
                 d if d < 4 => ',',
                 d if d < 7 => '\'',
@@ -154,11 +154,11 @@ pub fn flat_terrain_cell(
             })
             .col(X::MAROON)
         }
-        MapTile::Exit => CharCell::c('░'),
+        Tile::Exit => CharCell::c('░'),
     }
 }
 
-fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> MapTile {
+fn tile(r: &impl AsRef<Runtime>, wide_loc_pos: IVec2) -> Tile {
     let p = wide_loc_pos;
 
     if p.x % 2 == 0 {

@@ -1,9 +1,10 @@
+use content::Rect;
 use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::s4;
+use util::{s4, v3};
 
-use crate::{prelude::*, Grammatize, Rect, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{prelude::*, Grammatize};
 
 /// Absolute locations in the game world.
 #[derive(
@@ -117,10 +118,10 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
+    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
         let r = r.as_ref();
         r.tile_terrain_overlay
-            .get(self)
+            .get(&<[i32; 3]>::from(v3(*self)))
             .copied()
             .or_else(|| r.world.tile(self))
             .unwrap_or_default()
@@ -128,26 +129,25 @@ impl Location {
 
     /// Get actual tiles from visible cells, assume ground for unexplored
     /// cell.
-    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> MapTile {
+    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
         if self.is_explored(r) {
             self.map_tile(r)
         } else {
-            MapTile::Ground
+            Tile::Ground
         }
     }
 
-    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
         let r = r.as_mut();
-        r.tile_terrain_overlay.insert(*self, t);
+        r.tile_terrain_overlay.insert(v3(*self), t);
     }
 
     /// Tile setter that doesn't cover functional terrain.
-    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: MapTile) {
+    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
         let r = r.as_mut();
-        if self.map_tile(r) == MapTile::Ground
-            || self.map_tile(r).is_decoration()
+        if self.map_tile(r) == Tile::Ground || self.map_tile(r).is_decoration()
         {
-            r.tile_terrain_overlay.insert(*self, t);
+            self.set_tile(r, t);
         }
     }
 
@@ -203,7 +203,7 @@ impl Location {
     pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
         match self.map_tile(r) {
             // Door is held open by someone passing through.
-            MapTile::Door if self.mob_at(r).is_some() => false,
+            Tile::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_shot(),
         }
     }
@@ -211,7 +211,7 @@ impl Location {
     pub fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
         match self.map_tile(r) {
             // Door is held open by someone passing through.
-            MapTile::Door if self.mob_at(r).is_some() => false,
+            Tile::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_sight(),
         }
     }
@@ -303,8 +303,8 @@ impl Location {
 
     pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         match self.map_tile(r) {
-            MapTile::Upstairs => Some(*self + ivec3(0, 0, 1)),
-            MapTile::Downstairs => Some(*self + ivec3(0, 0, -1)),
+            Tile::Upstairs => Some(*self + ivec3(0, 0, 1)),
+            Tile::Downstairs => Some(*self + ivec3(0, 0, -1)),
             _ => None,
         }
     }
@@ -459,6 +459,12 @@ impl Location {
         if let Some(mob) = self.mob_at(r) {
             mob.damage(r, perp, amount);
         }
+    }
+}
+
+impl From<IVec3> for Location {
+    fn from(value: IVec3) -> Self {
+        Location::new(value.x as i16, value.y as i16, value.z as i16)
     }
 }
 

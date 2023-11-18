@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         let md = util::dir_to_idm(path)?;
         mods.push(md);
     }
-    engine::register_mods(mods);
+    content::register_mods(mods);
 
     navni::run(GAME_NAME, async move {
         ui::init_game();

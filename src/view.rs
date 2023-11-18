@@ -1,6 +1,7 @@
 use std::fmt::Write;
 
-use engine::{prelude::*, EquippedAt};
+use content::EquippedAt;
+use engine::prelude::*;
 use navni::Key;
 use ui::prelude::*;
 use util::{text, write, writeln};

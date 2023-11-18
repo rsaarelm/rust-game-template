@@ -13,7 +13,7 @@ pub struct World {
     /// Map generation artifacts specifying terrain and entity spawns.
     patches: IndexMap<Location, FlatPatch>,
     /// Replicates data from `patches` in a more efficiently accessible form.
-    terrain: HashMap<Location, MapTile>,
+    terrain: HashMap<Location, Tile>,
 }
 
 impl TryFrom<WorldSpec> for World {
@@ -65,7 +65,7 @@ impl World {
         })
     }
 
-    pub fn tile(&self, loc: &Location) -> Option<MapTile> {
+    pub fn tile(&self, loc: &Location) -> Option<Tile> {
         self.terrain.get(loc).copied()
     }
 

@@ -2,11 +2,6 @@
 #![feature(int_roundings)]
 #![feature(lazy_cell)]
 
-/// Width of a single sector of the game world in tiles.
-pub const SECTOR_WIDTH: i32 = 52;
-/// Height of a single sector of the game world in tiles.
-pub const SECTOR_HEIGHT: i32 = 39;
-
 /// How far can the player see.
 pub const FOV_RADIUS: i32 = 10;
 
@@ -28,11 +23,8 @@ pub use action::Action;
 mod ai;
 pub use ai::Goal;
 
-mod atlas;
-pub use atlas::{Atlas, BitAtlas};
-
 mod data;
-pub use data::{register_mods, Data, EntitySeed};
+pub use data::EntitySeed;
 
 pub mod ecs;
 
@@ -43,7 +35,6 @@ mod fov;
 pub use crate::fov::Fov;
 
 mod item;
-pub use item::EquippedAt;
 
 mod location;
 pub use location::{Location, SectorDir};
@@ -63,27 +54,17 @@ mod placement;
 pub use placement::Placement;
 
 pub mod power;
-pub use power::Power;
 
 pub mod prelude;
 
 mod runtime;
 pub use runtime::Runtime;
 
-mod terrain;
-pub use terrain::TileTerrain;
-
-mod tile;
-pub use tile::MapTile;
-
 mod time;
 pub use time::Instant;
 
 mod world;
 pub use world::{World, WorldSpec};
-
-pub type Rect = util::Rect<i32>;
-pub type Cube = util::Cube<i32>;
 
 pub enum ScenarioStatus {
     Ongoing,

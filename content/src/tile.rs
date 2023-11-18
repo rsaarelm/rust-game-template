@@ -1,11 +1,15 @@
+use derive_more::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
+use util::Cloud;
+
+use crate::Atlas;
 
 /// Specific terrain in a single game world map cell.
 #[derive(
     Copy, Clone, Default, Eq, PartialEq, Debug, Serialize, Deserialize,
 )]
 #[serde(try_from = "char", into = "char")]
-pub enum MapTile {
+pub enum Tile {
     #[default]
     Wall,
     Ground,
@@ -20,9 +24,9 @@ pub enum MapTile {
     Exit,
 }
 
-use MapTile::*;
+use Tile::*;
 
-impl MapTile {
+impl Tile {
     pub fn blocks_sight(self) -> bool {
         matches!(self, Wall | Door)
     }
@@ -76,12 +80,12 @@ impl MapTile {
     /// terrain on a double-width map.
     ///
     /// ```
-    /// use engine::MapTile;
+    /// use content::Tile;
     ///
-    /// assert_eq!(MapTile::Water.mix(MapTile::Magma), MapTile::Magma);
-    /// assert_eq!(MapTile::Grass.mix(MapTile::Ground), MapTile::Ground);
+    /// assert_eq!(Tile::Water.mix(Tile::Magma), Tile::Magma);
+    /// assert_eq!(Tile::Grass.mix(Tile::Ground), Tile::Ground);
     /// ```
-    pub fn mix(self, other: MapTile) -> Self {
+    pub fn mix(self, other: Tile) -> Self {
         match (self, other) {
             (x, y) if x == y => x,
             // All defined matches are an earlier terrain type matched against
@@ -101,7 +105,7 @@ impl MapTile {
     }
 }
 
-impl TryFrom<char> for MapTile {
+impl TryFrom<char> for Tile {
     type Error = &'static str;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -122,8 +126,8 @@ impl TryFrom<char> for MapTile {
     }
 }
 
-impl From<MapTile> for char {
-    fn from(val: MapTile) -> Self {
+impl From<Tile> for char {
+    fn from(val: Tile) -> Self {
         // NB. This must match Tile's TryFrom inputs above.
         match val {
             Ground => '.',
@@ -138,5 +142,32 @@ impl From<MapTile> for char {
             Gore => '§',
             Exit => 'X',
         }
+    }
+}
+
+/// Game world terrain tiles.
+#[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
+#[serde(try_from = "Atlas", into = "Atlas")]
+pub struct Terrain(Cloud<3, Tile>);
+
+impl TryFrom<Atlas> for Terrain {
+    type Error = &'static str;
+
+    fn try_from(value: Atlas) -> Result<Self, Self::Error> {
+        let mut ret = Terrain::default();
+
+        for (loc, c) in value.iter() {
+            let c = Tile::try_from(c)?;
+            if c != Default::default() {
+                ret.0.insert(loc, c);
+            }
+        }
+        Ok(ret)
+    }
+}
+
+impl From<Terrain> for Atlas {
+    fn from(map: Terrain) -> Self {
+        Atlas::from_iter(map.0)
     }
 }

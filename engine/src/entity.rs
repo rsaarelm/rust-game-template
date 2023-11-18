@@ -1,12 +1,13 @@
 //! Generic entity logic.
 use std::{fmt, str::FromStr};
 
+use content::EquippedAt;
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use util::{Logos, Noun};
 
-use crate::{ecs::*, placement::Place, prelude::*, EquippedAt};
+use crate::{ecs::*, placement::Place, prelude::*};
 
 // Dummy wrapper so we can write impls for it directly instead of deriving a
 // trait for hecs::Entity and writing every fn signature twice.
@@ -157,9 +158,9 @@ impl Entity {
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> MapTile {
+    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile {
         // Return a different tile if entity is aquatic or another weird type.
-        MapTile::Ground
+        Tile::Ground
     }
 
     pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
@@ -310,7 +311,7 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.decorate_tile(r, MapTile::Gore);
+                loc.decorate_tile(r, Tile::Gore);
             }
 
             // Drop stuff.

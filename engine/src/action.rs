@@ -1,14 +1,14 @@
 //! Entities doing things
 
+use content::{EquippedAt, Power};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 use util::{s4, RngExt};
 
 use crate::{
     ecs::{ActsNext, Momentum, Voice},
-    power::Power,
     prelude::*,
-    EquippedAt, ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
+    ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
 };
 
 impl Entity {

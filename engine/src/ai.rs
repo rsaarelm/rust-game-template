@@ -1,9 +1,10 @@
 //! Mobs figuring out what to do on their own.
+use content::EquippedAt;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::s4;
 
-use crate::{ecs::IsFriendly, prelude::*, EquippedAt, FOV_RADIUS, THROW_RANGE};
+use crate::{ecs::IsFriendly, prelude::*, FOV_RADIUS, THROW_RANGE};
 
 impl Entity {
     /// Decide on the next action given a goal.

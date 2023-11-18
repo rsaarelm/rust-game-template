@@ -24,11 +24,12 @@ panic = 'abort'
 codegen-units = 1
 
 [workspace]
-members = ["fov", "engine", "gfx", "ui", "util"]
+members = ["content", "fov", "engine", "gfx", "ui", "util"]
 
 [dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
+content = { path = "content" }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }

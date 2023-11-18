@@ -1,80 +1,11 @@
 //! Entity logic for usable items.
 
+use content::{EquippedAt, ItemKind};
 use rand::seq::SliceRandom;
-use serde::{Deserialize, Serialize};
-use strum::{EnumIter, IntoEnumIterator};
+use strum::IntoEnumIterator;
 use util::{s4, RngExt};
 
 use crate::{ecs::ItemPower, prelude::*, THROW_RANGE};
-
-#[derive(
-    Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize,
-)]
-#[serde(rename_all = "kebab-case")]
-pub enum ItemKind {
-    // Have a baked-in None value so this can be used directly as a component
-    #[default]
-    None,
-    MeleeWeapon,
-    RangedWeapon,
-    Armor,
-    Ring,
-    Scroll,
-    Potion,
-    Treasure,
-}
-
-impl ItemKind {
-    pub fn fits(&self, slot: EquippedAt) -> bool {
-        use EquippedAt::*;
-        use ItemKind::*;
-        match self {
-            MeleeWeapon => slot == RunHand,
-            RangedWeapon => slot == RunHand || slot == GunHand,
-            Armor => slot == Body,
-            Ring => slot == Ring1 || slot == Ring2,
-            _ => false,
-        }
-    }
-
-    pub fn icon(&self) -> char {
-        use ItemKind::*;
-        match self {
-            None => 'X',
-            MeleeWeapon => ')',
-            RangedWeapon => ')',
-            Armor => '[',
-            Ring => '°',
-            Scroll => '?',
-            Potion => '!',
-            Treasure => '$',
-        }
-    }
-}
-
-#[derive(
-    Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize, EnumIter,
-)]
-#[serde(rename_all = "kebab-case")]
-pub enum EquippedAt {
-    #[default]
-    None,
-    RunHand,
-    GunHand,
-    Body,
-    Ring1,
-    Ring2,
-}
-
-impl EquippedAt {
-    pub fn is_none(&self) -> bool {
-        matches!(self, EquippedAt::None)
-    }
-
-    pub fn is_some(&self) -> bool {
-        !self.is_none()
-    }
-}
 
 impl Entity {
     pub fn is_item(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -280,7 +211,7 @@ impl Entity {
         let effect = item.get::<ItemPower>(r).0;
         let Some(loc) = self.loc(r) else { return };
         if let Some(effect) = effect {
-            effect.invoke(r, Some(*self), loc, v);
+            r.invoke_power(effect, Some(*self), loc, v);
         }
         if item.consumed_on_use(r) {
             item.destroy(r);

@@ -1,11 +1,12 @@
 use anyhow::{bail, Result};
+use content::Terrain;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, LazyRes};
 
 use crate::{
     data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
-    TileTerrain, World, WorldSpec,
+    World, WorldSpec,
 };
 
 /// Main data container for game engine runtime.
@@ -17,7 +18,7 @@ pub struct Runtime {
     /// Lazily instantiated static world structure.
     pub(crate) world: LazyRes<WorldSpec, World>,
     /// Terrain modifications made on world during runtime.
-    pub(crate) tile_terrain_overlay: TileTerrain,
+    pub(crate) tile_terrain_overlay: Terrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,

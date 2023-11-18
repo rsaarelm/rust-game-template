@@ -1,9 +1,11 @@
 //! Logic for revealing unexplored game terrain
 
+use content::BitAtlas;
 use derive_more::{Deref, DerefMut};
+use glam::IVec3;
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, BitAtlas};
+use crate::prelude::*;
 
 /// Portions of map that have been revealed to player.
 #[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
@@ -17,7 +19,7 @@ impl TryFrom<BitAtlas> for Fov {
         let mut ret = Fov::default();
 
         for loc in value.iter() {
-            ret.insert(loc);
+            ret.insert(loc.into());
         }
         Ok(ret)
     }
@@ -25,7 +27,7 @@ impl TryFrom<BitAtlas> for Fov {
 
 impl From<Fov> for BitAtlas {
     fn from(fov: Fov) -> Self {
-        Self::from_iter(fov.0)
+        Self::from_iter(fov.0.into_iter().map(IVec3::from))
     }
 }
 
