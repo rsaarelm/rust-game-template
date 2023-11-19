@@ -72,3 +72,9 @@ IDM things
 	People reading the code can't tell the difference between a literal NBSP and ASCII space on sight, so the code can be very confusing if they don't know about the NBSP trick
 	IDM style is to use kebab-case with field naming, use `#[serde(rename_all = "kebab-case")]` on struct and enum declarations
 	Serialized structs are expected to omit fields that have a default value, use `#[serde(default)]` on struct declarations
+Interned string
+	Interned strings (util::InString) are reduced to machine word sized values and have their text stored in an internal cache
+	They implement copy and are very fast to compare for equality or hash
+	Fetching the actual contents of the string requires accessing the internal cache and is slower than that of a regular `String`
+		Because of this interned strings are *not* fast to sort in lexical order and are not a good fit for Ord based containers
+	Consider using interned strings for internal identifier values that are copied in many places and compared for equality more often than they are examined for their actual string contents
