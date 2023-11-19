@@ -15,8 +15,8 @@ pub const GAME_NAME: &str = "gametemplate";
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[arg(long, value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)), help = "Game world seed")]
-    seed: Option<Logos>,
+    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)), help = "Start a new game, optionally with specific seed")]
+    new_game: Option<Option<Logos>>,
 
     #[arg(
         long,
@@ -39,20 +39,30 @@ fn main() -> anyhow::Result<()> {
     }
     engine::register_mods(mods);
 
-    navni::run(GAME_NAME, async {
+    navni::run(GAME_NAME, async move {
         ui::init_game();
+
+        if args.new_game.is_some() {
+            log::info!("New game requested, deleting any existing saves");
+            game().delete_save(GAME_NAME);
+        }
 
         // Restore game or init a new one.
         loop {
             match game().load(GAME_NAME) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
-                    let seed = args.seed.unwrap_or_else(|| {
+                    let seed = if let Some(Some(logos)) = args.new_game {
+                        // A fixed seed was given, use that.
+                        logos
+                    } else {
+                        // Otherwise sample from the system clock.
                         Logos::sample(
                             &mut util::srng(&navni::now().to_le_bytes()),
                             10,
                         )
-                    });
+                    };
+
                     log::info!("seed: {seed}");
 
                     game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
