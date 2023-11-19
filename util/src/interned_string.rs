@@ -19,6 +19,7 @@ use crate::HashMap;
 #[derive(
     Copy,
     Clone,
+    Default,
     Eq,
     PartialEq,
     Hash,
@@ -47,12 +48,6 @@ impl From<&str> for InString {
 impl From<String> for InString {
     fn from(value: String) -> Self {
         Self::new(value)
-    }
-}
-
-impl Default for InString {
-    fn default() -> Self {
-        InString::new("")
     }
 }
 
@@ -91,12 +86,18 @@ impl Interner {
     /// capacity.
     pub fn with_capacity(cap: usize) -> Interner {
         let cap = cap.next_power_of_two();
-        Interner {
+        let mut ret = Interner {
             current_buffer: String::with_capacity(cap),
             str_to_id: Default::default(),
             id_to_str: Default::default(),
             full_buffers: Default::default(),
-        }
+        };
+
+        // Set zero string to be "" so derived Default semantics work for
+        // InString.
+        let id = ret.make("");
+        assert_eq!(id, 0);
+        ret
     }
 
     /// Get the interned string ID corresponding to a string.
@@ -183,5 +184,10 @@ mod test {
         // come out fine.
         let is = InString::from(s.as_str());
         is.as_str() == s.as_str()
+    }
+
+    #[test]
+    fn default() {
+        assert_eq!(InString::default().as_str(), "");
     }
 }
