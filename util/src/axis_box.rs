@@ -571,6 +571,19 @@ impl<const N: usize> LatticeBox<N> {
     pub fn len(&self) -> usize {
         self.volume() as usize
     }
+
+    /// Grow to contain given point.
+    pub fn grow_to_contain(&self, p: impl Into<[i32; N]>) -> Self {
+        let p = p.into();
+
+        let mut ret = *self;
+        for i in 0..N {
+            ret.p0[i] = pmin(ret.p0[i], p[i]);
+            ret.p1[i] = pmax(ret.p1[i], p[i] + 1);
+        }
+
+        ret
+    }
 }
 
 impl LatticeBox<2> {

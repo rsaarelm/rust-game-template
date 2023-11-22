@@ -291,6 +291,7 @@ pub fn char_grid(text: &str) -> impl Iterator<Item = (IVec2, char)> + '_ {
             line.chars()
                 .skip(x_skip)
                 .enumerate()
+                .filter(|(_, c)| c.is_whitespace())
                 .map(move |(x, c)| (ivec2(x as i32, y as i32), c))
         })
 }

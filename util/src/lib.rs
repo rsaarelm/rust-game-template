@@ -9,6 +9,9 @@ pub use bits::{
     compact_u32_by_2, compact_u64_by_2, spread_u32_by_2, spread_u64_by_2,
 };
 
+mod cloud;
+pub use cloud::Cloud;
+
 mod geom;
 pub use geom::{
     bresenham_line, s4, s6, s8, v2, v3, PlottedPoint, VecExt, AXIS_DIRS,
