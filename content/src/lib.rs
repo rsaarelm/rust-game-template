@@ -9,7 +9,7 @@ pub use data::{
 };
 
 mod location;
-pub use location::{LocExt, Location};
+pub use location::{Environs, LocExt, Location};
 
 mod tile;
 pub use tile::{Terrain, Tile};
