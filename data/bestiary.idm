@@ -1,6 +1,6 @@
 --   icon might rar min-depth
-bat     b   1  10  1
-snake   s   2  20  1
+bat     b   1  10  0
+snake   s   2  20  0
 goblin  g   4  10  1
 orc     o   6  10  3
 troll   T  10  30  6
