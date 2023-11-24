@@ -374,6 +374,25 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
 
         E::from(val)
     }
+
+    /// Return volume that contains origin positions for `smaller` box where
+    /// `smaller` is fully contained in self.
+    pub fn sweep_volume(&self, smaller: &Self) -> Self {
+        let mut ret = *self;
+        let self_size = self.dim();
+        let size = smaller.dim();
+        for i in 0..N {
+            if size[i] <= self_size[i] {
+                // Shrink the outer edge by dimensions of smaller.
+                ret.p1[i] = ret.p1[i] - size[i];
+            } else {
+                // Bail out with a zero volume box if smaller turns out to not be
+                // smaller along some dimension.
+                return Default::default();
+            }
+        }
+        ret
+    }
 }
 
 impl<T, const N: usize> AxisBox<T, N>
