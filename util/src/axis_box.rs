@@ -584,6 +584,31 @@ impl<const N: usize> LatticeBox<N> {
 
         ret
     }
+
+    /// Return a sub-volume where for each element in normal, -1 will select
+    /// the unit thickness minimum contained volume at the small end of that
+    /// axis, 1 will select the unit thickness volume at the large end of that
+    /// axis, and 0 will encompass the whole volume. Technically the border is
+    /// a k-face where k is the axis box's `N` minus the number of nonzero
+    /// components in `normal`.
+    ///
+    /// So for a cube, [0, 0, 0] will cover the whole cube, while [0, 0, -1]
+    /// will produce the bottom face and [-1, 0, -1] will produce the bottom
+    /// left edge.
+    pub fn border(&self, normal: impl Into<[i32; N]>) -> Self {
+        let normal = normal.into();
+        let mut ret = *self;
+
+        for i in 0..N {
+            match normal[i] {
+                n if n < 0 => ret.p1[i] = pmin(ret.p1[i], ret.p0[i] + 1),
+                n if n > 0 => ret.p0[i] = pmax(ret.p0[i], ret.p1[i] - 1),
+                _ => {}
+            }
+        }
+
+        ret
+    }
 }
 
 impl LatticeBox<2> {
