@@ -6,6 +6,7 @@ use std::{
 };
 
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, One, Zero};
+use rand::{distributions::uniform::SampleUniform, prelude::Distribution};
 
 /// A lattice box describes a region over a discrete cellular lattice.
 ///
@@ -680,6 +681,18 @@ where
             self.p0[i] = self.p0[i] - rhs[i];
             self.p1[i] = self.p1[i] - rhs[i];
         }
+    }
+}
+
+impl<const N: usize, T, U> Distribution<U> for AxisBox<T, N>
+where
+    T: Element + SampleUniform,
+    U: From<[T; N]>,
+{
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> U {
+        U::from(std::array::from_fn(|i| {
+            rng.gen_range(self.p0[i]..self.p1[i])
+        }))
     }
 }
 
