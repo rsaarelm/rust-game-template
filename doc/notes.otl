@@ -10,6 +10,8 @@ Semantic commit tags
 		New library machinery used by features
 	fix
 		Bug fix for the user, not a fix to a build script
+	content
+		Editing application content data, user-visible behavior change
 	docs
 		Changes to the documentation
 	style
