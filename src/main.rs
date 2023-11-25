@@ -65,7 +65,7 @@ fn main() -> anyhow::Result<()> {
 
                     log::info!("seed: {seed}");
 
-                    game().r = Runtime::new(WorldSpec::new(seed)).unwrap();
+                    game().r = Runtime::new(seed).unwrap();
 
                     msg!("Welcome to {}!", GAME_NAME);
                 }

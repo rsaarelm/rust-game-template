@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use glam::IVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -35,6 +36,13 @@ impl From<Entity> for Place {
 impl From<Location> for Place {
     fn from(loc: Location) -> Self {
         At(loc)
+    }
+}
+
+// TODO: Migrate Locations to IVec3s
+impl From<IVec3> for Place {
+    fn from(loc: IVec3) -> Self {
+        At(Location::from(loc))
     }
 }
 

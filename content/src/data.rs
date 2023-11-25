@@ -1,8 +1,12 @@
-use std::sync::OnceLock;
+use std::{fmt, str::FromStr, sync::OnceLock};
 
+use anyhow::bail;
+use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{IncrementalOutline, IndexMap, Outline, _String};
+use util::{IncrementalOutline, IndexMap, Outline, _String, text, Cloud};
+
+use crate::{Location, Tile};
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
@@ -23,6 +27,7 @@ pub fn register_mods(mods: Vec<IncrementalOutline>) {
 pub struct Data {
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
+    pub scenario: Scenario,
 }
 
 // Custom loader that initializes the global static gamedata from the data
@@ -56,6 +61,181 @@ impl Data {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "_String", into = "_String")]
+pub enum Spawn {
+    Monster(String, &'static Monster),
+    Item(String, &'static Item),
+}
+
+impl TryFrom<_String> for Spawn {
+    type Error = anyhow::Error;
+
+    fn try_from(value: _String) -> Result<Self, Self::Error> {
+        (*value).parse()
+    }
+}
+
+impl From<Spawn> for _String {
+    fn from(value: Spawn) -> Self {
+        _String(value.to_string())
+    }
+}
+
+impl FromStr for Spawn {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Magic switchboard that trawls the data files looking for named
+        // things that can be spawned.
+        if let Some(monster) = Data::get().bestiary.get(s) {
+            return Ok(Spawn::Monster(s.into(), monster));
+        }
+
+        if let Some(item) = Data::get().armory.get(s) {
+            return Ok(Spawn::Item(s.into(), item));
+        }
+
+        bail!("Unknown spawn {s:?}")
+    }
+}
+
+impl fmt::Display for Spawn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Spawn::Monster(name, _) | Spawn::Item(name, _) => {
+                write!(f, "{name}")
+            }
+        }
+    }
+}
+
+pub trait SpawnDist {
+    fn rarity(&self) -> u32;
+    fn min_depth(&self) -> u32;
+
+    fn spawn_weight(&self) -> f64 {
+        match self.rarity() {
+            0 => 0.0,
+            r => 1.0 / r as f64,
+        }
+    }
+}
+
+impl SpawnDist for Spawn {
+    fn rarity(&self) -> u32 {
+        match self {
+            Spawn::Monster(_, a) => a.rarity(),
+            Spawn::Item(_, a) => a.rarity(),
+        }
+    }
+
+    fn min_depth(&self) -> u32 {
+        match self {
+            Spawn::Monster(_, a) => a.min_depth(),
+            Spawn::Item(_, a) => a.min_depth(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Scenario {
+    pub map: String,
+    pub legend: IndexMap<char, Vec<Region>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Region {
+    /// A procgen level
+    Generate(GenericSector),
+    /// An above-ground prefab level
+    Site(SectorMap),
+    /// An underground prefab level
+    Vault(SectorMap),
+    /// Branch a new stack off to the side
+    Branch(Vec<Region>),
+    /// A sequence of applying the same constructor multiple times.
+    Repeat(u32, Box<Region>),
+}
+
+impl Region {
+    pub fn is_above_ground(&self) -> bool {
+        matches!(self, Region::Site(_))
+    }
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum GenericSector {
+    Water,
+    Grassland,
+    Forest,
+    Mountains,
+    Dungeon,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SectorMap {
+    name: String,
+    map: String,
+    // Values are spawns, but store them as strings here since they can't be
+    // validated until gamedata has been completely loaded.
+    legend: IndexMap<char, String>,
+}
+
+impl SectorMap {
+    pub fn entrances(&self) -> impl Iterator<Item = IVec2> + '_ {
+        text::char_grid(&self.map).filter_map(|(p, c)| (c == '@').then_some(p))
+    }
+
+    pub fn spawns(
+        &self,
+        origin: Location,
+    ) -> anyhow::Result<Vec<(Location, Spawn)>> {
+        let mut ret = Vec::default();
+
+        for (p, c) in text::char_grid(&self.map) {
+            if let Some(name) = self.legend.get(&c) {
+                ret.push((p.extend(0) + origin, name.parse()?));
+            }
+        }
+
+        Ok(ret)
+    }
+
+    pub fn terrain(&self, origin: Location) -> anyhow::Result<Cloud<3, Tile>> {
+        let mut ret = Cloud::default();
+
+        for (p, c) in text::char_grid(&self.map) {
+            let p = origin + p.extend(0);
+
+            let c = match c {
+                // Rewrite entrace cells.
+                '@' => '.',
+                // Assume all spawns spawn on top of regular ground
+                c if self.legend.contains_key(&c) => '.',
+                c => c,
+            };
+
+            let tile = match c {
+                '#' => Tile::Wall,
+                '.' => Tile::Ground,
+                '+' => Tile::Door,
+                '>' => Tile::Downstairs,
+                '<' => Tile::Upstairs,
+                _ => bail!("Unknown terrain {c:?}"),
+            };
+
+            ret.insert(p, tile);
+        }
+
+        Ok(ret)
+    }
+}
+
 #[derive(Clone, Default, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Monster {
@@ -63,6 +243,16 @@ pub struct Monster {
     pub might: i32,
     pub rarity: u32,
     pub min_depth: u32,
+}
+
+impl SpawnDist for Monster {
+    fn rarity(&self) -> u32 {
+        self.rarity
+    }
+
+    fn min_depth(&self) -> u32 {
+        self.min_depth
+    }
 }
 
 #[derive(Clone, Default, Debug, Deserialize)]
@@ -74,6 +264,16 @@ pub struct Item {
 
     #[serde(with = "util::dash_option")]
     pub power: Option<Power>,
+}
+
+impl SpawnDist for Item {
+    fn rarity(&self) -> u32 {
+        self.rarity
+    }
+
+    fn min_depth(&self) -> u32 {
+        0
+    }
 }
 
 #[derive(

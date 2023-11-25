@@ -4,5 +4,5 @@ pub use util::{Error, HashMap, HashSet, IndexMap, IndexSet, Odds, VecExt};
 
 pub use crate::{
     msg, send_msg, Action, Entity, Goal, Instant, Location, Msg, Receiver,
-    Runtime, ScenarioStatus, World, WorldSpec,
+    Runtime, ScenarioStatus,
 };

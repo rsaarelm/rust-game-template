@@ -2,7 +2,7 @@ use content::Rect;
 use glam::{ivec3, IVec3};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::{s4, v3};
+use util::s4;
 
 use crate::{prelude::*, Grammatize};
 
@@ -120,11 +120,7 @@ impl Location {
 
     pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
         let r = r.as_ref();
-        r.tile_terrain_overlay
-            .get(&<[i32; 3]>::from(v3(*self)))
-            .copied()
-            .or_else(|| r.world.tile(self))
-            .unwrap_or_default()
+        r.world.get((*self).into())
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -139,7 +135,7 @@ impl Location {
 
     pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
         let r = r.as_mut();
-        r.tile_terrain_overlay.insert(v3(*self), t);
+        r.world.set((*self).into(), t);
     }
 
     /// Tile setter that doesn't cover functional terrain.

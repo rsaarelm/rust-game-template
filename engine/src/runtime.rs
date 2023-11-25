@@ -1,13 +1,10 @@
-use anyhow::{bail, Result};
-use content::Terrain;
+use anyhow::Result;
+use content::{Data, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, s8, GameRng, LazyRes};
+use util::{flood_fill_4, s8, GameRng, Logos};
 
-use crate::{
-    data::StaticSeed, ecs::*, placement::Place, prelude::*, Fov, Placement,
-    World, WorldSpec,
-};
+use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 
 /// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]
@@ -15,14 +12,11 @@ use crate::{
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
-    /// Lazily instantiated static world structure.
-    pub(crate) world: LazyRes<WorldSpec, World>,
-    /// Terrain modifications made on world during runtime.
-    pub(crate) tile_terrain_overlay: Terrain,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
     pub(crate) rng: GameRng,
+    pub(crate) world: World,
 }
 
 impl AsRef<Runtime> for Runtime {
@@ -45,18 +39,17 @@ impl Default for Runtime {
             now: Instant(3600),
             rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
-            world: Default::default(),
-            tile_terrain_overlay: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
+            world: Default::default(),
         }
     }
 }
 
 impl Runtime {
-    pub fn new(w: WorldSpec) -> Result<Self> {
-        let world: LazyRes<WorldSpec, World> = LazyRes::new(w);
+    pub fn new(seed: Logos) -> Result<Self> {
+        let world = World::new(seed, Data::get().scenario.clone())?;
         let rng = util::srng(world.seed());
 
         let mut ret = Runtime {
@@ -65,20 +58,10 @@ impl Runtime {
             ..Default::default()
         };
 
-        let spawns: Vec<_> = ret
-            .world
-            .spawns()
-            .map(|(p, s)| (p, s.clone()))
-            .collect::<Vec<_>>();
-        for (loc, s) in spawns {
-            s.spawn(&mut ret, loc);
-        }
+        // Construct the initial world space and create the spawns.
+        ret.refresh_world_cache(ret.world.player_entrance().into());
 
-        if let Some(entrance) = ret.world.entrance() {
-            ret.spawn_player(entrance);
-        } else {
-            bail!("world does not specify player entry point");
-        }
+        ret.spawn_player_at(ret.world.player_entrance().into());
 
         Ok(ret)
     }
@@ -101,12 +84,29 @@ impl Runtime {
         }
     }
 
-    pub fn spawn(&mut self, loadout: impl hecs::DynamicBundle) -> Entity {
+    pub fn spawn(&mut self, spawn: &content::Spawn) -> Entity {
+        match spawn {
+            content::Spawn::Monster(name, data) => data.build(self, name),
+            content::Spawn::Item(name, data) => data.build(self, name),
+        }
+    }
+
+    pub fn spawn_at(
+        &mut self,
+        spawn: &content::Spawn,
+        place: impl Into<Place>,
+    ) -> Entity {
+        let e = self.spawn(spawn);
+        e.place(self, place);
+        e
+    }
+
+    pub fn spawn_raw(&mut self, loadout: impl hecs::DynamicBundle) -> Entity {
         Entity(self.ecs.spawn(loadout))
     }
 
     /// Spawns a new player entity if there isn't currently a player.
-    pub fn spawn_player(&mut self, loc: Location) {
+    pub fn spawn_player_at(&mut self, loc: Location) {
         if self.player.is_some() {
             return;
         }
@@ -181,8 +181,21 @@ impl Runtime {
         self.placement.all_entities()
     }
 
+    fn refresh_world_cache(&mut self, loc: Location) {
+        for (loc, spawn) in self.world.populate_around(loc.into()) {
+            self.spawn_at(&spawn, loc);
+        }
+    }
+
     /// Update the crate state by one tick.
     pub fn tick(&mut self) {
+        // Start every tick by refreshing the world cache around the player's
+        // position. If the player has moved to a location where new terrain
+        // needs to be generated, that gets generated here.
+        if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
+            self.refresh_world_cache(loc);
+        }
+
         // Tick every entity every frame
         let all: Vec<Entity> = self.live_entities().collect();
         for e in all {
@@ -390,14 +403,6 @@ impl Runtime {
         place: impl Into<Place>,
         name: &str,
     ) -> Option<Entity> {
-        let seed: StaticSeed = name.parse().ok()?;
-        let ret = seed.build(self);
-
-        // Names are map keys so they're not stored in the seed, assign the
-        // name here.
-        ret.set(self, crate::ecs::Name(name.into()));
-        ret.place(self, place);
-
-        Some(ret)
+        Some(self.spawn_at(&name.parse().ok()?, place))
     }
 }

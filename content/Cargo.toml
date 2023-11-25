@@ -17,6 +17,7 @@ pathfinding = "4"
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_with = "3"
+static_assertions = "1"
 strum = { version = "0.25", features = ["derive"] }
 util = { path = "../util" }
 

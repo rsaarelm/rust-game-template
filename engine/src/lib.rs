@@ -23,9 +23,6 @@ pub use action::Action;
 mod ai;
 pub use ai::Goal;
 
-mod data;
-pub use data::EntitySeed;
-
 pub mod ecs;
 
 mod entity;
@@ -39,16 +36,11 @@ mod item;
 mod location;
 pub use location::{Location, SectorDir};
 
-mod mapgen;
-
 mod mob;
 pub use mob::Buff;
 
 mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
-
-mod patch;
-pub use patch::{FlatPatch, Patch, Spawn};
 
 mod placement;
 pub use placement::Placement;
@@ -60,11 +52,11 @@ pub mod prelude;
 mod runtime;
 pub use runtime::Runtime;
 
+mod entity_spec;
+pub use entity_spec::EntitySpec;
+
 mod time;
 pub use time::Instant;
-
-mod world;
-pub use world::{World, WorldSpec};
 
 pub enum ScenarioStatus {
     Ongoing,

@@ -5,11 +5,15 @@ pub use atlas::{Atlas, BitAtlas};
 
 mod data;
 pub use data::{
-    register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power,
+    register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power, Scenario,
+    SectorMap, Spawn, SpawnDist,
 };
 
 mod location;
 pub use location::{Environs, LocExt, Location};
+
+mod mapgen;
+pub use mapgen::{Lot, MapGenerator, Patch};
 
 mod tile;
 pub use tile::{Terrain, Tile};
@@ -25,4 +29,4 @@ pub const SECTOR_WIDTH: i32 = 52;
 /// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 39;
 /// Depth of a single sector of the game world in tiles.
-pub const SECTOR_DEPTH: i32 = 2;
+pub const SECTOR_DEPTH: i32 = 1; // TODO: Change to 2 when going voxel
