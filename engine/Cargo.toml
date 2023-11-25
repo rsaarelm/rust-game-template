@@ -21,10 +21,6 @@ serde_with = "3"
 strum = { version = "0.25", features = ["derive"] }
 util = { path = "../util" }
 
-[build-dependencies]
-fdeflate = "0.3"
-util = { path = "../util" }
-
 [dev-dependencies]
 quickcheck = "1"
 quickcheck_macros = "1"
