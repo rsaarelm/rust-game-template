@@ -80,3 +80,12 @@ Interned string
 	Fetching the actual contents of the string requires accessing the internal cache and is slower than that of a regular `String`
 		Because of this interned strings are *not* fast to sort in lexical order and are not a good fit for Ord based containers
 	Consider using interned strings for internal identifier values that are copied in many places and compared for equality more often than they are examined for their actual string contents
+Gamedata notes
+	Gamedata contents are files under data/ directory
+	The corresponding data structure is content::Data
+	Gamedata contains human-authored structured data describing static aspects of the game
+	Such as item and creature specifications and the terrain of fixed maps
+	The rest of the code assumes that the gamedata value is available for it as a static reference
+		This introduces a potential deadlock, as gamedata itself cannot involve types which require gamedata to be available when they're deserialized
+		Use util::LazyRes type to break this deadlock
+		LazyRes allows serializing data as (usually) string, and will fetch the actual data the first time the value is accessed
