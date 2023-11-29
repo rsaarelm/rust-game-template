@@ -118,30 +118,31 @@ impl Location {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
-    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+    pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         let r = r.as_ref();
         r.world.get((*self).into())
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
     /// cell.
-    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile {
+    pub fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         if self.is_explored(r) {
             self.map_tile(r)
         } else {
-            Tile::Ground
+            Tile2D::Ground
         }
     }
 
-    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+    pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
         let r = r.as_mut();
         r.world.set((*self).into(), t);
     }
 
     /// Tile setter that doesn't cover functional terrain.
-    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile) {
+    pub fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
         let r = r.as_mut();
-        if self.map_tile(r) == Tile::Ground || self.map_tile(r).is_decoration()
+        if self.map_tile(r) == Tile2D::Ground
+            || self.map_tile(r).is_decoration()
         {
             self.set_tile(r, t);
         }
@@ -199,7 +200,7 @@ impl Location {
     pub fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
         match self.map_tile(r) {
             // Door is held open by someone passing through.
-            Tile::Door if self.mob_at(r).is_some() => false,
+            Tile2D::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_shot(),
         }
     }
@@ -207,7 +208,7 @@ impl Location {
     pub fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
         match self.map_tile(r) {
             // Door is held open by someone passing through.
-            Tile::Door if self.mob_at(r).is_some() => false,
+            Tile2D::Door if self.mob_at(r).is_some() => false,
             t => t.blocks_sight(),
         }
     }
@@ -299,8 +300,8 @@ impl Location {
 
     pub fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         match self.map_tile(r) {
-            Tile::Upstairs => Some(*self + ivec3(0, 0, 1)),
-            Tile::Downstairs => Some(*self + ivec3(0, 0, -1)),
+            Tile2D::Upstairs => Some(*self + ivec3(0, 0, 1)),
+            Tile2D::Downstairs => Some(*self + ivec3(0, 0, -1)),
             _ => None,
         }
     }

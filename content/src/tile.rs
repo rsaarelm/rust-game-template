@@ -9,7 +9,7 @@ use crate::Atlas;
     Copy, Clone, Default, Eq, PartialEq, Debug, Serialize, Deserialize,
 )]
 #[serde(try_from = "char", into = "char")]
-pub enum Tile {
+pub enum Tile2D {
     #[default]
     Wall,
     Ground,
@@ -24,9 +24,9 @@ pub enum Tile {
     Exit,
 }
 
-use Tile::*;
+use Tile2D::*;
 
-impl Tile {
+impl Tile2D {
     pub fn blocks_sight(self) -> bool {
         matches!(self, Wall | Door)
     }
@@ -80,12 +80,12 @@ impl Tile {
     /// terrain on a double-width map.
     ///
     /// ```
-    /// use content::Tile;
+    /// use content::Tile2D;
     ///
-    /// assert_eq!(Tile::Water.mix(Tile::Magma), Tile::Magma);
-    /// assert_eq!(Tile::Grass.mix(Tile::Ground), Tile::Ground);
+    /// assert_eq!(Tile2D::Water.mix(Tile2D::Magma), Tile2D::Magma);
+    /// assert_eq!(Tile2D::Grass.mix(Tile2D::Ground), Tile2D::Ground);
     /// ```
-    pub fn mix(self, other: Tile) -> Self {
+    pub fn mix(self, other: Tile2D) -> Self {
         match (self, other) {
             (x, y) if x == y => x,
             // All defined matches are an earlier terrain type matched against
@@ -105,7 +105,7 @@ impl Tile {
     }
 }
 
-impl TryFrom<char> for Tile {
+impl TryFrom<char> for Tile2D {
     type Error = &'static str;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -126,8 +126,8 @@ impl TryFrom<char> for Tile {
     }
 }
 
-impl From<Tile> for char {
-    fn from(val: Tile) -> Self {
+impl From<Tile2D> for char {
+    fn from(val: Tile2D) -> Self {
         // NB. This must match Tile's TryFrom inputs above.
         match val {
             Ground => '.',
@@ -148,7 +148,7 @@ impl From<Tile> for char {
 /// Game world terrain tiles.
 #[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
 #[serde(try_from = "Atlas", into = "Atlas")]
-pub struct Terrain(Cloud<3, Tile>);
+pub struct Terrain(Cloud<3, Tile2D>);
 
 impl TryFrom<Atlas> for Terrain {
     type Error = &'static str;
@@ -157,7 +157,7 @@ impl TryFrom<Atlas> for Terrain {
         let mut ret = Terrain::default();
 
         for (loc, c) in value.iter() {
-            let c = Tile::try_from(c)?;
+            let c = Tile2D::try_from(c)?;
             if c != Default::default() {
                 ret.0.insert(loc, c);
             }

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 use util::{IncrementalOutline, IndexMap, Outline, _String, text, Cloud};
 
-use crate::{Location, Tile};
+use crate::{Location, Tile2D};
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
@@ -206,7 +206,10 @@ impl SectorMap {
         Ok(ret)
     }
 
-    pub fn terrain(&self, origin: Location) -> anyhow::Result<Cloud<3, Tile>> {
+    pub fn terrain(
+        &self,
+        origin: Location,
+    ) -> anyhow::Result<Cloud<3, Tile2D>> {
         let mut ret = Cloud::default();
 
         for (p, c) in text::char_grid(&self.map) {
@@ -221,11 +224,11 @@ impl SectorMap {
             };
 
             let tile = match c {
-                '#' => Tile::Wall,
-                '.' => Tile::Ground,
-                '+' => Tile::Door,
-                '>' => Tile::Downstairs,
-                '<' => Tile::Upstairs,
+                '#' => Tile2D::Wall,
+                '.' => Tile2D::Ground,
+                '+' => Tile2D::Door,
+                '>' => Tile2D::Downstairs,
+                '<' => Tile2D::Upstairs,
                 _ => bail!("Unknown terrain {c:?}"),
             };
 

@@ -5,7 +5,7 @@ use util::{Cloud, IndexMap};
 
 use crate::{
     data::GenericSector, Cube, Data, Environs, Location, SectorMap, Spawn,
-    SpawnDist, Tile,
+    SpawnDist, Tile2D,
 };
 
 pub trait MapGenerator {
@@ -60,7 +60,7 @@ pub struct Lot {
 pub struct Patch {
     #[deref]
     #[deref_mut]
-    pub terrain: Cloud<3, Tile>,
+    pub terrain: Cloud<3, Tile2D>,
     pub spawns: IndexMap<Location, Spawn>,
 }
 
@@ -82,7 +82,7 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
     let floor = lot.volume.border([0, 0, -1]);
 
     for p in floor {
-        ret.set_tile(p.into(), Tile::Ground);
+        ret.set_tile(p.into(), Tile2D::Ground);
     }
 
     let z = lot.volume.max()[2] - 1;
@@ -91,12 +91,12 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
 
     if let Some(mut upstairs) = lot.up {
         upstairs.z = z;
-        ret.set_tile(upstairs + ivec3(0, -1, 0), Tile::Upstairs);
+        ret.set_tile(upstairs + ivec3(0, -1, 0), Tile2D::Upstairs);
     }
 
     if let Some(mut downstairs) = lot.down {
         downstairs.z = z;
-        ret.set_tile(downstairs, Tile::Downstairs);
+        ret.set_tile(downstairs, Tile2D::Downstairs);
     }
 
     let depth = 0.max(-lot.volume.min()[2]) as u32;

@@ -1,7 +1,7 @@
 use glam::{ivec3, IVec2, IVec3};
 use util::Cloud;
 
-use crate::{Tile, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{Tile2D, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 pub type Location = IVec3;
 
@@ -89,18 +89,18 @@ impl LocExt for Location {
 }
 
 pub trait Environs {
-    fn tile(&self, loc: Location) -> Tile;
-    fn set_tile(&mut self, loc: Location, tile: Tile);
+    fn tile(&self, loc: Location) -> Tile2D;
+    fn set_tile(&mut self, loc: Location, tile: Tile2D);
 }
 
-impl Environs for Cloud<3, Tile> {
-    fn tile(&self, loc: Location) -> Tile {
+impl Environs for Cloud<3, Tile2D> {
+    fn tile(&self, loc: Location) -> Tile2D {
         util::HashMap::get(self, &<[i32; 3]>::from(loc))
             .copied()
             .unwrap_or_default()
     }
 
-    fn set_tile(&mut self, loc: Location, tile: Tile) {
+    fn set_tile(&mut self, loc: Location, tile: Tile2D) {
         if tile == Default::default() {
             self.remove(loc);
         } else {

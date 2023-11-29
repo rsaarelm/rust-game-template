@@ -10,7 +10,8 @@ use util::{text, v2, HashMap, Logos};
 
 use crate::{
     data::Region, Cube, LocExt, Location, Lot, MapGenerator, Patch, Rect,
-    Scenario, Spawn, Terrain, Tile, SECTOR_DEPTH, SECTOR_HEIGHT, SECTOR_WIDTH,
+    Scenario, Spawn, Terrain, Tile2D, SECTOR_DEPTH, SECTOR_HEIGHT,
+    SECTOR_WIDTH,
 };
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -305,7 +306,7 @@ impl World {
         self.player_entrance
     }
 
-    pub fn get(&self, loc: Location) -> Tile {
+    pub fn get(&self, loc: Location) -> Tile2D {
         if let Some(&mutated) = self.inner.overlay.get(&<[i32; 3]>::from(loc)) {
             return mutated;
         }
@@ -317,15 +318,15 @@ impl World {
         self.default_terrain(loc)
     }
 
-    pub fn set(&mut self, loc: Location, tile: Tile) {
+    pub fn set(&mut self, loc: Location, tile: Tile2D) {
         self.inner.overlay.insert(loc, tile);
     }
 
-    fn default_terrain(&self, loc: Location) -> Tile {
+    fn default_terrain(&self, loc: Location) -> Tile2D {
         if loc.z >= 0 {
-            Tile::Ground
+            Tile2D::Ground
         } else {
-            Tile::Wall
+            Tile2D::Wall
         }
     }
 }

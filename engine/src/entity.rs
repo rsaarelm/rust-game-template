@@ -158,9 +158,9 @@ impl Entity {
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile {
+    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile2D {
         // Return a different tile if entity is aquatic or another weird type.
-        Tile::Ground
+        Tile2D::Ground
     }
 
     pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
@@ -311,7 +311,7 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
-                loc.decorate_tile(r, Tile::Gore);
+                loc.decorate_tile(r, Tile2D::Gore);
             }
 
             // Drop stuff.

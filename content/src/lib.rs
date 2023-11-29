@@ -16,7 +16,7 @@ mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};
 
 mod tile;
-pub use tile::{Terrain, Tile};
+pub use tile::{Terrain, Tile2D};
 
 mod world;
 pub use world::{Sector, World};
