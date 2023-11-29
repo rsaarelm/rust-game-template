@@ -277,6 +277,59 @@ pub fn v3(a: impl Into<glam::IVec3>) -> glam::IVec3 {
     a.into()
 }
 
+/// When `is_wall(pos)` is true, return a bitmask of the four neighboring
+/// walls (in `s4::DIR` order of directions) that the wall at `pos` should be
+/// drawn connected to. If `pos` is not a wall or is enclosed by walls from
+/// all 8 directions, return `None`.
+pub fn wallform_mask(
+    is_wall: impl Fn(IVec2) -> bool,
+    pos: impl Into<IVec2>,
+) -> Option<usize> {
+    let pos = pos.into();
+
+    if !is_wall(pos) {
+        return None;
+    }
+
+    // Is `pos` exposed to air in at least one neighbor.
+    let mut is_visible = false;
+
+    // Which of the four neighbors are walls to begin witn.
+    let mut wall_mask = 0;
+
+    // Which of the four neighboring walls are exposed to open air by a
+    // cell `pos` is also exposed to.
+    let mut expose_mask = 0;
+
+    for (i, w) in s8::ns(pos).map(is_wall).enumerate() {
+        if i % 2 == 0 && w {
+            wall_mask |= 1 << (i / 2);
+        }
+
+        if !w {
+            is_visible = true;
+
+            if i % 2 == 0 {
+                // _ *
+                // _ 0 i  <-
+                // _ *
+                let i = i / 2;
+                expose_mask |= 1 << ((i + 1) % 4);
+                expose_mask |= 1 << ((i + 3) % 4);
+            } else {
+                // _ * i  <-
+                // _ 0 *
+                // _ _ _
+                let i = i / 2;
+                expose_mask |= 1 << i;
+                expose_mask |= 1 << ((i + 1) % 4);
+            }
+        }
+    }
+
+    is_visible.then_some(wall_mask & expose_mask)
+}
+
 pub trait VecExt: Sized + Default {
     /// Absolute size of vector in taxicab metric.
     fn taxi_len(&self) -> i32;
