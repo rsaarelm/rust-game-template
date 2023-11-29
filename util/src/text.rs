@@ -291,7 +291,7 @@ pub fn char_grid(text: &str) -> impl Iterator<Item = (IVec2, char)> + '_ {
             line.chars()
                 .skip(x_skip)
                 .enumerate()
-                .filter(|(_, c)| c.is_whitespace())
+                .filter(|(_, c)| !c.is_whitespace())
                 .map(move |(x, c)| (ivec2(x as i32, y as i32), c))
         })
 }
@@ -350,5 +350,25 @@ All mimsy were the borogoves,
                 !text.is_empty() && capitalize(text) == text
             );
         }
+    }
+
+    #[test]
+    fn grids() {
+        fn g(text: &str) -> Vec<(IVec2, char)> {
+            char_grid(text).collect()
+        }
+
+        assert_eq!(g(""), vec![]);
+        assert_eq!(g("A"), vec![(ivec2(0, 0), 'A')]);
+        assert_eq!(
+            g("AB\nC"),
+            vec![(ivec2(0, 0), 'A'), (ivec2(1, 0), 'B'), (ivec2(0, 1), 'C')]
+        );
+
+        assert_eq!(g("  A"), vec![(ivec2(0, 0), 'A')]);
+        assert_eq!(g("\n\n  A"), vec![(ivec2(0, 0), 'A')]);
+        assert_eq!(g("A  B"), vec![(ivec2(0, 0), 'A'), (ivec2(3, 0), 'B')]);
+        assert_eq!(g("\nA"), vec![(ivec2(0, 0), 'A')]);
+        assert_eq!(g("A\n\nB"), vec![(ivec2(0, 0), 'A'), (ivec2(0, 2), 'B')]);
     }
 }
