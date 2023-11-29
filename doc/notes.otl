@@ -4,6 +4,7 @@ For now I'm just writing these down as I run into them
 
 Semantic commit tags
 	After https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
+	Roughly in order of importance, pick the highest one if multiple categories apply
 	feat
 		New feature for the user, not a new feature for build script
 	lib
@@ -14,12 +15,12 @@ Semantic commit tags
 		Editing application content data, user-visible behavior change
 	docs
 		Changes to the documentation
-	style
-		Formatting, missing semi colons, etc; no production code change
-	refactor
-		Refactoring production code, eg. renaming a variable
 	test
 		Adding missing tests, refactoring tests; no production code change
+	refactor
+		Refactoring production code, eg. renaming a variable
+	style
+		Formatting, missing semi colons, etc; no production code change
 	chore
 		Updating grunt tasks etc; no production code change
 Async runner functions and display frames
