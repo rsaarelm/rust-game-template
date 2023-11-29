@@ -3,6 +3,9 @@
 mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
+mod block;
+pub use block::{Block, Tile, Voxel};
+
 mod data;
 pub use data::{
     register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power, Scenario,
