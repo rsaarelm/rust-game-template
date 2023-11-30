@@ -4,7 +4,7 @@ use glam::{ivec2, IVec2, IVec3};
 use serde::{Deserialize, Serialize};
 use util::{v2, v3, HashMap, HashSet};
 
-use crate::{LocExt, Rect};
+use crate::{Coordinates, Rect};
 
 // Use [i32; 3] as key since it implements Ord, unlike IVec3.
 

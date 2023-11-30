@@ -13,7 +13,7 @@ pub use data::{
 };
 
 mod location;
-pub use location::{Environs, LocExt, Location};
+pub use location::{Coordinates, Environs, Location};
 
 mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};

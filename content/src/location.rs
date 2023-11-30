@@ -6,7 +6,7 @@ use crate::{Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
 pub type Location = IVec3;
 
 /// Methods for points when treated as game world locations.
-pub trait LocExt: Sized {
+pub trait Coordinates: Sized {
     fn z(&self) -> i32;
 
     /// Snap location to origin of it's current 2D sector-slice.
@@ -102,14 +102,14 @@ pub trait LocExt: Sized {
         let wide_loc_pos = wide_loc_pos.into();
 
         if wide_loc_pos.x % 2 == 0 {
-            Some(LocExt::fold(wide_loc_pos / ivec2(2, 1)))
+            Some(Coordinates::fold(wide_loc_pos / ivec2(2, 1)))
         } else {
             None
         }
     }
 }
 
-impl LocExt for Location {
+impl Coordinates for Location {
     fn z(&self) -> i32 {
         self.z
     }

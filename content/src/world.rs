@@ -9,7 +9,7 @@ use static_assertions::const_assert;
 use util::{text, v2, HashMap, Logos};
 
 use crate::{
-    data::Region, Cube, LocExt, Location, Lot, MapGenerator, Patch, Rect,
+    data::Region, Coordinates, Cube, Location, Lot, MapGenerator, Patch, Rect,
     Scenario, Spawn, Terrain, Tile2D, SECTOR_DEPTH, SECTOR_HEIGHT,
     SECTOR_WIDTH,
 };
