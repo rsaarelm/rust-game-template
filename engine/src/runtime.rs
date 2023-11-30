@@ -1,5 +1,5 @@
 use anyhow::Result;
-use content::{Data, World};
+use content::{Data, Environs, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, s8, GameRng, Logos};
@@ -409,5 +409,19 @@ impl Runtime {
         name: &str,
     ) -> Option<Entity> {
         Some(self.spawn_at(&name.parse().ok()?, place))
+    }
+}
+
+impl Environs for Runtime {
+    fn tile(&self, loc: content::Location) -> Tile2D {
+        self.world.get(loc)
+    }
+
+    fn set_tile(&mut self, loc: content::Location, tile: Tile2D) {
+        self.world.set(loc, tile);
+    }
+
+    fn voxel(&self, _loc: content::Location) -> content::Voxel {
+        todo!()
     }
 }
