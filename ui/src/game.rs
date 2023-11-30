@@ -568,10 +568,9 @@ impl Game {
             .read("saved.idm")
         {
             // Return an error if deserialization fails.
-            match idm::from_str(&save) {
-                Err(e) => Err(e.into()),
-                Ok(r) => Ok(Some(r)),
-            }
+            let mut ret: Runtime = idm::from_str(&save)?;
+            ret.bump_cache();
+            Ok(Some(ret))
         } else {
             Ok(None)
         }

@@ -59,7 +59,7 @@ impl Runtime {
         };
 
         // Construct the initial world space and create the spawns.
-        ret.refresh_world_cache(ret.world.player_entrance().into());
+        ret.bump_cache_at(ret.world.player_entrance().into());
 
         ret.spawn_player_at(ret.world.player_entrance().into());
 
@@ -181,7 +181,14 @@ impl Runtime {
         self.placement.all_entities()
     }
 
-    fn refresh_world_cache(&mut self, loc: Location) {
+    /// Do a cache update around the player character's current location.
+    pub fn bump_cache(&mut self) {
+        if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
+            self.bump_cache_at(loc);
+        }
+    }
+
+    fn bump_cache_at(&mut self, loc: Location) {
         for (loc, spawn) in self.world.populate_around(loc.into()) {
             self.spawn_at(&spawn, loc);
         }
@@ -192,9 +199,7 @@ impl Runtime {
         // Start every tick by refreshing the world cache around the player's
         // position. If the player has moved to a location where new terrain
         // needs to be generated, that gets generated here.
-        if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
-            self.refresh_world_cache(loc);
-        }
+        self.bump_cache();
 
         // Tick every entity every frame
         let all: Vec<Entity> = self.live_entities().collect();
