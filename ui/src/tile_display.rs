@@ -1,3 +1,4 @@
+use content::{Coordinates, Tile};
 use engine::prelude::*;
 use navni::prelude::*;
 use rand::Rng;
@@ -6,9 +7,9 @@ use util::{s8, srng};
 use navni::X256Color as X;
 
 #[rustfmt::skip]
-pub(crate) const SHARP_CORNERS: [char; 16] = [
-    '│', '╵', '╶', '└', '╷', '│', '┌', '├',
-    '╴', '┘', '─', '┴', '┐', '┤', '┬', '┼',
+pub(crate) const SINGLE_LINE: [char; 16] = [
+    '│', '│', '─', '└', '│', '│', '┌', '├',
+    '─', '┘', '─', '┴', '┐', '┤', '┬', '┼',
 ];
 
 #[rustfmt::skip]
@@ -27,6 +28,21 @@ const DOUBLE_LINE: [char; 16] = [
 const CROSSED: [char; 16] = [
     '╫', '╫', '╪', '+', '╫', '╫', '+', '+',
     '╪', '+', '╪', '+', '+', '+', '+', '+',
+];
+
+// ▲▶▼◀
+/// Slopes upwards from a high floor.
+#[rustfmt::skip]
+const UP_SLOPE: [char; 16] = [
+    ' ', '▼', '◀', '◆', '▲', '◆', '◆', '◆',
+    '▶', '◆', '◆', '◆', '◆', '◆', '◆', '◆',
+];
+
+/// Slopes downward from a low floor.
+#[rustfmt::skip]
+const DOWN_SLOPE: [char; 16] = [
+    ' ', '▲', '▶', '●', '▼', '●', '●', '●',
+    '◀', '●', '●', '●', '●', '●', '●', '●',
 ];
 
 /// Return 4-bit wallform connectivity shape for center cell.
@@ -78,6 +94,76 @@ fn wallform(r: &impl AsRef<Runtime>, p: IVec2) -> Option<usize> {
     Some(ret)
 }
 
+pub fn terrain_cell(
+    r: &impl AsRef<Runtime>,
+    wide_loc_pos: impl Into<IVec2>,
+) -> CharCell {
+    let wide_loc_pos = wide_loc_pos.into();
+    let r = r.as_ref();
+
+    // XXX: This calls the same functions many times, could use a memoizing
+    // cache.
+
+    // TODO Remove the "content::" once engine::Location is retired.
+    if let Some(loc) = content::Location::fold_wide(wide_loc_pos) {
+        match loc.tile(r) {
+            Tile::Void => CharCell::c('░'),
+            Tile::Solid(_) => {
+                if let Some(connectivity) = util::wallform_mask(
+                    |p| (loc + p.extend(0)).is_wall_tile(r),
+                    [0, 0],
+                ) {
+                    CharCell::c(DOUBLE_LINE[connectivity])
+                } else {
+                    Default::default()
+                }
+            }
+
+            Tile::Floor {
+                z, connectivity, ..
+            } => {
+                if connectivity != 0 {
+                    if z == -1 {
+                        CharCell::c(DOWN_SLOPE[connectivity])
+                    } else if z == 1 {
+                        CharCell::c(UP_SLOPE[connectivity])
+                    } else {
+                        panic!("Nonzero connectivity at z=0");
+                    }
+                }
+                // Ghost wallforms for cliffy edges
+                else if let Some(mask) = loc.cliff_form(r) {
+                    CharCell::c(SINGLE_LINE[mask]).col(X::BROWN)
+                } else {
+                    Default::default()
+                }
+            }
+        }
+    } else {
+        let (a, b) = (
+            terrain_cell(r, wide_loc_pos - ivec2(1, 0)),
+            terrain_cell(r, wide_loc_pos + ivec2(1, 0)),
+        );
+        let (c, d) = (
+            std::char::from_u32(a.c as u32).unwrap(),
+            std::char::from_u32(b.c as u32).unwrap(),
+        );
+
+        // Wall connectivity
+        if "═╚╔╠╩╦╬".contains(c) && "═╝╩╗╣╦╬".contains(d)
+        {
+            CharCell::c('═').col(a.foreground)
+        } else if "─└┌├┴┼".contains(c) && "─┘┴┐┤┬┼".contains(d)
+        {
+            CharCell::c('─').col(a.foreground)
+        } else if c == '░' && d == '░' {
+            CharCell::c('░')
+        } else {
+            Default::default()
+        }
+    }
+}
+
 /// Show the interpolated and shaped map terrain cell in the given wide
 /// unfolded coordinate position.
 pub fn flat_terrain_cell(
@@ -110,7 +196,7 @@ pub fn flat_terrain_cell(
         }
         Tile2D::LowWall => {
             if let Some(i) = wallform(r, wide_loc_pos) {
-                CharCell::c(SHARP_CORNERS[i])
+                CharCell::c(SINGLE_LINE[i])
             } else if is_centered {
                 CharCell::c('∙')
             } else {

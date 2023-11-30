@@ -30,7 +30,7 @@ mod input;
 pub use input::{input_press, InputAction, InputMap};
 
 mod tile_display;
-pub use tile_display::flat_terrain_cell;
+pub use tile_display::{flat_terrain_cell, terrain_cell};
 
 mod widget;
 pub use widget::{Centered, ConfirmationDialog, Widget};
