@@ -135,13 +135,13 @@ impl Entity {
     pub fn place_on_open_spot(
         &self,
         r: &mut impl AsMut<Runtime>,
-        loc: Location,
+        loc: &Location,
     ) {
         let r = r.as_mut();
         // If no open position is found, just squeeze the thing right where it
         // was asked to go.
-        let mut place_loc = loc;
-        for loc in r.perturbed_fill_positions(loc) {
+        let mut place_loc = *loc;
+        for loc in r.perturbed_fill_positions(&loc) {
             if self.can_enter(r, loc) {
                 place_loc = loc;
                 break;
@@ -309,14 +309,14 @@ impl Entity {
 
             // Ground splatter.
             let splat: Vec<Location> =
-                r.perturbed_fill_positions(loc).take(6).collect();
+                r.perturbed_fill_positions(&loc).take(6).collect();
             for loc in splat {
                 loc.decorate_tile(r, Tile2D::Gore);
             }
 
             // Drop stuff.
             for e in self.contents(r).collect::<Vec<_>>() {
-                e.place_on_open_spot(r, loc);
+                e.place_on_open_spot(r, &loc);
             }
         }
         self.destroy(r);

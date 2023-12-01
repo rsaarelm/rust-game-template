@@ -78,10 +78,10 @@ pub struct Placement {
 impl Placement {
     pub fn entities_at(
         &self,
-        loc: Location,
+        loc: &Location,
     ) -> impl Iterator<Item = Entity> + '_ {
         self.entities
-            .get(&Place::from(loc))
+            .get(&Place::from(*loc))
             .into_iter()
             .flatten()
             .copied()

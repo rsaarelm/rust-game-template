@@ -192,7 +192,7 @@ impl Entity {
         let r = r.as_mut();
 
         if let Some(loc) = self.loc(r) {
-            item.place_on_open_spot(r, loc);
+            item.place_on_open_spot(r, &loc);
             msg!("[One] drop[s] [another]."; self.noun(r), item.noun(r));
         } else {
             log::warn!("Entity::drop: Dropping entity has no location");
@@ -211,7 +211,7 @@ impl Entity {
         let effect = item.get::<ItemPower>(r).0;
         let Some(loc) = self.loc(r) else { return };
         if let Some(effect) = effect {
-            r.invoke_power(effect, Some(*self), loc, v);
+            r.invoke_power(effect, Some(*self), &loc, v);
         }
         if item.consumed_on_use(r) {
             item.destroy(r);
@@ -239,7 +239,7 @@ impl Entity {
             perp = None;
         }
 
-        let target = r.trace_target(perp, loc, v, THROW_RANGE as usize);
+        let target = r.trace_target(perp, &loc, v, THROW_RANGE as usize);
 
         if target == loc {
             // No room to throw, just drop it.

@@ -57,7 +57,7 @@ impl Entity {
                     }
                 }
 
-                let explore_map = r.autoexplore_map(loc);
+                let explore_map = r.autoexplore_map(&loc);
                 if explore_map.is_empty() {
                     // If starting out and done exploring the current sector,
                     // branch off to neighboring sectors.
@@ -69,7 +69,7 @@ impl Entity {
                             if let Some(dest) = loc
                                 .path_dest_to_neighboring_sector(r, sector_dir)
                             {
-                                if !r.autoexplore_map(dest).is_empty() {
+                                if !r.autoexplore_map(&dest).is_empty() {
                                     return self.decide(r, Goal::GoTo(dest));
                                 }
                             }
@@ -326,7 +326,7 @@ impl Entity {
                 Some(*self)
             };
 
-            if let Some(enemy) = r.trace_enemy(perp, loc, dir, range) {
+            if let Some(enemy) = r.trace_enemy(perp, &loc, dir, range) {
                 return Some(enemy);
             }
         }
@@ -350,7 +350,7 @@ impl Entity {
         let Some(loc) = self.loc(r) else {
             return Default::default();
         };
-        r.fov_from(loc, range)
+        r.fov_from(&loc, range)
             .filter_map(|(_, loc)| loc.mob_at(r))
             .collect()
     }
@@ -375,7 +375,7 @@ impl Entity {
         let Some(loc) = self.loc(r) else { return };
 
         let cells: Vec<Location> =
-            r.fov_from(loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
+            r.fov_from(&loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
 
         // Should we look for a fight while doing the scan?
         let mut looking_for_target = self.is_looking_for_fight(r);

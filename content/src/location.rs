@@ -174,23 +174,23 @@ impl Coordinates for Location {
             // Solid topside stack, makes a proper wall.
             //
             // Look for a voxel with an exposed side to show as wall.
-            (true, true, _) => Tile::Solid(r.voxel(*self).unwrap()),
+            (true, true, _) => Tile::Solid(r.voxel(self).unwrap()),
             // Raised floor.
             //(false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
             (false, true, _) => Tile::Floor {
-                block: r.voxel(*self).unwrap(),
+                block: r.voxel(self).unwrap(),
                 z: 1,
                 connectivity: self.above().high_connectivity(r),
             },
             // Regular floor
             (_, false, true) => Tile::Floor {
-                block: r.voxel(self.below()).unwrap(),
+                block: r.voxel(&self.below()).unwrap(),
                 z: 0,
                 connectivity: 0,
             },
             // Depressed floor, check further down if there's surface.
             (_, _, false) => {
-                if let Some(block) = r.voxel(self.below().below()) {
+                if let Some(block) = r.voxel(&self.below().below()) {
                     Tile::Floor {
                         block,
                         z: -1,
@@ -204,19 +204,19 @@ impl Coordinates for Location {
     }
 
     fn cliff_form(&self, r: &impl Environs) -> Option<usize> {
-        fn is_cliff(loc: Location, r: &impl Environs) -> bool {
+        fn is_cliff(loc: &Location, r: &impl Environs) -> bool {
             matches!(loc.tile(r), Tile::Floor { z: 1, .. })
                 && s8::ns(loc.truncate()).any(|a| {
                     matches!(a.extend(loc.z).tile(r), Tile::Floor { z: -1, .. })
                 })
         }
 
-        if is_cliff(*self, r) {
+        if is_cliff(self, r) {
             let mut mask = 0;
             for (i, loc) in s4::ns(self.truncate()).enumerate() {
                 let loc = loc.extend(self.z);
 
-                if is_cliff(loc, r) {
+                if is_cliff(&loc, r) {
                     mask |= 1 << i;
                 }
             }
@@ -251,28 +251,28 @@ impl Coordinates for Location {
 }
 
 pub trait Environs {
-    fn tile(&self, loc: Location) -> Tile2D;
-    fn set_tile(&mut self, loc: Location, tile: Tile2D);
+    fn tile(&self, loc: &Location) -> Tile2D;
+    fn set_tile(&mut self, loc: &Location, tile: Tile2D);
 
-    fn voxel(&self, loc: Location) -> Voxel;
+    fn voxel(&self, loc: &Location) -> Voxel;
 }
 
 impl Environs for Cloud<3, Tile2D> {
-    fn tile(&self, loc: Location) -> Tile2D {
-        util::HashMap::get(self, &<[i32; 3]>::from(loc))
+    fn tile(&self, loc: &Location) -> Tile2D {
+        util::HashMap::get(self, &<[i32; 3]>::from(*loc))
             .copied()
             .unwrap_or_default()
     }
 
-    fn set_tile(&mut self, loc: Location, tile: Tile2D) {
+    fn set_tile(&mut self, loc: &Location, tile: Tile2D) {
         if tile == Default::default() {
-            self.remove(loc);
+            self.remove(*loc);
         } else {
-            self.insert(loc, tile);
+            self.insert(*loc, tile);
         }
     }
 
-    fn voxel(&self, _loc: Location) -> Voxel {
+    fn voxel(&self, _loc: &Location) -> Voxel {
         unimplemented!()
     }
 }

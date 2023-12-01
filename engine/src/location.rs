@@ -120,7 +120,7 @@ impl Location {
 
     pub fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         let r = r.as_ref();
-        r.world.get((*self).into())
+        r.world.get(&(*self).into())
     }
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -135,7 +135,7 @@ impl Location {
 
     pub fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
         let r = r.as_mut();
-        r.world.set((*self).into(), t);
+        r.world.set(&(*self).into(), t);
     }
 
     /// Tile setter that doesn't cover functional terrain.
@@ -215,20 +215,20 @@ impl Location {
 
     pub fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
         let r = r.as_ref();
-        r.placement.entities_at(*self).find(|e| e.is_mob(r))
+        r.placement.entities_at(self).find(|e| e.is_mob(r))
     }
 
     /// Return entities at cell sorted to draw order.
     pub fn entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity> {
         let r = r.as_ref();
-        let mut ret: Vec<Entity> = r.placement.entities_at(*self).collect();
+        let mut ret: Vec<Entity> = r.placement.entities_at(self).collect();
         ret.sort_by_key(|e| e.draw_layer(r));
         ret
     }
 
     pub fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
         let r = r.as_ref();
-        r.placement.entities_at(*self).find(|e| e.is_item(r))
+        r.placement.entities_at(self).find(|e| e.is_item(r))
     }
 
     pub fn vec_towards(&self, other: &Location) -> Option<IVec2> {

@@ -58,10 +58,11 @@ impl Runtime {
             ..Default::default()
         };
 
+        // TODO: Retire engine::Location
+        let entrance = Location::from(ret.world.player_entrance());
         // Construct the initial world space and create the spawns.
-        ret.bump_cache_at(ret.world.player_entrance().into());
-
-        ret.spawn_player_at(ret.world.player_entrance().into());
+        ret.bump_cache_at(&entrance);
+        ret.spawn_player_at(&entrance);
 
         Ok(ret)
     }
@@ -106,7 +107,7 @@ impl Runtime {
     }
 
     /// Spawns a new player entity if there isn't currently a player.
-    pub fn spawn_player_at(&mut self, loc: Location) {
+    pub fn spawn_player_at(&mut self, loc: &Location) {
         if self.player.is_some() {
             return;
         }
@@ -126,7 +127,7 @@ impl Runtime {
         )));
 
         self.player = Some(player);
-        player.place(self, loc);
+        player.place(self, *loc);
 
         let party_spawns: Vec<(_, _)> = ["Ranger", "Monk", "Wizard"]
             .iter()
@@ -184,12 +185,15 @@ impl Runtime {
     /// Do a cache update around the player character's current location.
     pub fn bump_cache(&mut self) {
         if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
-            self.bump_cache_at(loc);
+            self.bump_cache_at(&loc);
         }
     }
 
-    fn bump_cache_at(&mut self, loc: Location) {
-        for (loc, spawn) in self.world.populate_around(loc.into()) {
+    fn bump_cache_at(&mut self, loc: &Location) {
+        // TODO Remove engine::Location cruft (&*)
+        for (loc, spawn) in
+            self.world.populate_around(&content::Location::from(*loc))
+        {
             self.spawn_at(&spawn, loc);
         }
     }
@@ -252,7 +256,7 @@ impl Runtime {
         self.gc();
     }
 
-    pub fn autoexplore_map(&self, loc: Location) -> HashMap<Location, usize> {
+    pub fn autoexplore_map(&self, loc: &Location) -> HashMap<Location, usize> {
         let ret: HashMap<Location, usize> = flood_fill_4(
             &|loc2: &Location| {
                 loc2.sector() == loc.sector() && loc2.is_walkable(self)
@@ -278,7 +282,7 @@ impl Runtime {
     /// A fill-positions variant that assumes all FOV-covered cells are passable.
     pub fn fov_optimistic_fill_positions(
         &self,
-        start: Location,
+        start: &Location,
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
@@ -289,14 +293,14 @@ impl Runtime {
                     })
                     .collect::<Vec<Location>>()
             },
-            [start],
+            [*start],
         )
         .map(|n| n.0)
     }
 
     pub fn fill_positions(
         &self,
-        start: Location,
+        start: &Location,
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
@@ -306,7 +310,7 @@ impl Runtime {
                     })
                     .collect::<Vec<Location>>()
             },
-            [start],
+            [*start],
         )
         .map(|n| n.0)
     }
@@ -315,7 +319,7 @@ impl Runtime {
     /// the same sector and on walkable tiles.
     pub fn perturbed_fill_positions(
         &self,
-        start: Location,
+        start: &Location,
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
@@ -326,7 +330,7 @@ impl Runtime {
                     })
                     .collect::<Vec<Location>>()
             },
-            [start],
+            [*start],
         )
         .map(|n| n.0)
     }
@@ -413,15 +417,15 @@ impl Runtime {
 }
 
 impl Environs for Runtime {
-    fn tile(&self, loc: content::Location) -> Tile2D {
+    fn tile(&self, loc: &content::Location) -> Tile2D {
         self.world.get(loc)
     }
 
-    fn set_tile(&mut self, loc: content::Location, tile: Tile2D) {
+    fn set_tile(&mut self, loc: &content::Location, tile: Tile2D) {
         self.world.set(loc, tile);
     }
 
-    fn voxel(&self, _loc: content::Location) -> content::Voxel {
+    fn voxel(&self, _loc: &content::Location) -> content::Voxel {
         todo!()
     }
 }

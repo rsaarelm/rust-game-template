@@ -34,7 +34,7 @@ impl From<Fov> for BitAtlas {
 impl Runtime {
     pub fn fov_from(
         &self,
-        loc: Location,
+        loc: &Location,
         radius: i32,
     ) -> impl Iterator<Item = (IVec2, Location)> + '_ {
         #[derive(Copy, Clone)]
@@ -57,12 +57,12 @@ impl Runtime {
 
         impl<'a> FovState<'a> {
             pub fn new(
-                origin: Location,
+                origin: &Location,
                 r: &'a Runtime,
                 radius: i32,
             ) -> FovState<'a> {
                 FovState {
-                    origin,
+                    origin: *origin,
                     r,
                     radius,
                     is_edge: false,

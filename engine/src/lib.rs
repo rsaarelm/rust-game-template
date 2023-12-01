@@ -28,6 +28,9 @@ pub mod ecs;
 mod entity;
 pub use entity::Entity;
 
+mod entity_spec;
+pub use entity_spec::EntitySpec;
+
 mod fov;
 pub use crate::fov::Fov;
 
@@ -51,9 +54,6 @@ pub mod prelude;
 
 mod runtime;
 pub use runtime::Runtime;
-
-mod entity_spec;
-pub use entity_spec::EntitySpec;
 
 mod time;
 pub use time::Instant;

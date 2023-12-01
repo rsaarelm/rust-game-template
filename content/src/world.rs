@@ -168,7 +168,7 @@ fn build_skeleton(
                         connected_west: false,
                         connected_down: None,
                         generator: Box::new(Patch::from_sector_map(
-                            origin, map,
+                            &origin, map,
                         )?),
                     }
                 }
@@ -207,8 +207,11 @@ impl World {
         &self.inner.seed
     }
 
-    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
-        let s = Sector::from(loc);
+    pub fn populate_around(
+        &mut self,
+        loc: &Location,
+    ) -> Vec<(Location, Spawn)> {
+        let s = Sector::from(*loc);
 
         // Early exit if this is already a core generated sector.
         if matches!(self.gen_status.get(&s), Some(&GenStatus::Core)) {
@@ -306,23 +309,26 @@ impl World {
         self.player_entrance
     }
 
-    pub fn get(&self, loc: Location) -> Tile2D {
-        if let Some(&mutated) = self.inner.overlay.get(&<[i32; 3]>::from(loc)) {
+    pub fn get(&self, loc: &Location) -> Tile2D {
+        // XXX: Could a Borrow<[i32; 3]> interface in Cloud get us out of
+        // having to do the explicit conversion?
+        let pt = <[i32; 3]>::from(*loc);
+        if let Some(&mutated) = self.inner.overlay.get(&pt) {
             return mutated;
         }
 
-        if let Some(&cached) = self.terrain_cache.get(&<[i32; 3]>::from(loc)) {
+        if let Some(&cached) = self.terrain_cache.get(&pt) {
             return cached;
         }
 
         self.default_terrain(loc)
     }
 
-    pub fn set(&mut self, loc: Location, tile: Tile2D) {
-        self.inner.overlay.insert(loc, tile);
+    pub fn set(&mut self, loc: &Location, tile: Tile2D) {
+        self.inner.overlay.insert(*loc, tile);
     }
 
-    fn default_terrain(&self, loc: Location) -> Tile2D {
+    fn default_terrain(&self, loc: &Location) -> Tile2D {
         if loc.z >= 0 {
             Tile2D::Ground
         } else {

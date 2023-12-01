@@ -66,7 +66,7 @@ pub struct Patch {
 
 impl Patch {
     pub fn from_sector_map(
-        origin: Location,
+        origin: &Location,
         value: &SectorMap,
     ) -> anyhow::Result<Self> {
         Ok(Patch {
@@ -82,7 +82,7 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
     let floor = lot.volume.border([0, 0, -1]);
 
     for p in floor {
-        ret.set_tile(p.into(), Tile2D::Ground);
+        ret.set_tile(&p.into(), Tile2D::Ground);
     }
 
     let z = lot.volume.max()[2] - 1;
@@ -91,12 +91,12 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
 
     if let Some(mut upstairs) = lot.up {
         upstairs.z = z;
-        ret.set_tile(upstairs + ivec3(0, -1, 0), Tile2D::Upstairs);
+        ret.set_tile(&(upstairs + ivec3(0, -1, 0)), Tile2D::Upstairs);
     }
 
     if let Some(mut downstairs) = lot.down {
         downstairs.z = z;
-        ret.set_tile(downstairs, Tile2D::Downstairs);
+        ret.set_tile(&downstairs, Tile2D::Downstairs);
     }
 
     let depth = 0.max(-lot.volume.min()[2]) as u32;
