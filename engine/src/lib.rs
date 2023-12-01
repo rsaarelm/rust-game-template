@@ -55,6 +55,9 @@ pub mod prelude;
 mod runtime;
 pub use runtime::Runtime;
 
+mod space;
+pub use space::RuntimeCoordinates;
+
 mod time;
 pub use time::Instant;
 

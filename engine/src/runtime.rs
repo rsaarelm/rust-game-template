@@ -352,7 +352,7 @@ impl Runtime {
             start,
             &dest,
             |&loc| {
-                loc.fold_neighbors_4(self).filter(|loc| {
+                loc.fold_neighbors_4(self).into_iter().filter(|loc| {
                     start.sector_dist(loc) <= 1 && loc.is_walkable(self)
                 })
             },
@@ -378,7 +378,7 @@ impl Runtime {
             start,
             &dest,
             |&loc| {
-                loc.fold_neighbors_4(self).filter(|loc| {
+                loc.fold_neighbors_4(self).into_iter().filter(|loc| {
                     // Optimistically run into the fog of war within the
                     // starting sector.
                     (loc.sector() == start.sector() && !loc.is_explored(self))
