@@ -37,8 +37,6 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
         }
     }
 
-    fn to_vec3(&self) -> IVec3;
-
     fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D;
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -213,10 +211,6 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
 }
 
 impl RuntimeCoordinates for Location {
-    fn to_vec3(&self) -> IVec3 {
-        ivec3(self.x as i32, self.y as i32, self.z as i32)
-    }
-
     fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         let r = r.as_ref();
         r.world.get(self)
