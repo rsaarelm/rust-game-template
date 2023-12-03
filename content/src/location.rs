@@ -1,12 +1,12 @@
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use util::{s4, s8, Cloud};
 
-use crate::{Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 pub type Location = IVec3;
 
 /// Methods for points when treated as game world locations.
-pub trait Coordinates: Sized {
+pub trait Coordinates: Copy + Sized {
     fn z(&self) -> i32;
 
     /// Snap location to origin of it's current 2D sector-slice.
@@ -82,8 +82,8 @@ pub trait Coordinates: Sized {
     /// Convert to 2D vector, layering Z-levels vertically in 2-plane.
     ///
     /// Each location has a unique point on the `IVec2` plane and the original
-    /// location can be retrieved by calling `Location::from` on the `IVec2`
-    /// value.
+    /// location can be retrieved by calling `Coordinates::fold` on the
+    /// `IVec2` value.
     fn unfold(&self) -> IVec2;
 
     /// Convert an unfolded 2D vector back to a Location.
@@ -107,6 +107,54 @@ pub trait Coordinates: Sized {
             None
         }
     }
+
+    /// Return the two locations on two sides of an off-center wide pos.
+    ///
+    /// If pos is not off-center, returns the same centered location twice.
+    fn fold_wide_sides(wide_loc_pos: impl Into<IVec2>) -> (Self, Self) {
+        let wide_loc_pos = wide_loc_pos.into();
+
+        match Self::fold_wide(wide_loc_pos) {
+            Some(loc) => (loc, loc),
+            None => (
+                Self::fold_wide(wide_loc_pos - ivec2(1, 0)).unwrap(),
+                Self::fold_wide(wide_loc_pos + ivec2(1, 0)).unwrap(),
+            ),
+        }
+    }
+
+    /// Return location snapped to the origin of this location's sector.
+    fn sector(&self) -> Location;
+
+    /// How many sector transitions there are between self and other.
+    fn sector_dist(&self, other: &Self) -> usize;
+
+    /// Return sector bounding box containing this loc.
+    fn sector_bounds(&self) -> Rect {
+        let p = self.sector().unfold();
+        Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
+    }
+
+    fn at_sector_edge(&self) -> bool;
+
+    /// Return sector bounds extended for the adjacent sector rim.
+    fn expanded_sector_bounds(&self) -> Rect {
+        self.sector_bounds().grow([1, 1], [1, 1])
+    }
+
+    fn vec_towards(&self, other: &Self) -> Option<IVec2>;
+
+    /// Same sector plus the facing rims of adjacent sectors.
+    fn has_same_screen_as(&self, other: &Self) -> bool {
+        self.expanded_sector_bounds().contains(other.unfold())
+    }
+
+    fn astar_heuristic(&self, other: &Self) -> usize;
+
+    // Start tracing from self towards `dir` in `dir` size steps. Starts
+    // from the point one step away from self. Panics if `dir` is a zero
+    // vector. Does not follow portals.
+    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self>;
 }
 
 impl Coordinates for Location {
@@ -247,6 +295,56 @@ impl Coordinates for Location {
         let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i32;
 
         ivec3(x, y, z)
+    }
+
+    fn sector(&self) -> Location {
+        Location::new(
+            self.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
+            self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
+            self.z,
+        )
+    }
+
+    fn sector_dist(&self, other: &Self) -> usize {
+        let a = Into::<IVec3>::into(self.sector())
+            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
+        let b = Into::<IVec3>::into(other.sector())
+            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
+        let d = (a - b).abs();
+        (d.x + d.y + d.z) as usize
+    }
+
+    fn at_sector_edge(&self) -> bool {
+        let (u, v) = (
+            self.x.rem_euclid(SECTOR_WIDTH),
+            self.y.rem_euclid(SECTOR_HEIGHT),
+        );
+        (u == 0 || u == (SECTOR_WIDTH - 1))
+            || (v == 0 || v == (SECTOR_HEIGHT - 1))
+    }
+
+    fn vec_towards(&self, other: &Self) -> Option<IVec2> {
+        if self.z == other.z {
+            Some((*other - *self).truncate())
+        } else {
+            None
+        }
+    }
+
+    fn astar_heuristic(&self, other: &Self) -> usize {
+        // NB. This will work badly if pathing between Z-layers.
+        let d = (*self - *other).abs();
+        (d.x + d.y + d.z) as usize
+    }
+
+    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self> {
+        assert!(dir != IVec2::ZERO);
+
+        let mut p = *self;
+        std::iter::from_fn(move || {
+            p += dir.extend(0);
+            Some(p)
+        })
     }
 }
 

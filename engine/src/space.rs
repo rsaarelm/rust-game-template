@@ -5,7 +5,7 @@ use util::{s4, v3};
 
 use crate::{prelude::*, Grammatize, SectorDir};
 
-pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
+pub trait RuntimeCoordinates: Coordinates {
     fn smart_fold_wide(
         wide_loc_pos: impl Into<IVec2>,
         r: &impl AsRef<Runtime>,
@@ -19,21 +19,6 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
                 b
             }
             (a, _) => a,
-        }
-    }
-
-    /// Return the two locations on two sides of an off-center wide pos.
-    ///
-    /// If pos is not off-center, returns the same centered location twice.
-    fn fold_wide_sides(wide_loc_pos: impl Into<IVec2>) -> (Self, Self) {
-        let wide_loc_pos = wide_loc_pos.into();
-
-        match Self::fold_wide(wide_loc_pos) {
-            Some(loc) => (loc, loc),
-            None => (
-                Self::fold_wide(wide_loc_pos - ivec2(1, 0)).unwrap(),
-                Self::fold_wide(wide_loc_pos + ivec2(1, 0)).unwrap(),
-            ),
         }
     }
 
@@ -60,25 +45,6 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
         {
             self.set_tile(r, t);
         }
-    }
-
-    /// Return location snapped to the origin of this location's sector.
-    fn sector(&self) -> Location;
-
-    /// How many sector transitions there are between self and other.
-    fn sector_dist(&self, other: &Self) -> usize;
-
-    /// Return sector bounding box containing this loc.
-    fn sector_bounds(&self) -> Rect {
-        let p = self.sector().unfold();
-        Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
-    }
-
-    fn at_sector_edge(&self) -> bool;
-
-    /// Return sector bounds extended for the adjacent sector rim.
-    fn expanded_sector_bounds(&self) -> Rect {
-        self.sector_bounds().grow([1, 1], [1, 1])
     }
 
     /// Location has been seen by an allied unit at some point.
@@ -124,16 +90,6 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
         self.entities_at(r).find(|e| e.is_item(r))
     }
 
-    //////
-    fn vec_towards(&self, other: &Location) -> Option<IVec2>;
-
-    fn vec3_towards(&self, other: &Location) -> IVec3;
-
-    /// Same sector plus the facing rims of adjacent sectors.
-    fn has_same_screen_as(&self, other: &Self) -> bool {
-        self.expanded_sector_bounds().contains(other.unfold())
-    }
-
     /// Try to reconstruct step towards adjacent other location. Handles
     /// folding.
     fn find_step_towards(
@@ -164,19 +120,12 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
             .collect()
     }
 
-    fn astar_heuristic(&self, other: &Self) -> usize;
-
     /// Find the closest pathable location on neighboring sector.
     fn path_dest_to_neighboring_sector(
         &self,
         r: &impl AsRef<Runtime>,
         neighbor_dir: SectorDir,
     ) -> Option<Self>;
-
-    // Start tracing from self towards `dir` in `dir` size steps. Starts
-    // from the point one step away from self. Panics if `dir` is a zero
-    // vector. Does not follow portals.
-    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self>;
 
     /// Create a printable description of interesting features at location.
     fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
@@ -221,37 +170,6 @@ impl RuntimeCoordinates for Location {
         r.world.set(self, t);
     }
 
-    fn sector(&self) -> Location {
-        Location::new(
-            self.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
-            self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
-            self.z,
-        )
-    }
-
-    fn sector_dist(&self, other: &Self) -> usize {
-        let a = Into::<IVec3>::into(self.sector())
-            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
-        let b = Into::<IVec3>::into(other.sector())
-            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
-        let d = (a - b).abs();
-        (d.x + d.y + d.z) as usize
-    }
-
-    fn at_sector_edge(&self) -> bool {
-        let (u, v) = (
-            self.x.rem_euclid(SECTOR_WIDTH),
-            self.y.rem_euclid(SECTOR_HEIGHT),
-        );
-        (u == 0 || u == (SECTOR_WIDTH - 1))
-            || (v == 0 || v == (SECTOR_HEIGHT - 1))
-    }
-
-    /// Return sector bounds extended for the adjacent sector rim.
-    fn expanded_sector_bounds(&self) -> Rect {
-        self.sector_bounds().grow([1, 1], [1, 1])
-    }
-
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
         r.fov.contains(self)
@@ -263,18 +181,6 @@ impl RuntimeCoordinates for Location {
     ) -> impl Iterator<Item = Entity> + 'a {
         let r = r.as_ref();
         r.placement.entities_at(self)
-    }
-
-    fn vec_towards(&self, other: &Location) -> Option<IVec2> {
-        if self.z == other.z {
-            Some((*other - *self).truncate())
-        } else {
-            None
-        }
-    }
-
-    fn vec3_towards(&self, other: &Location) -> IVec3 {
-        Into::<IVec3>::into(*other) - Into::<IVec3>::into(*self)
     }
 
     fn find_step_towards(
@@ -379,12 +285,6 @@ impl RuntimeCoordinates for Location {
         .map(move |d| o + d.extend(0))
     }
 
-    fn astar_heuristic(&self, other: &Self) -> usize {
-        // NB. This will work badly if pathing between Z-layers.
-        let d = (*self - *other).abs();
-        (d.x + d.y + d.z) as usize
-    }
-
     fn path_dest_to_neighboring_sector(
         &self,
         r: &impl AsRef<Runtime>,
@@ -423,16 +323,6 @@ impl RuntimeCoordinates for Location {
         }
 
         None
-    }
-
-    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self> {
-        assert!(dir != IVec2::ZERO);
-
-        let mut p = *self;
-        std::iter::from_fn(move || {
-            p += dir.extend(0);
-            Some(p)
-        })
     }
 
     fn damage(
