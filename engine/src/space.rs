@@ -13,8 +13,8 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
         match Self::fold_wide_sides(wide_loc_pos) {
             (a, b) if !a.is_explored(r) && b.is_explored(r) => b,
             (a, b)
-                if a.entities_at(r).is_empty()
-                    && !b.entities_at(r).is_empty() =>
+                if a.entities_at(r).next().is_none()
+                    && !b.entities_at(r).next().is_none() =>
             {
                 b
             }
@@ -106,12 +106,25 @@ pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
         }
     }
 
-    fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity>;
+    fn entities_at<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Entity> + 'a;
 
     /// Return entities at cell sorted to draw order.
-    fn entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity>;
+    fn drawable_entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity> {
+        let mut ret: Vec<Entity> = self.entities_at(r).collect();
+        ret.sort_by_key(|e| e.draw_layer(r));
+        ret
+    }
 
-    fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity>;
+    fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        self.entities_at(r).find(|e| e.is_mob(r))
+    }
+
+    fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        self.entities_at(r).find(|e| e.is_item(r))
+    }
 
     //////
     fn vec_towards(&self, other: &Location) -> Option<IVec2>;
@@ -250,21 +263,12 @@ impl RuntimeCoordinates for Location {
         r.fov.contains(self)
     }
 
-    fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+    fn entities_at<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Entity> + 'a {
         let r = r.as_ref();
-        r.placement.entities_at(self).find(|e| e.is_mob(r))
-    }
-
-    fn entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity> {
-        let r = r.as_ref();
-        let mut ret: Vec<Entity> = r.placement.entities_at(self).collect();
-        ret.sort_by_key(|e| e.draw_layer(r));
-        ret
-    }
-
-    fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
-        let r = r.as_ref();
-        r.placement.entities_at(self).find(|e| e.is_item(r))
+        r.placement.entities_at(self)
     }
 
     fn vec_towards(&self, other: &Location) -> Option<IVec2> {
