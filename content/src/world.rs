@@ -22,7 +22,7 @@ struct SerWorld {
     /// Terrain that has been changed at runtime.
     overlay: Terrain,
     /// Sectors that have already had their entities spawned.
-    spawn_history: Vec<Sector>,
+    spawn_history: Vec<Sec>,
     /// Game scenario spec.
     scenario: Scenario,
 }
@@ -57,9 +57,9 @@ pub struct World {
     // This means that skeleton construction needs access to the whole
     // SerWorld type.
     /// Built from scenario.
-    skeleton: HashMap<Sector, Segment>,
+    skeleton: HashMap<Sec, Segment>,
 
-    gen_status: HashMap<Sector, GenStatus>,
+    gen_status: HashMap<Sec, GenStatus>,
 
     player_entrance: Location,
 }
@@ -122,7 +122,7 @@ impl TryFrom<SerWorld> for World {
 fn build_skeleton(
     seed: &Logos,
     scenario: &Scenario,
-) -> anyhow::Result<(Location, HashMap<Sector, Segment>)> {
+) -> anyhow::Result<(Location, HashMap<Sec, Segment>)> {
     use Region::*;
 
     let mut start_pos = None;
@@ -135,9 +135,9 @@ fn build_skeleton(
         let z = -1
             + stack.iter().take_while(|a| a.is_above_ground()).count() as i32;
 
-        let s = Sector::new(p.x, p.y, z);
+        let s = Sec::new(p.x, p.y, z);
         for (depth, region) in stack.iter().enumerate() {
-            let s = s + Sector::new(0, 0, -(depth as i32));
+            let s = s + Sec::new(0, 0, -(depth as i32));
             let origin = Location::from(s);
 
             let at_bottom = depth == stack.len() - 1;
@@ -211,7 +211,7 @@ impl World {
         &mut self,
         loc: &Location,
     ) -> Vec<(Location, Spawn)> {
-        let s = Sector::from(*loc);
+        let s = Sec::from(*loc);
 
         // Early exit if this is already a core generated sector.
         if matches!(self.gen_status.get(&s), Some(&GenStatus::Core)) {
@@ -233,7 +233,7 @@ impl World {
 
     fn generate_sector(
         &mut self,
-        s: &Sector,
+        s: &Sec,
         spawns: &mut Vec<(Location, Spawn)>,
     ) {
         match self.gen_status.entry(*s) {
@@ -276,7 +276,7 @@ impl World {
         }
     }
 
-    fn construct_lot(&self, s: &Sector) -> Lot {
+    fn construct_lot(&self, s: &Sec) -> Lot {
         let mut sides =
             self.skeleton.get(s).map_or(0, |a| a.connected_north as u8);
         sides |= self
@@ -337,14 +337,15 @@ impl World {
     }
 }
 
+/// Sector position.
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Deref, Add, Serialize, Deserialize,
 )]
-pub struct Sector(IVec3);
+pub struct Sec(IVec3);
 
-impl From<Location> for Sector {
+impl From<Location> for Sec {
     fn from(value: Location) -> Self {
-        Sector(ivec3(
+        Sec(ivec3(
             (value.x).div_floor(SECTOR_WIDTH),
             (value.y).div_floor(SECTOR_HEIGHT),
             (value.z).div_floor(SECTOR_DEPTH),
@@ -352,8 +353,8 @@ impl From<Location> for Sector {
     }
 }
 
-impl From<Sector> for IVec3 {
-    fn from(value: Sector) -> Self {
+impl From<Sec> for IVec3 {
+    fn from(value: Sec) -> Self {
         ivec3(
             value.x * SECTOR_WIDTH,
             value.y * SECTOR_HEIGHT,
@@ -362,34 +363,34 @@ impl From<Sector> for IVec3 {
     }
 }
 
-impl From<Sector> for Cube {
-    fn from(value: Sector) -> Self {
+impl From<Sec> for Cube {
+    fn from(value: Sec) -> Self {
         let sector_size = ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
         let origin = *value * ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
         Cube::new(origin, origin + sector_size)
     }
 }
 
-impl Sector {
+impl Sec {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
-        Sector(ivec3(x, y, z))
+        Sec(ivec3(x, y, z))
     }
 
     pub fn east(&self) -> Self {
-        *self + Sector::new(1, 0, 0)
+        *self + Sec::new(1, 0, 0)
     }
 
     pub fn south(&self) -> Self {
-        *self + Sector::new(0, 1, 0)
+        *self + Sec::new(0, 1, 0)
     }
 
     pub fn above(&self) -> Self {
-        *self + Sector::new(0, 0, 1)
+        *self + Sec::new(0, 0, 1)
     }
 
     /// Return the sector neighborhood which should have maps generated for it
     /// when the central sector is being set up as an active play area.
-    pub fn cache_volume(&self) -> impl Iterator<Item = Sector> {
+    pub fn cache_volume(&self) -> impl Iterator<Item = Sec> {
         let s = *self;
         // All 8 chess-metric neighbors plus above and below sectors. Should
         // be enough to cover everything needed while moving around the center
@@ -408,11 +409,11 @@ impl Sector {
             ivec3(0, 0, 1),
         ]
         .into_iter()
-        .map(move |d| s + Sector(d))
+        .map(move |d| s + Sec(d))
     }
 }
 
-fn default_down_stairs(seed: &Logos, s: Sector) -> Location {
+fn default_down_stairs(seed: &Logos, s: Sec) -> Location {
     snap_stairwell_position(
         Cube::from(s)
             .border([0, 0, -1])

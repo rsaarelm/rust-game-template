@@ -22,7 +22,7 @@ mod tile;
 pub use tile::{Terrain, Tile2D};
 
 mod world;
-pub use world::{Sector, World};
+pub use world::{Sec, World};
 
 pub type Rect = util::Rect<i32>;
 pub type Cube = util::Cube<i32>;
