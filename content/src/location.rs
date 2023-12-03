@@ -107,6 +107,9 @@ pub trait Coordinates: Sized {
             None
         }
     }
+
+    /// 8 horizontal neighbors of the location.
+    fn neighbors_8(&self) -> impl Iterator<Item = Self> + '_;
 }
 
 impl Coordinates for Location {
@@ -235,7 +238,7 @@ impl Coordinates for Location {
     fn unfold(&self) -> IVec2 {
         // Maps y: i16::MIN, z: i16::MIN to i32::MIN.
         let y = self.y as i64 + self.z as i64 * 0x1_0000 - i16::MIN as i64;
-        ivec2(self.x as i32, y as i32)
+        ivec2(self.x, y as i32)
     }
 
     fn fold(loc_pos: impl Into<IVec2>) -> Self {
@@ -247,6 +250,10 @@ impl Coordinates for Location {
         let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i32;
 
         ivec3(x, y, z)
+    }
+
+    fn neighbors_8(&self) -> impl Iterator<Item = Self> + '_ {
+        s8::ns(self.truncate()).map(|v| v.extend(self.z))
     }
 }
 
