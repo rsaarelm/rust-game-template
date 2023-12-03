@@ -1,4 +1,5 @@
 use engine::prelude::*;
+use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use ui::prelude::*;
 use util::v2;
@@ -46,14 +47,14 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
 
     // Get scroll input.
     let mut scroll = match input_press() {
-        Some(InputAction::ScrollNorth) => ivec2(0, -1),
-        Some(InputAction::ScrollEast) => ivec2(1, 0),
-        Some(InputAction::ScrollSouth) => ivec2(0, 1),
-        Some(InputAction::ScrollWest) => ivec2(-1, 0),
+        Some(InputAction::ScrollNorth) => ivec3(0, -1, 0),
+        Some(InputAction::ScrollEast) => ivec3(1, 0, 0),
+        Some(InputAction::ScrollSouth) => ivec3(0, 1, 0),
+        Some(InputAction::ScrollWest) => ivec3(-1, 0, 0),
         _ => Default::default(),
     };
-    if scroll == IVec2::ZERO {
-        scroll = v2(navni::mouse_state().scroll_delta());
+    if scroll == IVec3::ZERO {
+        scroll = v2(navni::mouse_state().scroll_delta()).extend(0);
     }
     camera += scroll * SCROLL_STEP;
 

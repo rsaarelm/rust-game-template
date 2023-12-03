@@ -107,9 +107,6 @@ pub trait Coordinates: Sized {
             None
         }
     }
-
-    /// 8 horizontal neighbors of the location.
-    fn neighbors_8(&self) -> impl Iterator<Item = Self> + '_;
 }
 
 impl Coordinates for Location {
@@ -250,10 +247,6 @@ impl Coordinates for Location {
         let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i32;
 
         ivec3(x, y, z)
-    }
-
-    fn neighbors_8(&self) -> impl Iterator<Item = Self> + '_ {
-        s8::ns(self.truncate()).map(|v| v.extend(self.z))
     }
 }
 

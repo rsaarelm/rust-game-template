@@ -2,7 +2,7 @@
 
 use content::{Power, Rect};
 use serde::{Deserialize, Serialize};
-use util::{s8, v2};
+use util::{v2, Neighbors2D};
 
 use crate::{
     ecs::{Powers, Wounds},
@@ -55,7 +55,7 @@ impl Runtime {
         for (i, loc) in from.trace(dir).enumerate() {
             // Hit a wall, pull back one tile.
             if loc.blocks_shot(self) {
-                return loc - dir;
+                return loc - dir.extend(0);
             }
 
             // Stop at range limit.
@@ -113,7 +113,7 @@ impl Runtime {
         // No need to worry about it going through walls since it only extends
         // one cell in any direction from the valid starting cell.
         for p in Rect::new([-1, -1], [2, 2]) {
-            (target + v2(p)).damage(self, perp, FIREBALL_DAMAGE);
+            (target + v2(p).extend(0)).damage(self, perp, FIREBALL_DAMAGE);
         }
     }
 
@@ -168,15 +168,14 @@ impl Runtime {
                 return ret;
             }
 
-            for d in s8::DIR {
-                let loc = *loc + d;
+            for loc2 in loc.ns_8() {
                 // Only add corners if they block further FOV, this is so that
                 // corners of rectangular rooms get added.
-                if d.taxi_len() == 2 && !loc.blocks_sight(self) {
+                if (loc2 - *loc).taxi_len() == 2 && !loc.blocks_sight(self) {
                     continue;
                 }
 
-                ret.push(loc);
+                ret.push(loc2);
             }
             ret
         };

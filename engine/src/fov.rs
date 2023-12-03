@@ -82,7 +82,7 @@ impl Runtime {
                     return None;
                 }
 
-                let loc = self.origin + offset;
+                let loc = self.origin + offset.extend(0);
 
                 if !self.origin.has_same_screen_as(&loc) {
                     // Do not create any FOV outside of current sector.
@@ -96,7 +96,7 @@ impl Runtime {
         }
 
         fov::Square::new(FovState::new(loc, self, radius))
-            .map(|(v, s)| (v, s.origin + v))
+            .map(|(v, s)| (v, s.origin + v.extend(0)))
     }
 
     /// Return whether fog of war should be drawn at the given wide coordinate

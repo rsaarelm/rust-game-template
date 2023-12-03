@@ -1,8 +1,8 @@
-use glam::IVec2;
+use std::{collections::VecDeque, hash::Hash};
+
 use num_traits::{One, Zero};
 
-use crate::{s4, HashSet};
-use std::{collections::VecDeque, hash::Hash, ops::Add};
+use crate::{HashSet, Neighbors2D};
 
 /// Generate a shortest paths map on a grid according to a neighbors function.
 pub fn dijkstra_map<'a, T, I>(
@@ -75,19 +75,10 @@ pub fn flood_fill_4<'a, T>(
     starts: impl IntoIterator<Item = T>,
 ) -> impl Iterator<Item = (T, usize)> + 'a
 where
-    T: Clone + Eq + Hash + Add<IVec2, Output = T> + 'a,
+    T: Clone + Eq + Hash + Neighbors2D + 'a,
 {
     crate::dijkstra_map(
-        move |n| {
-            let mut ret = Vec::new();
-            for d in s4::DIR {
-                let n = n.clone() + d;
-                if is_valid(&n) {
-                    ret.push(n);
-                }
-            }
-            ret
-        },
+        move |n| n.ns_4().filter(is_valid).collect::<Vec<_>>(),
         starts,
     )
 }

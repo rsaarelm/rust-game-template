@@ -1,42 +1,11 @@
-use content::Rect;
+use content::{Coordinates, Rect};
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
-use util::s4;
+use util::{s4, v3};
 
 use crate::{prelude::*, Grammatize, SectorDir};
 
-pub trait RuntimeCoordinates: Copy + Sized {
-    fn z(&self) -> i16;
-
-    /// Convert to 2D vector, layering Z-levels vertically in 2-plane.
-    ///
-    /// Each location has a unique point on the `IVec2` plane and the original
-    /// location can be retrieved by calling `Location::from` on the `IVec2`
-    /// value.
-    fn unfold(&self) -> IVec2;
-
-    /// Convert an unfolded 2D vector back to a Location.
-    fn fold(loc_pos: impl Into<IVec2>) -> Self;
-
-    /// Convenience method that doubles the x coordinate.
-    ///
-    /// Use for double-width character display.
-    fn unfold_wide(&self) -> IVec2 {
-        let mut ret = self.unfold();
-        ret.x *= 2;
-        ret
-    }
-
-    fn fold_wide(wide_loc_pos: impl Into<IVec2>) -> Option<Self> {
-        let wide_loc_pos = wide_loc_pos.into();
-
-        if wide_loc_pos.x % 2 == 0 {
-            Some(Self::fold(wide_loc_pos / ivec2(2, 1)))
-        } else {
-            None
-        }
-    }
-
+pub trait RuntimeCoordinates: Coordinates + Copy + Sized {
     fn smart_fold_wide(
         wide_loc_pos: impl Into<IVec2>,
         r: &impl AsRef<Runtime>,
@@ -231,45 +200,24 @@ pub trait RuntimeCoordinates: Copy + Sized {
 }
 
 impl RuntimeCoordinates for Location {
-    fn z(&self) -> i16 {
-        self.z
-    }
-
-    fn unfold(&self) -> IVec2 {
-        // Maps y: i16::MIN, z: i16::MIN to i32::MIN.
-        let y = self.y as i64 + self.z as i64 * 0x1_0000 - i16::MIN as i64;
-        ivec2(self.x as i32, y as i32)
-    }
-
-    fn fold(loc_pos: impl Into<IVec2>) -> Self {
-        let loc_pos = loc_pos.into();
-
-        let x = loc_pos.x as i16;
-        let y =
-            ((loc_pos.y as i64).rem_euclid(0x1_0000) + i16::MIN as i64) as i16;
-        let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i16;
-
-        Location::new(x, y, z)
-    }
-
     fn to_vec3(&self) -> IVec3 {
         ivec3(self.x as i32, self.y as i32, self.z as i32)
     }
 
     fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         let r = r.as_ref();
-        r.world.get(&(*self).into())
+        r.world.get(self)
     }
 
     fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
         let r = r.as_mut();
-        r.world.set(&(*self).into(), t);
+        r.world.set(self, t);
     }
 
     fn sector(&self) -> Location {
         Location::new(
-            ((self.x as i32).div_floor(SECTOR_WIDTH) * SECTOR_WIDTH) as i16,
-            ((self.y as i32).div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT) as i16,
+            self.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
+            self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
             self.z,
         )
     }
@@ -285,11 +233,11 @@ impl RuntimeCoordinates for Location {
 
     fn at_sector_edge(&self) -> bool {
         let (u, v) = (
-            self.x.rem_euclid(SECTOR_WIDTH as i16),
-            self.y.rem_euclid(SECTOR_HEIGHT as i16),
+            self.x.rem_euclid(SECTOR_WIDTH),
+            self.y.rem_euclid(SECTOR_HEIGHT),
         );
-        (u == 0 || u == (SECTOR_WIDTH as i16 - 1))
-            || (v == 0 || v == (SECTOR_HEIGHT as i16 - 1))
+        (u == 0 || u == (SECTOR_WIDTH - 1))
+            || (v == 0 || v == (SECTOR_HEIGHT - 1))
     }
 
     /// Return sector bounds extended for the adjacent sector rim.
@@ -347,7 +295,7 @@ impl RuntimeCoordinates for Location {
         // loc.
         s4::DIR
             .into_iter()
-            .find(|&d| (*self + d).follow(r) == *other)
+            .find(|&d| (*self + d.extend(0)).follow(r) == *other)
     }
 
     fn follow(&self, r: &impl AsRef<Runtime>) -> Self {
@@ -389,20 +337,20 @@ impl RuntimeCoordinates for Location {
         let origin = self.sector();
         Rect::sized([SECTOR_WIDTH, SECTOR_HEIGHT])
             .into_iter()
-            .map(move |p| origin + IVec2::from(p))
+            .map(move |p| origin + IVec2::from(p).extend(0))
     }
 
     fn expanded_sector_locs(&self) -> impl Iterator<Item = Self> {
         let origin = self.sector();
         Rect::sized([SECTOR_WIDTH + 2, SECTOR_HEIGHT + 2])
             .into_iter()
-            .map(move |p| origin + IVec2::from(p) - ivec2(1, 1))
+            .map(move |p| origin + (IVec2::from(p) - ivec2(1, 1)).extend(0))
     }
 
     fn perturbed_flat_neighbors_4(&self) -> Vec<Self> {
         let mut rng = util::srng(self);
         let mut dirs: Vec<Location> =
-            s4::DIR.iter().map(|&d| *self + d).collect();
+            s4::DIR.iter().map(|&d| *self + d.extend(0)).collect();
         dirs.shuffle(&mut rng);
         dirs
     }
@@ -430,7 +378,7 @@ impl RuntimeCoordinates for Location {
             &V4
         }
         .iter()
-        .map(move |d| o + *d)
+        .map(move |d| o + d.extend(0))
     }
 
     fn astar_heuristic(&self, other: &Self) -> usize {
@@ -448,14 +396,14 @@ impl RuntimeCoordinates for Location {
             move |loc| {
                 let mut ret = Vec::new();
                 for d in s4::DIR {
-                    let loc = (*loc + d).follow(r);
+                    let loc = (*loc + d.extend(0)).follow(r);
                     if !loc.is_walkable(r) {
                         continue;
                     }
 
                     // Skip unexplored sectors, but allow one to get through
                     // if it gets us to destination (unmapped stairwell)
-                    if loc.sector() != self.sector() + neighbor_dir
+                    if loc.sector() != self.sector() + v3(neighbor_dir)
                         && !loc.is_explored(r)
                     {
                         continue;
@@ -484,7 +432,7 @@ impl RuntimeCoordinates for Location {
 
         let mut p = *self;
         std::iter::from_fn(move || {
-            p += dir;
+            p += dir.extend(0);
             Some(p)
         })
     }

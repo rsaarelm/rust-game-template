@@ -2,7 +2,7 @@ use anyhow::Result;
 use content::{Data, Environs, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{flood_fill_4, s8, GameRng, Logos};
+use util::{flood_fill_4, GameRng, Logos, Neighbors2D};
 
 use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 
@@ -58,8 +58,7 @@ impl Runtime {
             ..Default::default()
         };
 
-        // TODO: Retire engine::Location
-        let entrance = Location::from(ret.world.player_entrance());
+        let entrance = ret.world.player_entrance();
         // Construct the initial world space and create the spawns.
         ret.bump_cache_at(&entrance);
         ret.spawn_player_at(&entrance);
@@ -190,10 +189,7 @@ impl Runtime {
     }
 
     fn bump_cache_at(&mut self, loc: &Location) {
-        // TODO Remove engine::Location cruft (&*)
-        for (loc, spawn) in
-            self.world.populate_around(&content::Location::from(*loc))
-        {
+        for (loc, spawn) in self.world.populate_around(loc) {
             self.spawn_at(&spawn, loc);
         }
     }
@@ -266,7 +262,7 @@ impl Runtime {
                     || (loc2.is_explored(self)
                         && loc2.is_walkable(self)
                         && loc2.sector() == loc.sector()
-                        && s8::ns(*loc2).any(|loc| !loc.is_explored(self)))
+                        && loc2.ns_8().any(|loc| !loc.is_explored(self)))
             }),
         )
         .collect();

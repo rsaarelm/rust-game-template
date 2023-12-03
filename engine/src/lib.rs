@@ -37,7 +37,7 @@ pub use crate::fov::Fov;
 mod item;
 
 mod location;
-pub use location::{Location, SectorDir};
+pub use location::SectorDir;
 
 mod mob;
 pub use mob::Buff;

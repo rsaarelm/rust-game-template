@@ -1,24 +1,12 @@
 use std::collections::BTreeMap;
 
-use glam::IVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
 /// Absolute place in the game world, either in a location or inside another
 /// entity.
-#[derive(
-    Copy,
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Place {
     In(Entity),
@@ -36,13 +24,6 @@ impl From<Entity> for Place {
 impl From<Location> for Place {
     fn from(loc: Location) -> Self {
         At(loc)
-    }
-}
-
-// TODO: Migrate Locations to IVec3s
-impl From<IVec3> for Place {
-    fn from(loc: IVec3) -> Self {
-        At(Location::from(loc))
     }
 }
 

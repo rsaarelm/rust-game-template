@@ -61,7 +61,7 @@ impl Entity {
 
     pub fn can_step(&self, r: &impl AsRef<Runtime>, dir: IVec2) -> bool {
         let Some(loc) = self.loc(r) else { return false };
-        let n = (loc + dir).follow(r);
+        let n = (loc + dir.extend(0)).follow(r);
 
         if !n.is_walkable(r) {
             return false;

@@ -27,7 +27,6 @@ struct SerWorld {
     scenario: Scenario,
 }
 
-// TODO Retire engine::World, use this instead
 #[derive(Default, Deserialize)]
 #[serde(try_from = "SerWorld")]
 pub struct World {

@@ -104,8 +104,7 @@ pub fn terrain_cell(
     // XXX: This calls the same functions many times, could use a memoizing
     // cache.
 
-    // TODO Remove the "content::" once engine::Location is retired.
-    if let Some(loc) = content::Location::fold_wide(wide_loc_pos) {
+    if let Some(loc) = Location::fold_wide(wide_loc_pos) {
         match loc.tile(r) {
             Tile::Void => CharCell::c('░'),
             Tile::Solid(_) => {
