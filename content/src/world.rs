@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use anyhow::bail;
-use derive_more::{Add, Deref};
+use derive_more::{Add, Deref, Sub};
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
@@ -339,7 +339,17 @@ impl World {
 
 /// Sector position.
 #[derive(
-    Copy, Clone, Eq, PartialEq, Hash, Debug, Deref, Add, Serialize, Deserialize,
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Hash,
+    Debug,
+    Deref,
+    Add,
+    Sub,
+    Serialize,
+    Deserialize,
 )]
 pub struct Sec(IVec3);
 
