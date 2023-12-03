@@ -1,7 +1,7 @@
 use gfx::{Buffer, Field, Image, Rect};
 use glam::{ivec2, IVec2};
 use navni::{prelude::*, X256Color as X};
-use util::{s4, v2};
+use util::{v2, Neighbors2D};
 
 use crate::{game, tile_display::SHARP_CORNERS};
 
@@ -426,7 +426,8 @@ impl Window {
         let old_mask = box_mask(cell);
 
         if old_mask != 0 {
-            let mask: usize = s4::ns(pos)
+            let mask: usize = pos
+                .ns_4()
                 .enumerate()
                 .filter_map(|(i, p)| {
                     (area.contains(p) && box_mask(self.get(p)) != 0)

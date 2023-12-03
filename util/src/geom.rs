@@ -4,17 +4,17 @@ use std::{
     str::FromStr,
 };
 
-use glam::{ivec2, vec2, IVec2, IVec3, Vec2};
+use glam::{ivec2, ivec3, vec2, IVec2, IVec3, Vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// Axis-aligned directions in 3D space, canonical order.
 pub const AXIS_DIRS: [IVec3; 6] = [
-    IVec3::from_array([0, -1, 0]),
-    IVec3::from_array([1, 0, 0]),
-    IVec3::from_array([0, 1, 0]),
-    IVec3::from_array([-1, 0, 0]),
-    IVec3::from_array([0, 0, -1]),
-    IVec3::from_array([0, 0, 1]),
+    ivec3(0, -1, 0),
+    ivec3(1, 0, 0),
+    ivec3(0, 1, 0),
+    ivec3(-1, 0, 0),
+    ivec3(0, 0, -1),
+    ivec3(0, 0, 1),
 ];
 
 /// 4-directional grid space using taxicab metric.
@@ -26,12 +26,8 @@ pub mod s4 {
     use crate::VecExt;
 
     /// 4-dirs in clock face order.
-    pub const DIR: [IVec2; 4] = [
-        IVec2::from_array([0, -1]),
-        IVec2::from_array([1, 0]),
-        IVec2::from_array([0, 1]),
-        IVec2::from_array([-1, 0]),
-    ];
+    pub const DIR: [IVec2; 4] =
+        [ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0)];
 
     /// Taxicab distance metric.
     pub fn d(a: &IVec2, b: &IVec2) -> i32 {
@@ -102,10 +98,10 @@ pub mod s4 {
 }
 
 /// Hex coordinate space.
-pub mod s6 {
+pub mod s_hex {
     use std::{f32::consts::TAU, ops::Add};
 
-    use glam::IVec2;
+    use glam::{ivec2, IVec2};
 
     /// 6-dirs.
     ///
@@ -113,12 +109,12 @@ pub mod s6 {
     /// hex display where the [-1, -1] axis points up and the [1, 0] axis
     /// points up and right.
     pub const DIR: [IVec2; 6] = [
-        IVec2::from_array([-1, -1]),
-        IVec2::from_array([0, -1]),
-        IVec2::from_array([1, 0]),
-        IVec2::from_array([1, 1]),
-        IVec2::from_array([0, 1]),
-        IVec2::from_array([-1, 0]),
+        ivec2(-1, -1),
+        ivec2(0, -1),
+        ivec2(1, 0),
+        ivec2(1, 1),
+        ivec2(0, 1),
+        ivec2(-1, 0),
     ];
 
     /// Hex distance metric.
@@ -209,18 +205,18 @@ pub mod s6 {
 pub mod s8 {
     use std::{f32::consts::TAU, ops::Add};
 
-    use glam::IVec2;
+    use glam::{ivec2, IVec2};
 
     /// 8-dirs in clock face order.
     pub const DIR: [IVec2; 8] = [
-        IVec2::from_array([0, -1]),
-        IVec2::from_array([1, -1]),
-        IVec2::from_array([1, 0]),
-        IVec2::from_array([1, 1]),
-        IVec2::from_array([0, 1]),
-        IVec2::from_array([-1, 1]),
-        IVec2::from_array([-1, 0]),
-        IVec2::from_array([-1, -1]),
+        ivec2(0, -1),
+        ivec2(1, -1),
+        ivec2(1, 0),
+        ivec2(1, 1),
+        ivec2(0, 1),
+        ivec2(-1, 1),
+        ivec2(-1, 0),
+        ivec2(-1, -1),
     ];
 
     /// Chessboard distance metric.
@@ -373,6 +369,83 @@ impl VecExt for IVec3 {
 
     fn is_wide_cell_center(&self) -> bool {
         self.truncate().is_wide_cell_center()
+    }
+}
+
+/// Two-dimensional point neighborhood.
+pub trait Neighbors2D: Sized {
+    /// List neighbors in horizontal cardinal directions.
+    fn ns_4(&self) -> impl Iterator<Item = Self> + '_;
+
+    /// List neighbors in horizontal hex directions.
+    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_;
+
+    /// List neighbors in horizontal cardinal and diagonal directions.
+    fn ns_8(&self) -> impl Iterator<Item = Self> + '_;
+}
+
+fn ns<T>(base: T, offsets: impl Iterator<Item = T>) -> impl Iterator<Item = T>
+where
+    T: std::ops::Add<T, Output = T> + Copy,
+{
+    offsets.map(move |a| base + a)
+}
+
+impl Neighbors2D for IVec2 {
+    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s4::DIR.iter().copied())
+    }
+
+    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s_hex::DIR.iter().copied())
+    }
+
+    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s8::DIR.iter().copied())
+    }
+}
+
+impl Neighbors2D for IVec3 {
+    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s4::DIR.iter().map(|a| a.extend(0)))
+    }
+
+    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s_hex::DIR.iter().map(|a| a.extend(0)))
+    }
+
+    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, s8::DIR.iter().map(|a| a.extend(0)))
+    }
+}
+
+pub trait Neighbors3D: Sized {
+    /// List neighbors in 6 3D cardinal directions.
+    fn ns_6(&self) -> impl Iterator<Item = Self> + '_;
+
+    /// List neighbors in 6 3D cardinal directions plus horizontal diagonals.
+    fn ns_10(&self) -> impl Iterator<Item = Self> + '_;
+}
+
+impl Neighbors3D for IVec3 {
+    fn ns_6(&self) -> impl Iterator<Item = Self> + '_ {
+        ns(*self, AXIS_DIRS.iter().copied())
+    }
+
+    fn ns_10(&self) -> impl Iterator<Item = Self> + '_ {
+        const A: &[IVec3] = &[
+            ivec3(0, -1, 0),
+            ivec3(1, -1, 0),
+            ivec3(1, 0, 0),
+            ivec3(1, 1, 0),
+            ivec3(0, 1, 0),
+            ivec3(-1, 1, 0),
+            ivec3(-1, 0, 0),
+            ivec3(-1, -1, 0),
+            ivec3(0, 0, -1),
+            ivec3(0, 0, 1),
+        ];
+        ns(*self, A.iter().copied())
     }
 }
 
