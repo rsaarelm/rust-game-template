@@ -19,8 +19,6 @@ pub const AXIS_DIRS: [IVec3; 6] = [
 
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
-    use std::ops::Add;
-
     use glam::{ivec2, IVec2};
 
     use crate::VecExt;
@@ -33,13 +31,6 @@ pub mod s4 {
     pub fn d(a: &IVec2, b: &IVec2) -> i32 {
         let c = (*a - *b).abs();
         c.x + c.y
-    }
-
-    /// 4-neighbors of given point.
-    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
-        p: T,
-    ) -> impl Iterator<Item = T> {
-        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     /// Normalize vector to a 4-dir.
@@ -99,7 +90,7 @@ pub mod s4 {
 
 /// Hex coordinate space.
 pub mod s_hex {
-    use std::{f32::consts::TAU, ops::Add};
+    use std::f32::consts::TAU;
 
     use glam::{ivec2, IVec2};
 
@@ -122,13 +113,6 @@ pub mod s_hex {
         let dx = b.x - a.x;
         let dy = b.y - a.y;
         (dx.abs() + dy.abs() + (dx + dy).abs()) / 2
-    }
-
-    /// 6-neighbors of given point.
-    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
-        p: T,
-    ) -> impl Iterator<Item = T> {
-        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     /// Normalize a vector to a hex dir.
@@ -203,7 +187,7 @@ pub mod s_hex {
 
 /// 8-directional grid space using chessboard metric.
 pub mod s8 {
-    use std::{f32::consts::TAU, ops::Add};
+    use std::f32::consts::TAU;
 
     use glam::{ivec2, IVec2};
 
@@ -223,13 +207,6 @@ pub mod s8 {
     pub fn d(a: &IVec2, b: &IVec2) -> i32 {
         let c = (*a - *b).abs();
         c.x.max(c.y)
-    }
-
-    /// 8-neighbors of given point.
-    pub fn ns<T: Clone + Add<IVec2, Output = T>>(
-        p: T,
-    ) -> impl Iterator<Item = T> {
-        DIR.iter().map(move |d| p.clone() + *d)
     }
 
     /// Normalize vector to a 8-dir.
@@ -301,7 +278,7 @@ pub fn wallform_mask(
     // cell `pos` is also exposed to.
     let mut expose_mask = 0;
 
-    for (i, w) in s8::ns(pos).map(is_wall).enumerate() {
+    for (i, w) in pos.ns_8().map(is_wall).enumerate() {
         if i % 2 == 0 && w {
             wall_mask |= 1 << (i / 2);
         }

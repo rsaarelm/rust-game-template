@@ -1,5 +1,5 @@
 use glam::{ivec2, ivec3, IVec2, IVec3};
-use util::{s4, s8, Cloud};
+use util::{s4, Cloud, Neighbors2D};
 
 use crate::{Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -254,14 +254,14 @@ impl Coordinates for Location {
     fn cliff_form(&self, r: &impl Environs) -> Option<usize> {
         fn is_cliff(loc: &Location, r: &impl Environs) -> bool {
             matches!(loc.tile(r), Tile::Floor { z: 1, .. })
-                && s8::ns(loc.truncate()).any(|a| {
+                && loc.truncate().ns_8().any(|a| {
                     matches!(a.extend(loc.z).tile(r), Tile::Floor { z: -1, .. })
                 })
         }
 
         if is_cliff(self, r) {
             let mut mask = 0;
-            for (i, loc) in s4::ns(self.truncate()).enumerate() {
+            for (i, loc) in self.truncate().ns_4().enumerate() {
                 let loc = loc.extend(self.z);
 
                 if is_cliff(&loc, r) {
