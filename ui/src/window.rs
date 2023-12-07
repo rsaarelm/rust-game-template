@@ -19,9 +19,7 @@ impl Window {
     pub fn root() -> Self {
         Window::new(canvas().area(), X::FOREGROUND, X::BACKGROUND)
     }
-}
 
-impl Window {
     pub fn new(
         region: Rect,
         foreground_col: X256Color,
