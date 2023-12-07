@@ -48,8 +48,8 @@ impl<T> Element for T where
 /// Equivalent to an axis-aligned bounding rectangle, bounding box etc.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct AxisBox<T, const N: usize> {
-    p0: [T; N],
-    p1: [T; N],
+    pub p0: [T; N],
+    pub p1: [T; N],
 }
 
 impl<T, const N: usize> AxisBox<T, N> {
