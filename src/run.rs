@@ -78,11 +78,8 @@ pub async fn explore() {
             Some(InputAction::Inventory) if !side.is_zero() => {
                 match inventory_choice(&side).await {
                     Some(e) if e.can_be_used(game()) => {
-                        if ask(format!(
-                            "Activate {}?",
-                            e.noun(game()).the_name()
-                        ))
-                        .await
+                        if ask(format!("Use {}?", e.noun(game()).the_name()))
+                            .await
                         {
                             if let Some(dir) = if e.use_needs_aim(game()) {
                                 aim(&main).await
