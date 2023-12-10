@@ -90,3 +90,18 @@ Gamedata notes
 		This introduces a potential deadlock, as gamedata itself cannot involve types which require gamedata to be available when they're deserialized
 		Use util::LazyRes type to break this deadlock
 		LazyRes allows serializing data as (usually) string, and will fetch the actual data the first time the value is accessed
+Optimistic Search Assumption
+	Pathfinding assumes that all unexplored terrain is perfectly traversable open ground
+	It adjusts as terrain gets revealed and shown to be blocked
+	This creates consistent logic for pathing into unexplored areas where units start with a naive path and readjust as they explore more during the path
+	A somewhat similar assumption is used when drawing walls, rendered wall tiles do not glom to adjacent walls if the adjacent walls are on unexplored tiles
+Voxel space guidelines
+	Simplest possible space
+		No flat floor tiles, full voxel cube is needed for floor
+		Single cell is enough vertical space for human-sized rooms
+	You can walk a single voxel's height up or down in a regular movement step
+	The clever idea: The map shows no change if there's a single step up or down
+		The start of a walkable slope just looks like regular floor
+		Show an arrow glyph if the slope continues further out from +/-1z
+		Only draw floors at -1, 0 and 1 z
+	A voxel world should look and play like a traditional roguelike space with the correct architecture
