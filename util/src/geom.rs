@@ -479,36 +479,121 @@ impl Neighbors3D for IVec3 {
     }
 }
 
-pub fn bresenham_line(
-    a: impl Into<IVec2>,
-    b: impl Into<IVec2>,
-) -> impl Iterator<Item = IVec2> {
-    let (a, b): (IVec2, IVec2) = (a.into(), b.into());
+pub fn bresenham_line(a: impl Into<IVec2>, b: impl Into<IVec2>) -> LineIter {
+    LineIter::new(a, b)
+}
 
-    let d = b - a;
-    let step = d.signum();
-    let d = d.abs() * ivec2(1, -1);
-    let mut p = a;
-    let mut err = d.x + d.y;
+#[derive(Copy, Clone, Default)]
+pub struct LineIter {
+    d: IVec2,
+    step: IVec2,
 
-    std::iter::from_fn(move || {
-        if p == b {
-            None
-        } else {
-            let ret = p;
+    err: i32,
+    p: IVec2,
+    end: IVec2,
+}
 
-            let e2 = 2 * err;
-            if e2 >= d.y {
-                err += d.y;
-                p.x += step.x;
-            }
-            if e2 <= d.x {
-                err += d.x;
-                p.y += step.y;
-            }
-            Some(ret)
+impl LineIter {
+    pub fn new(a: impl Into<IVec2>, b: impl Into<IVec2>) -> Self {
+        let (a, end): (IVec2, IVec2) = (a.into(), b.into());
+
+        let d = end - a;
+        let step = d.signum();
+        let d = d.abs() * ivec2(1, -1);
+        let p = a;
+        let err = d.x + d.y;
+
+        LineIter {
+            d,
+            step,
+            err,
+            p,
+            end,
         }
-    })
+    }
+}
+
+impl Iterator for LineIter {
+    type Item = IVec2;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.step == IVec2::ZERO {
+            return None;
+        } else if self.p == self.end {
+            self.step = IVec2::ZERO;
+        }
+
+        let ret = self.p;
+
+        let e2 = 2 * self.err;
+        if e2 >= self.d.y {
+            self.err += self.d.y;
+            self.p.x += self.step.x;
+        }
+        if e2 <= self.d.x {
+            self.err += self.d.x;
+            self.p.y += self.step.y;
+        }
+
+        Some(ret)
+    }
+}
+
+pub struct PolyLineIter<I> {
+    inner: I,
+    line: LineIter,
+    next_start: Option<IVec2>,
+}
+
+impl<I: Iterator<Item = IVec2>> PolyLineIter<I> {
+    pub fn new(inner: impl IntoIterator<Item = IVec2, IntoIter = I>) -> Self {
+        let mut inner = inner.into_iter();
+
+        let Some(a) = inner.next() else {
+            return PolyLineIter {
+                inner,
+                line: Default::default(),
+                next_start: None,
+            };
+        };
+
+        let Some(b) = inner.find(|&p| p != a) else {
+            return PolyLineIter {
+                inner,
+                line: Default::default(),
+                next_start: None,
+            };
+        };
+
+        PolyLineIter {
+            inner,
+            line: LineIter::new(a, b),
+            next_start: Some(b),
+        }
+    }
+}
+
+impl<I: Iterator<Item = IVec2>> Iterator for PolyLineIter<I> {
+    type Item = IVec2;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.line.next() {
+            Some(b) if Some(b) == self.next_start => {
+                // End of segment, recurse to start of new segment.
+                if let Some(next_start) = self.inner.find(|&p| p != b) {
+                    self.line = LineIter::new(b, next_start);
+                    self.next_start = Some(next_start);
+                    self.next()
+                } else {
+                    debug_assert!(self.line.next().is_none());
+                    self.next_start = None;
+                    Some(b)
+                }
+            }
+            Some(p) => Some(p),
+            None => None,
+        }
+    }
 }
 
 /// Floating-point valued point that plots a nice-looking line when repeatedly
@@ -688,6 +773,61 @@ mod tests {
         assert_eq!(
             Vec2::from(Angle::from(vec2(1.0, 0.0))).round(),
             vec2(1.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn bresenham() {
+        assert_eq!(
+            bresenham_line([10, 10], [10, 10]).collect::<Vec<_>>(),
+            vec![]
+        );
+
+        assert_eq!(
+            bresenham_line([10, 10], [12, 10]).collect::<Vec<_>>(),
+            vec![ivec2(10, 10), ivec2(11, 10), ivec2(12, 10)]
+        );
+    }
+
+    #[test]
+    fn polyline() {
+        assert_eq!(PolyLineIter::new(vec![]).collect::<Vec<_>>(), vec![]);
+
+        assert_eq!(
+            PolyLineIter::new(vec![ivec2(10, 10)]).collect::<Vec<_>>(),
+            vec![]
+        );
+
+        assert_eq!(
+            PolyLineIter::new(vec![ivec2(10, 10), ivec2(10, 12)])
+                .collect::<Vec<_>>(),
+            vec![ivec2(10, 10), ivec2(10, 11), ivec2(10, 12)]
+        );
+
+        assert_eq!(
+            PolyLineIter::new(vec![
+                ivec2(10, 10),
+                ivec2(10, 10),
+                ivec2(10, 12)
+            ])
+            .collect::<Vec<_>>(),
+            vec![ivec2(10, 10), ivec2(10, 11), ivec2(10, 12)]
+        );
+
+        assert_eq!(
+            PolyLineIter::new(vec![
+                ivec2(10, 10),
+                ivec2(10, 12),
+                ivec2(12, 12)
+            ])
+            .collect::<Vec<_>>(),
+            vec![
+                ivec2(10, 10),
+                ivec2(10, 11),
+                ivec2(10, 12),
+                ivec2(11, 12),
+                ivec2(12, 12)
+            ]
         );
     }
 }
