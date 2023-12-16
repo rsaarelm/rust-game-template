@@ -1,4 +1,5 @@
 //! Game user interface machinery
+#![feature(int_roundings)]
 
 pub mod prelude {
     use navni::prelude::*;
@@ -10,6 +11,7 @@ pub mod prelude {
 
     pub type Buffer = gfx::Buffer<CharCell>;
     pub type Rect = util::Rect<i32>;
+    pub type Cube = util::Cube<i32>;
 }
 
 pub mod anim;

@@ -51,6 +51,14 @@ impl Window {
         self.bounds.height()
     }
 
+    pub fn origin(&self) -> IVec2 {
+        self.bounds.min().into()
+    }
+
+    pub fn dim(&self) -> IVec2 {
+        self.bounds.dim().into()
+    }
+
     /// Return whether window contains a point in absolute screen coordinates.
     pub fn contains(&self, pos: impl Into<[i32; 2]>) -> bool {
         self.bounds.contains(pos)
