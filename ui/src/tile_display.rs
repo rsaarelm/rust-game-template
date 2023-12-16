@@ -220,13 +220,15 @@ impl DisplayTile {
 
                 loc = loc_2;
             }
-            Wall(block) => {
+            Wall(block) if !loc.is_interior_wall(r) => {
                 // Create a connection mask from the visible neighboring wall
-                // tiles. Assume unrevealed tiles are not walls so as not to
-                // reveal details of unexplored structures.
+                // tiles.
                 //
-                // A mask is not constructed for tiles completely enclosed in
-                // solid mass.
+                // Assume unrevealed tiles are not walls so as not to
+                // reveal details of unexplored structures. Walls fully in the
+                // interior aren't drawn with an edge even if they're next to
+                // unexplored terrain though.
+
                 if let Some(mask) = util::wallform_mask(
                     |loc: Location| loc.is_explored(r) && loc.tile(r).is_wall(),
                     loc,
@@ -249,6 +251,9 @@ impl DisplayTile {
                         c1 = CharCell::c(tileset_2[0b10]);
                     }
                 }
+            }
+            Wall(_) => {
+                // Interior walls don't show as anything.
             }
             Void => {
                 c0 = CharCell::c('▒');
