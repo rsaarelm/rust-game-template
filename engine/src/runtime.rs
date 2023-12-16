@@ -425,3 +425,14 @@ impl Environs for Runtime {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_world() {
+        let runtime = Runtime::new(Logos::new("rand0m")).unwrap();
+        assert!(runtime.player().is_some());
+    }
+}
