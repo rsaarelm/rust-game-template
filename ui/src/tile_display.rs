@@ -146,19 +146,62 @@ pub struct DisplayTile {
 
 impl DisplayTile {
     pub fn new(r: &impl AsRef<Runtime>, mut loc: Location) -> Self {
+        use Block::*;
+        use Tile::*;
+
         let r = r.as_ref();
 
         let mut c0 = Default::default();
         let mut c1 = Default::default();
 
-        let right = loc + ivec3(1, 0, 0);
+        let left = loc.tile(r);
+        let right = (loc + ivec3(1, 0, 0)).tile(r);
 
-        match loc.tile(r) {
-            Tile::Surface(loc_2, _block) => {
-                loc = loc_2;
-                // TODO: Floor looks like things
+        let mut rng = util::srng(&loc);
+
+        // Do c1 here, overwrite later if needed...
+
+        match (left, right) {
+            // Merge same.
+            (Surface(_, a), Surface(_, b)) if a == b => {
+                c1 = floor_cell(&mut rng, a, false);
             }
-            Tile::Wall(block) => {
+            // Magma overrides water.
+            // Fluids stick to walls.
+            (Wall(_), Surface(_, Magma))
+            | (Surface(_, Magma), Wall(_))
+            | (Surface(_, Water), Surface(_, Magma))
+            | (Surface(_, Magma), Surface(_, Water)) => {
+                c1 = floor_cell(&mut rng, Magma, false);
+            }
+            (Wall(_), Surface(_, Water)) | (Surface(_, Water), Wall(_)) => {
+                c1 = floor_cell(&mut rng, Water, false);
+            }
+            // Chasms stick to walls.
+            (Void, Void) | (Wall(_), Void) | (Void, Wall(_)) => {
+                c1 = CharCell::c('░');
+            }
+            _ => {}
+        }
+
+        match left {
+            Surface(loc_2, block) => {
+                if let Some(mask) = loc.cliff_form(r) {
+                    // Surface is a cliff next to a lower-down but also
+                    // visible surface, draw the cliff form tile.
+
+                    c0 = CharCell::c(SINGLE_LINE[mask]).col(X::BROWN);
+                    let connect_right = (mask & 0b10) != 0;
+                    if connect_right {
+                        c1 = CharCell::c(SINGLE_LINE[0b10]).col(X::BROWN);
+                    }
+                } else {
+                    c0 = floor_cell(&mut rng, block, true);
+                }
+
+                loc = loc_2;
+            }
+            Wall(block) => {
                 // Create a connection mask from the visible neighboring wall
                 // tiles. Assume unrevealed tiles are not walls so as not to
                 // reveal details of unexplored structures.
@@ -170,8 +213,8 @@ impl DisplayTile {
                     loc,
                 ) {
                     let tileset = match block {
-                        Block::Door => &CROSSED,
-                        Block::Glass => &SINGLE_LINE,
+                        Door => &CROSSED,
+                        Glass => &SINGLE_LINE,
                         _ => &DOUBLE_LINE,
                     };
                     c0 = CharCell::c(tileset[mask]);
@@ -180,23 +223,16 @@ impl DisplayTile {
                     if connect_right {
                         // Adjacent windows form continuous pane, adjacent
                         // doors don't.
-                        let tileset_2 = match right.tile(r) {
-                            Tile::Wall(Block::Glass)
-                                if block == Block::Glass =>
-                            {
-                                &SINGLE_LINE
-                            }
+                        let tileset_2 = match right {
+                            Wall(Glass) if block == Glass => &SINGLE_LINE,
                             _ => &DOUBLE_LINE,
                         };
                         c1 = CharCell::c(tileset_2[0b10]);
                     }
                 }
             }
-            Tile::Void => {
+            Void => {
                 c0 = CharCell::c('░');
-                if matches!(right.tile(r), Tile::Void) {
-                    c1 = CharCell::c('░');
-                }
             }
         }
 
@@ -208,10 +244,6 @@ impl DisplayTile {
 
         win.put(pos, self.c0);
         win.put(pos + ivec2(1, 0), self.c1);
-    }
-
-    fn local_noise(&self) -> impl Rng {
-        util::srng(&self.loc)
     }
 }
 
@@ -239,6 +271,35 @@ pub fn render_fog(
 
     if cover_middle {
         win.put(pos + ivec2(1, 0), CharCell::c('░').col(X::BROWN));
+    }
+}
+
+fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
+    use Block::*;
+    match block {
+        Grass if is_center => {
+            const GRASS_SPARSENESS: usize = 3;
+            if rng.gen_range(0..GRASS_SPARSENESS) == 0 {
+                CharCell::c(',').col(X::GREEN)
+            } else {
+                CharCell::c(' ')
+            }
+        }
+        Rock | Glass | Door | Grass => CharCell::c(' '),
+        SplatteredRock => CharCell::c(match rng.gen_range(0..=10) {
+            d if d < 4 => ',',
+            d if d < 7 => '\'',
+            8 => ';',
+            9 => '*',
+            _ => '§',
+        })
+        .col(X::MAROON),
+        Water => CharCell::c(if is_center { '~' } else { ' ' })
+            .col(X::NAVY)
+            .inv(),
+        Magma => CharCell::c(if is_center { '~' } else { ' ' })
+            .col(X::MAROON)
+            .inv(),
     }
 }
 

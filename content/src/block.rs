@@ -35,6 +35,7 @@ pub type Voxel = Option<Block>;
 pub enum Block {
     #[default]
     Rock,
+    SplatteredRock,
     Grass,
     Glass,
 
@@ -49,11 +50,11 @@ use Block::*;
 impl Block {
     /// Block is solid matter that can be stood on top of.
     pub fn is_support(self) -> bool {
-        matches!(self, Rock | Grass | Glass)
+        matches!(self, Rock | SplatteredRock | Grass | Glass)
     }
 
     pub fn blocks_sight(self) -> bool {
-        matches!(self, Rock | Grass | Magma | Door)
+        matches!(self, Rock | SplatteredRock | Grass | Magma | Door)
     }
 }
 
@@ -65,6 +66,7 @@ impl TryFrom<char> for Block {
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             '*' => Ok(Rock),
+            '§' => Ok(SplatteredRock),
             ';' => Ok(Grass),
             '+' => Ok(Glass),
 
@@ -82,6 +84,7 @@ impl From<Block> for char {
         // This must match the mapping in Block::try_from.
         match value {
             Rock => '*',
+            SplatteredRock => '§',
             Grass => ';',
             Glass => '+',
 
