@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 use util::{IncrementalOutline, IndexMap, Outline, _String, text, Cloud};
 
-use crate::{Location, Tile2D};
+use crate::{Block, Coordinates, Location, Voxel};
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
@@ -209,7 +209,9 @@ impl SectorMap {
     pub fn terrain(
         &self,
         origin: &Location,
-    ) -> anyhow::Result<Cloud<3, Tile2D>> {
+    ) -> anyhow::Result<Cloud<3, Voxel>> {
+        use Block::*;
+
         let mut ret = Cloud::default();
 
         for (p, c) in text::char_grid(&self.map) {
@@ -223,16 +225,45 @@ impl SectorMap {
                 c => c,
             };
 
-            let tile = match c {
-                '#' => Tile2D::Wall,
-                '.' => Tile2D::Ground,
-                '+' => Tile2D::Door,
-                '>' => Tile2D::Downstairs,
-                '<' => Tile2D::Upstairs,
+            match c {
+                '#' => {
+                    ret.insert(p.above(), Some(Rock));
+                    ret.insert(p, Some(Rock));
+                    ret.insert(p.below(), Some(Rock));
+                }
+                '+' => {
+                    ret.insert(p.above(), Some(Rock));
+                    ret.insert(p, Some(Door));
+                    ret.insert(p.below(), Some(Rock));
+                }
+                '|' => {
+                    ret.insert(p.above(), Some(Rock));
+                    ret.insert(p, Some(Glass));
+                    ret.insert(p.below(), Some(Rock));
+                }
+                '.' => {
+                    ret.insert(p, None);
+                    ret.insert(p.below(), Some(Rock));
+                }
+                '~' => {
+                    ret.insert(p, None);
+                    ret.insert(p.below(), Some(Water));
+                }
+                '&' => {
+                    ret.insert(p, None);
+                    ret.insert(p.below(), Some(Magma));
+                }
+                '>' | '_' => {
+                    ret.insert(p, None);
+                    ret.insert(p.below(), None);
+                }
+                '<' => {
+                    ret.insert(p.above(), None);
+                    ret.insert(p, Some(Rock));
+                    ret.insert(p.below(), Some(Rock));
+                }
                 _ => bail!("Unknown terrain {c:?}"),
             };
-
-            ret.insert(p, tile);
         }
 
         Ok(ret)

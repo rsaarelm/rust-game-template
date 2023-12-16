@@ -1,31 +1,28 @@
 use anyhow::bail;
+use derive_more::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
+use util::Cloud;
+
+use crate::{Atlas, Location};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 // 2D representation for a top-down view of voxel location.
 pub enum Tile {
-    /// Floor seen from above.
-    Floor {
-        block: Block,
+    /// Surface with empty space above it.
+    ///
+    /// May be displaced from slice center by +/-1 z.
+    Surface(Location, Block),
 
-        /// Relative depth. 0 is the current observation level.
-        z: i32,
+    /// Solid vertical mass.
+    Wall(Block),
 
-        /// Slope connectivity to unseen tiles above at z=1 and unseen tiles
-        /// below at z=-1. Should always be 0 at z=0.
-        connectivity: usize,
-    },
-
-    /// Inside a solid mass, not visible from any direction.
-    Solid(Block),
-
-    /// Empty void,
+    /// Empty space with no visible floor.
     Void,
 }
 
 impl Tile {
     pub fn is_wall(&self) -> bool {
-        matches!(self, Tile::Solid(_))
+        matches!(self, Tile::Wall(_))
     }
 }
 
@@ -38,9 +35,12 @@ pub type Voxel = Option<Block>;
 pub enum Block {
     #[default]
     Rock,
+    SplatteredRock,
     Grass,
-    Door,
     Glass,
+
+    Door,
+
     Water,
     Magma,
 }
@@ -48,12 +48,13 @@ pub enum Block {
 use Block::*;
 
 impl Block {
-    pub fn is_solid(self) -> bool {
-        matches!(self, Rock | Grass | Glass)
+    /// Block is solid matter that can be stood on top of.
+    pub fn is_support(self) -> bool {
+        matches!(self, Rock | SplatteredRock | Grass | Glass)
     }
 
     pub fn blocks_sight(self) -> bool {
-        matches!(self, Rock | Grass | Magma | Door)
+        matches!(self, Rock | SplatteredRock | Grass | Magma | Door)
     }
 }
 
@@ -65,9 +66,12 @@ impl TryFrom<char> for Block {
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             '*' => Ok(Rock),
+            '§' => Ok(SplatteredRock),
             ';' => Ok(Grass),
-            '|' => Ok(Door),
             '+' => Ok(Glass),
+
+            '|' => Ok(Door),
+
             '~' => Ok(Water),
             '&' => Ok(Magma),
             _ => bail!("Bad block {value:?}"),
@@ -77,13 +81,48 @@ impl TryFrom<char> for Block {
 
 impl From<Block> for char {
     fn from(value: Block) -> Self {
+        // This must match the mapping in Block::try_from.
         match value {
             Rock => '*',
+            SplatteredRock => '§',
             Grass => ';',
-            Door => '|',
             Glass => '+',
+
+            Door => '|',
+
             Water => '~',
             Magma => '&',
         }
+    }
+}
+
+/// Voxel collection patches that serialize nicely.
+#[derive(Clone, Default, Deref, DerefMut, Debug, Serialize, Deserialize)]
+#[serde(try_from = "Atlas", into = "Atlas")]
+pub struct Terrain(Cloud<3, Voxel>);
+
+impl TryFrom<Atlas> for Terrain {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Atlas) -> Result<Self, Self::Error> {
+        let mut ret = Terrain::default();
+
+        for (loc, c) in value.iter() {
+            if c == '_' {
+                ret.0.insert(loc, None);
+            } else {
+                ret.0.insert(loc, Some(Block::try_from(c)?));
+            }
+        }
+        Ok(ret)
+    }
+}
+
+impl From<Terrain> for Atlas {
+    fn from(map: Terrain) -> Self {
+        Atlas::from_iter(map.0.into_iter().map(|(loc, v)| match v {
+            None => (loc, '_'),
+            Some(b) => (loc, b.into()),
+        }))
     }
 }

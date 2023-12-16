@@ -42,14 +42,11 @@ impl Runtime {
             origin: Location,
             r: &'a Runtime,
             radius: i32,
-            is_edge: bool,
         }
 
         impl<'a> PartialEq for FovState<'a> {
             fn eq(&self, other: &Self) -> bool {
-                self.origin == other.origin
-                    && self.radius == other.radius
-                    && self.is_edge == other.is_edge
+                self.origin == other.origin && self.radius == other.radius
             }
         }
 
@@ -57,16 +54,11 @@ impl Runtime {
 
         impl<'a> FovState<'a> {
             pub fn new(
-                origin: &Location,
+                origin: Location,
                 r: &'a Runtime,
                 radius: i32,
             ) -> FovState<'a> {
-                FovState {
-                    origin: *origin,
-                    r,
-                    radius,
-                    is_edge: false,
-                }
+                FovState { origin, r, radius }
             }
         }
 
@@ -74,10 +66,6 @@ impl Runtime {
             type Vector = glam::IVec2;
 
             fn advance(&self, offset: Self::Vector) -> Option<Self> {
-                if self.is_edge {
-                    return None;
-                }
-
                 if offset.taxi_len() > self.radius {
                     return None;
                 }
@@ -89,33 +77,22 @@ impl Runtime {
                     return None;
                 }
 
-                let is_edge = loc.blocks_sight(self.r);
+                if loc.transparent_volume(self.r).is_empty() {
+                    return None;
+                }
 
-                Some(FovState { is_edge, ..*self })
+                Some(*self)
             }
         }
 
-        fov::Square::new(FovState::new(loc, self, radius))
-            .map(|(v, s)| (v, s.origin + v.extend(0)))
-    }
-
-    /// Return whether fog of war should be drawn at the given wide coordinate
-    /// position.
-    pub fn wide_pos_is_shrouded(&self, wide_loc_pos: IVec2) -> bool {
-        let p = wide_loc_pos;
-        if let Some(loc) = Location::fold_wide(p) {
-            !loc.is_explored(self)
-        } else {
-            let c1 = Location::fold_wide(p - ivec2(1, 0)).unwrap();
-            let c2 = Location::fold_wide(p + ivec2(1, 0)).unwrap();
-
-            if c1.is_explored(self) && c2.is_explored(self) {
-                return false;
-            }
-
-            // Fog sticks to itself and walls
-            (!c1.is_explored(self) || c1.map_tile(self).is_wall())
-                && (!c2.is_explored(self) || c2.map_tile(self).is_wall())
-        }
+        fov::Square::new(FovState::new(*loc, self, radius)).flat_map(
+            |(v, s)| {
+                (s.origin + v.extend(0))
+                    .transparent_volume(self)
+                    .into_iter()
+                    .map(move |loc| (v, loc))
+                    .collect::<Vec<_>>()
+            },
+        )
     }
 }

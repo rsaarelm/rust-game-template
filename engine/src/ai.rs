@@ -1,8 +1,8 @@
 //! Mobs figuring out what to do on their own.
-use content::EquippedAt;
+use content::{Cube, EquippedAt};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::s4;
+use util::{s4, Sdf};
 
 use crate::{ecs::IsFriendly, prelude::*, FOV_RADIUS, THROW_RANGE};
 
@@ -14,9 +14,10 @@ impl Entity {
         goal: Goal,
     ) -> Option<Action> {
         let r = r.as_ref();
-        let mut dest;
 
         let loc = self.loc(r)?;
+        let mut path_origin = loc;
+        let mut path_dest: Cube;
 
         match goal {
             Goal::None => return Some(Action::Pass),
@@ -36,18 +37,18 @@ impl Entity {
                     self.first_visible_enemy(r).and_then(|e| e.loc(r))
                 {
                     // Enemies visible! Go fight them.
-                    dest = enemy_loc;
+                    path_dest = Cube::unit(enemy_loc);
                 } else if let Some(loc) = player.loc(r) {
                     // Otherwise follow player.
-                    dest = loc;
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
                 }
             }
 
-            Goal::Autoexplore | Goal::StartAutoexplore => {
-                let start = matches!(goal, Goal::StartAutoexplore);
+            Goal::Autoexplore(zone) | Goal::StartAutoexplore(zone) => {
+                let start = matches!(goal, Goal::StartAutoexplore(_));
 
                 if !self.is_player(r) {
                     // Non-players fight when they run into enemies when
@@ -57,26 +58,8 @@ impl Entity {
                     }
                 }
 
-                let explore_map = r.autoexplore_map(&loc);
+                let explore_map = r.autoexplore_map(&zone, &loc);
                 if explore_map.is_empty() {
-                    // If starting out and done exploring the current sector,
-                    // branch off to neighboring sectors.
-                    if start {
-                        use crate::SectorDir::*;
-                        // Direction list set up to do a boustrophedon on a
-                        // big flat open sector-plane.
-                        for sector_dir in [East, West, South, North, Down, Up] {
-                            if let Some(dest) = loc
-                                .path_dest_to_neighboring_sector(r, sector_dir)
-                            {
-                                if !r.autoexplore_map(&dest).is_empty() {
-                                    return self.decide(r, Goal::GoTo(dest));
-                                }
-                            }
-                        }
-                    }
-
-                    // If not just starting autoexplore, stop here.
                     return None;
                 }
 
@@ -96,20 +79,22 @@ impl Entity {
                 }
             }
 
-            Goal::GoTo(loc) => {
-                dest = loc;
-            }
-
-            Goal::AttackMove(loc) => {
-                // Move towards actual target by default.
-                dest = loc;
+            Goal::GoTo {
+                origin,
+                destination,
+                is_attack_move,
+            } => {
+                path_origin = origin;
+                path_dest = destination;
 
                 // Look for targets of opportunity, redirect towards them.
                 //
                 // Mob will bump-to-attack the target.
-                if let Some(e) = self.first_visible_enemy(r) {
-                    if let Some(enemy_loc) = e.loc(r) {
-                        dest = enemy_loc;
+                if is_attack_move {
+                    if let Some(e) = self.first_visible_enemy(r) {
+                        if let Some(enemy_loc) = e.loc(r) {
+                            path_dest = Cube::unit(enemy_loc);
+                        }
                     }
                 }
             }
@@ -120,7 +105,7 @@ impl Entity {
                 }
 
                 if let Some(loc) = e.loc(r) {
-                    dest = loc;
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Attack target can't be found, abandon goal.
                     return None;
@@ -139,7 +124,7 @@ impl Entity {
                     return None;
                 }
                 if let Some(loc) = e.loc(r) {
-                    dest = loc;
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
@@ -148,25 +133,24 @@ impl Entity {
         }
 
         // We've got a pathfinding task from loc to dest.
-        if loc.follow(r) == dest.follow(r) {
+        if path_dest.sd(loc) <= 0 {
             // Drop out if already arrived.
             return None;
         }
 
-        let enemy_at_dest =
-            dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self));
+        // Right next to dest, see if we need to watch out for mobs.
+        if let Some((dir, dest)) = loc
+            .walk_neighbors(r)
+            .find(|(_, loc)| path_dest.sd(*loc) <= 0)
+        {
+            // There's an enemy, fight it.
+            if dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self)) {
+                return Some(Action::Bump(dir));
+            }
 
-        if let Some(dir) = loc.vec_towards(&dest) {
-            // Right next to the target. If it's a mob, we can attack.
-            if dir.is_adjacent() {
-                // Pointed towards an enemy, fight it.
-                if enemy_at_dest {
-                    return Some(Action::Bump(dir));
-                }
-                // Don't try to move into escorted mob's space.
-                if matches!(goal, Goal::Escort(_)) {
-                    return Some(Action::Pass);
-                }
+            // Don't try to move into escorted mob's space.
+            if matches!(goal, Goal::Escort(_)) {
+                return Some(Action::Pass);
             }
         }
 
@@ -174,9 +158,9 @@ impl Entity {
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
         if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fov_aware_path_to(&loc, &dest)
+            r.fog_exploring_path(&path_origin, &loc, &path_dest)
         } else {
-            r.path_to(&loc, &dest)
+            r.enemy_path(&loc, &path_dest)
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -184,8 +168,13 @@ impl Entity {
 
             // Path should be steppable.
             let dir = loc
-                .find_step_towards(r, &next)
+                .vec2_towards(&next)
                 .expect("Invalid pathfind: Not steppable");
+            assert_eq!(
+                dir.length_squared(),
+                1,
+                "Invaild pathfind: Bad step distance"
+            );
 
             if self.can_step(r, dir) {
                 return Some(Action::Bump(dir));
@@ -219,21 +208,18 @@ impl Entity {
                 // Becomes invalid when you can't path to player.
                 self.clear_goal(r);
             }
-            Goal::StartAutoexplore => {
-                self.set_goal(r, Goal::Autoexplore);
+            Goal::StartAutoexplore(zone) => {
+                self.set_goal(r, Goal::Autoexplore(zone));
             }
-            Goal::Autoexplore => {
+            Goal::Autoexplore(_) => {
                 if self.is_npc(r) {
                     self.set_goal(r, Goal::FollowPlayer);
                 } else {
                     self.clear_goal(r);
                 }
             }
-            Goal::GoTo(_) => {
-                self.clear_goal(r);
-            }
-            Goal::AttackMove(_) => {
-                if self.is_npc(r) {
+            Goal::GoTo { is_attack_move, .. } => {
+                if is_attack_move && self.is_npc(r) {
                     self.set_goal(r, Goal::FollowPlayer);
                 } else {
                     self.clear_goal(r);
@@ -299,6 +285,49 @@ impl Entity {
         self.set(r, goal);
     }
 
+    pub fn order_go_to(&self, r: &mut impl AsMut<Runtime>, loc: Location) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: Cube::unit(loc),
+                is_attack_move: false,
+            },
+        )
+    }
+
+    pub fn order_go_to_zone(&self, r: &mut impl AsMut<Runtime>, zone: Cube) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: zone,
+                is_attack_move: false,
+            },
+        )
+    }
+
+    pub fn order_attack_move(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        loc: Location,
+    ) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: Cube::unit(loc),
+                is_attack_move: true,
+            },
+        )
+    }
+
     pub fn clear_goal(&self, r: &mut impl AsMut<Runtime>) {
         self.set(r, Goal::default());
     }
@@ -335,8 +364,10 @@ impl Entity {
 
     pub(crate) fn is_looking_for_fight(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
-        matches!(self.goal(r), Goal::None | Goal::GoTo(_) | Goal::Escort(_))
-            && Some(*self) != r.player()
+        matches!(
+            self.goal(r),
+            Goal::None | Goal::GoTo { .. } | Goal::Escort(_)
+        ) && Some(*self) != r.player()
     }
 
     pub(crate) fn fov_mobs(
@@ -424,7 +455,7 @@ pub enum Goal {
     /// If the current sector is fully explored and ongoing autoexploration
     /// would end, `StartAutoexplore` will instead look for unexplored
     /// adjacent sectors and plot a way to one if found.
-    StartAutoexplore,
+    StartAutoexplore(Cube),
 
     /// Autoexplore the current sector.
     ///
@@ -433,19 +464,19 @@ pub enum Goal {
     /// reachable unexplored cells in the current sector.
     ///
     /// NPCs return to party when done.
-    Autoexplore,
+    Autoexplore(Cube),
 
     /// Move to a location.
     ///
-    /// NPCs will not resume following player when they arrive, used to
-    /// detach NPCs from party.
-    GoTo(Location),
-
-    /// Like `GoTo`, but attack everything on the way.
-    ///
-    /// Unlike `GoTo`, NPCs will return to party once they arrive at the
-    /// destination and see no targets of opportunity.
-    AttackMove(Location),
+    /// Option to attack anything encountered for player's NPCs.
+    GoTo {
+        /// Keep track of starting point to limit pathfinding queries.
+        origin: Location,
+        /// Destination is a zone, use an unit cube for a point.
+        destination: Cube,
+        /// If true, NPC will look for fights along the way.
+        is_attack_move: bool,
+    },
 
     /// Attack a mob, will complete when target mob is dead.
     ///

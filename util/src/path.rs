@@ -2,7 +2,7 @@ use std::{collections::VecDeque, hash::Hash};
 
 use num_traits::{One, Zero};
 
-use crate::{HashSet, Neighbors2D};
+use crate::HashSet;
 
 /// Generate a shortest paths map on a grid according to a neighbors function.
 pub fn dijkstra_map<'a, T, I>(
@@ -63,24 +63,6 @@ where
         path.pop();
         path
     })
-}
-
-/// Create an iterator that flood fills in taxicab metric from origin.
-///
-/// Cells for which is_valid returns false are not returned. Cells are
-/// returned with monotonically increasing distance of shortest path along
-/// valid cells from origin.
-pub fn flood_fill_4<'a, T>(
-    is_valid: &'a impl Fn(&T) -> bool,
-    starts: impl IntoIterator<Item = T>,
-) -> impl Iterator<Item = (T, usize)> + 'a
-where
-    T: Clone + Eq + Hash + Neighbors2D + 'a,
-{
-    crate::dijkstra_map(
-        move |n| n.ns_4().filter(is_valid).collect::<Vec<_>>(),
-        starts,
-    )
 }
 
 /// Combinator for limiting flood fill to a given distance.

@@ -29,6 +29,9 @@ pub mod s4 {
     pub const DIR: [IVec2; 4] =
         [ivec2(0, -1), ivec2(1, 0), ivec2(0, 1), ivec2(-1, 0)];
 
+    pub const ALT_DIR: [IVec2; 4] =
+        [ivec2(-1, 0), ivec2(0, 1), ivec2(1, 0), ivec2(0, -1)];
+
     /// Taxicab distance metric.
     pub fn d(a: &IVec2, b: &IVec2) -> i32 {
         let c = (*a - *b).abs();
@@ -273,7 +276,7 @@ pub fn wallform_mask<T: Neighbors2D + Copy>(
     // Is `pos` exposed to air in at least one neighbor.
     let mut is_visible = false;
 
-    // Which of the four neighbors are walls to begin witn.
+    // Which of the four neighbors are walls to begin with.
     let mut wall_mask = 0;
 
     // Which of the four neighboring walls are exposed to open air by a
@@ -307,6 +310,28 @@ pub fn wallform_mask<T: Neighbors2D + Copy>(
     }
 
     is_visible.then_some(wall_mask & expose_mask)
+}
+
+pub fn reverse_dir_mask_4(mask: usize) -> usize {
+    match mask {
+        0b0000 => 0b0000,
+        0b0001 => 0b0100,
+        0b0010 => 0b1000,
+        0b0011 => 0b1100,
+        0b0100 => 0b0001,
+        0b0101 => 0b0101,
+        0b0110 => 0b1001,
+        0b0111 => 0b1101,
+        0b1000 => 0b0010,
+        0b1001 => 0b0110,
+        0b1010 => 0b1010,
+        0b1011 => 0b1110,
+        0b1100 => 0b0011,
+        0b1101 => 0b0111,
+        0b1110 => 0b1011,
+        0b1111 => 0b1111,
+        _ => panic!("bad mask-4"),
+    }
 }
 
 pub trait VecExt: Sized + Default {
@@ -418,13 +443,17 @@ impl VecExt for IVec3 {
 /// Two-dimensional point neighborhood.
 pub trait Neighbors2D: Sized {
     /// List neighbors in horizontal cardinal directions.
-    fn ns_4(&self) -> impl Iterator<Item = Self> + '_;
+    fn ns_4(self) -> impl Iterator<Item = Self>;
+
+    /// 4-neighbors with the iteration order alternating between every other
+    /// cell. Use to stimulate zig-zag movement in taxicab metric spaces.
+    fn ns_4_alternating(self) -> impl Iterator<Item = Self>;
 
     /// List neighbors in horizontal hex directions.
-    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_;
+    fn ns_hex(self) -> impl Iterator<Item = Self>;
 
     /// List neighbors in horizontal cardinal and diagonal directions.
-    fn ns_8(&self) -> impl Iterator<Item = Self> + '_;
+    fn ns_8(self) -> impl Iterator<Item = Self>;
 }
 
 fn ns<T>(base: T, offsets: impl Iterator<Item = T>) -> impl Iterator<Item = T>
@@ -435,64 +464,89 @@ where
 }
 
 impl Neighbors2D for IVec2 {
-    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s4::DIR.iter().copied())
+    fn ns_4(self) -> impl Iterator<Item = Self> {
+        ns(self, s4::DIR.iter().copied())
     }
 
-    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s_hex::DIR.iter().copied())
+    fn ns_4_alternating(self) -> impl Iterator<Item = Self> {
+        let dirs: &'static [IVec2] = if (self.x + self.y).rem_euclid(2) == 0 {
+            &s4::DIR
+        } else {
+            &s4::ALT_DIR
+        };
+        ns(self, dirs.iter().copied())
     }
 
-    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s8::DIR.iter().copied())
+    fn ns_hex(self) -> impl Iterator<Item = Self> {
+        ns(self, s_hex::DIR.iter().copied())
+    }
+
+    fn ns_8(self) -> impl Iterator<Item = Self> {
+        ns(self, s8::DIR.iter().copied())
     }
 }
 
 impl Neighbors2D for IVec3 {
-    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s4::DIR.iter().map(|a| a.extend(0)))
+    fn ns_4(self) -> impl Iterator<Item = Self> {
+        ns(self, s4::DIR.iter().map(|a| a.extend(0)))
     }
 
-    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s_hex::DIR.iter().map(|a| a.extend(0)))
+    fn ns_4_alternating(self) -> impl Iterator<Item = Self> {
+        let dirs: &'static [IVec2] = if (self.x + self.y).rem_euclid(2) == 0 {
+            &s4::DIR
+        } else {
+            &s4::ALT_DIR
+        };
+        ns(self, dirs.iter().map(|&a| a.extend(0)))
     }
 
-    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, s8::DIR.iter().map(|a| a.extend(0)))
+    fn ns_hex(self) -> impl Iterator<Item = Self> {
+        ns(self, s_hex::DIR.iter().map(|a| a.extend(0)))
+    }
+
+    fn ns_8(self) -> impl Iterator<Item = Self> {
+        ns(self, s8::DIR.iter().map(|a| a.extend(0)))
     }
 }
 
 impl Neighbors2D for Cube<i32> {
-    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_4(self) -> impl Iterator<Item = Self> {
         let basis = v3(self.dim());
-        IVec3::ZERO.ns_4().map(move |d| *self + (d * basis))
+        IVec3::ZERO.ns_4().map(move |d| self + (d * basis))
     }
 
-    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_4_alternating(self) -> impl Iterator<Item = Self> {
         let basis = v3(self.dim());
-        IVec3::ZERO.ns_hex().map(move |d| *self + (d * basis))
+        IVec3::ZERO
+            .ns_4_alternating()
+            .map(move |d| self + (d * basis))
     }
 
-    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_hex(self) -> impl Iterator<Item = Self> {
         let basis = v3(self.dim());
-        IVec3::ZERO.ns_8().map(move |d| *self + (d * basis))
+        IVec3::ZERO.ns_hex().map(move |d| self + (d * basis))
+    }
+
+    fn ns_8(self) -> impl Iterator<Item = Self> {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_8().map(move |d| self + (d * basis))
     }
 }
 
 pub trait Neighbors3D: Sized {
     /// List neighbors in 6 3D cardinal directions.
-    fn ns_6(&self) -> impl Iterator<Item = Self> + '_;
+    fn ns_6(self) -> impl Iterator<Item = Self>;
 
     /// List neighbors in 6 3D cardinal directions plus horizontal diagonals.
-    fn ns_10(&self) -> impl Iterator<Item = Self> + '_;
+    fn ns_10(self) -> impl Iterator<Item = Self>;
 }
 
 impl Neighbors3D for IVec3 {
-    fn ns_6(&self) -> impl Iterator<Item = Self> + '_ {
-        ns(*self, AXIS_DIRS.iter().copied())
+    fn ns_6(self) -> impl Iterator<Item = Self> {
+        ns(self, AXIS_DIRS.iter().copied())
     }
 
-    fn ns_10(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_10(self) -> impl Iterator<Item = Self> {
         const A: &[IVec3] = &[
             ivec3(0, -1, 0),
             ivec3(1, -1, 0),
@@ -505,42 +559,30 @@ impl Neighbors3D for IVec3 {
             ivec3(0, 0, -1),
             ivec3(0, 0, 1),
         ];
-        ns(*self, A.iter().copied())
+        ns(self, A.iter().copied())
     }
 }
 
 impl Neighbors3D for Cube<i32> {
-    fn ns_6(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_6(self) -> impl Iterator<Item = Self> {
         let basis = v3(self.dim());
-        IVec3::ZERO.ns_6().map(move |d| *self + (d * basis))
+        IVec3::ZERO.ns_6().map(move |d| self + (d * basis))
     }
 
-    fn ns_10(&self) -> impl Iterator<Item = Self> + '_ {
+    fn ns_10(self) -> impl Iterator<Item = Self> {
         let basis = v3(self.dim());
-        IVec3::ZERO.ns_10().map(move |d| *self + (d * basis))
+        IVec3::ZERO.ns_10().map(move |d| self + (d * basis))
     }
 }
 
 /// A signed distance field for a 3D body.
 pub trait Sdf {
-    fn sd(&self, p: impl Into<IVec3>) -> i32;
-}
-
-impl Sdf for IVec3 {
-    fn sd(&self, p: impl Into<IVec3>) -> i32 {
-        // Had chessboard distance here but it was causing weird artifacts in
-        // pathfinding. Squared euclidean seems to work better, though it
-        // might be screwing with A*'s expectation that the heuristic is
-        // optimistic.
-        let d = p.into() - *self;
-        d.dot(d)
-    }
+    fn sd(&self, p: IVec3) -> i32;
 }
 
 impl Sdf for Cube<i32> {
-    fn sd(&self, p: impl Into<IVec3>) -> i32 {
-        let p = p.into();
-        self.signed_distance(p)
+    fn sd(&self, p: IVec3) -> i32 {
+        self.vec_to(p).taxi_len()
     }
 }
 

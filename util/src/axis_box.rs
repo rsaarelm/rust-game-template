@@ -157,6 +157,20 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
         AxisBox::new(p0, p1)
     }
 
+    /// Create the lattice cell in the given basis containing the given point.
+    pub fn cell_containing(
+        basis: impl Into<[T; N]>,
+        pos: impl Into<[T; N]>,
+    ) -> Self
+    where
+        T: Euclid + AsPrimitive<i32> + FromPrimitive,
+    {
+        let basis = basis.into();
+        let pos = pos.into();
+        let pos = std::array::from_fn(|i| (pos[i].div_euclid(&basis[i])).as_());
+        Self::cell(basis, pos)
+    }
+
     /// Get the lattice point for this box if it were a lattice cell.
     ///
     /// If the box is part of a lattice that has a box corner snapping to
@@ -707,20 +721,12 @@ impl<const N: usize> IntegerBox<N> {
         ret
     }
 
-    /// Return signed distance of a point from the box that is the maximum of
-    /// the point's distance from the six half-planes spanned by points
-    /// contained in the box. The result is in chessboard metric.
-    pub fn signed_distance(&self, p: impl Into<[i32; N]>) -> i32 {
-        let p = p.into();
-
-        let mut ret = i32::MIN;
-
-        for i in 0..N {
-            ret = ret.max(self.p0[i] - p[i]);
-            ret = ret.max(p[i] - self.p1[i] + 1);
-        }
-
-        ret
+    /// Vector from closest contained integer point to given position.
+    pub fn vec_to<E>(&self, p: E) -> E
+    where
+        E: From<[i32; N]> + Into<[i32; N]> + Sub<E, Output = E> + Clone,
+    {
+        p.clone() - self.clamp_inclusive(p)
     }
 
     /// Clamp a vector type into the box so that `contains` will be true for
@@ -1071,20 +1077,5 @@ mod tests {
                 .snap_to(&Rect::new([20, 20], [80, 80]), [1.0, 1.0]),
             Rect::new([70, 70], [80, 80])
         );
-    }
-
-    #[test]
-    fn signed_distance() {
-        let rect = Rect::new([10, 10], [30, 20]);
-
-        assert_eq!(rect.signed_distance([20, 15]), -4);
-        assert_eq!(rect.signed_distance([9, 10]), 1);
-        assert_eq!(rect.signed_distance([10, 10]), 0);
-        assert_eq!(rect.signed_distance([29, 19]), 0);
-        assert_eq!(rect.signed_distance([30, 19]), 1);
-        assert_eq!(rect.signed_distance([29, 20]), 1);
-        assert_eq!(rect.signed_distance([20, 10]), 0);
-        assert_eq!(rect.signed_distance([40, 15]), 11);
-        assert_eq!(rect.signed_distance([5, 5]), 5);
     }
 }

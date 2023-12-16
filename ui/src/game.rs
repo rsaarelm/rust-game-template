@@ -1,9 +1,11 @@
 use anyhow::Result;
+use content::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
+use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
 
-use crate::{anim, prelude::*, Command, InputMap};
+use crate::{anim, prelude::*, Command, InputMap, SectorView};
 
 // Maximum GUI terminal size.
 // Get just about to a size where a whole sector fits on map screen.
@@ -177,25 +179,25 @@ impl Game {
                     // Map revealed cells into wide space and lengthen the
                     // reveal times so we can insert in-between times for the
                     // side cells.
-                    let posns: HashMap<IVec2, usize> = posns
+                    let posns: HashMap<IVec3, usize> = posns
                         .into_iter()
-                        .map(|(loc, n)| (loc.unfold_wide(), n * 2))
+                        .map(|(loc, n)| (loc.widen(), n * 2))
                         .collect();
 
                     // Fill the middle positions between two revealed cells.
-                    let sides: Vec<(IVec2, usize)> = posns
+                    let sides: Vec<(IVec3, usize)> = posns
                         .iter()
                         .filter_map(|(&loc, n)| {
                             posns
-                                .get(&(loc + ivec2(2, 0)))
-                                .map(|n2| (loc + ivec2(1, 0), n.min(n2) + 1))
+                                .get(&(loc + ivec3(2, 0, 0)))
+                                .map(|n2| (loc + ivec3(1, 0, 0), n.min(n2) + 1))
                         })
                         .collect();
 
                     for (p, mut t) in posns.into_iter().chain(sides) {
                         self.add_anim(Box::new(
-                            move |_: &Runtime, n, win: &Window, off| {
-                                let p = p - off;
+                            move |_: &Runtime, n, win: &Window, view: SectorView| {
+                                let p = view.project_wide(p);
                                 if t > 0 {
                                     win.put(p, CharCell::c('░').col(X::BROWN));
                                 } else {
@@ -258,12 +260,12 @@ impl Game {
         }
     }
 
-    pub fn draw_ground_anims(&mut self, win: &Window, draw_offset: IVec2) {
-        draw_anims(&self.r, win, draw_offset, &mut self.ground_anims);
+    pub fn draw_ground_anims(&mut self, win: &Window, view: SectorView) {
+        draw_anims(&self.r, win, view, &mut self.ground_anims);
     }
 
-    pub fn draw_sky_anims(&mut self, win: &Window, draw_offset: IVec2) {
-        draw_anims(&self.r, win, draw_offset, &mut self.sky_anims);
+    pub fn draw_sky_anims(&mut self, win: &Window, view: SectorView) {
+        draw_anims(&self.r, win, view, &mut self.sky_anims);
     }
 
     pub fn add_anim(&mut self, anim: Box<dyn Anim>) {
@@ -341,13 +343,15 @@ impl Game {
                     p.execute_direct(r, act);
                 }
             }
-            (Command::Indirect(Goal::GoTo(loc)), Some(_)) => {
+            (Command::Indirect(Goal::GoTo { destination, .. }), Some(_)) => {
                 if self.player_is_selected() {
                     // For player group, player gets the goal, others follow
                     // player.
 
                     let Some(p) = self.r.player() else { return };
-                    let Some(start) = p.loc(&self.r) else { return };
+                    let Some(current_loc) = p.loc(&self.r) else {
+                        return;
+                    };
 
                     for e in self.selection.iter() {
                         if !e.is_player(&self.r) {
@@ -358,16 +362,19 @@ impl Game {
                     if p.is_threatened(&self.r) {
                         // If player is threatened, see if it looks like
                         // you're trying to fight or flee.
-                        let Some(mut planned_path) =
-                            self.r.fov_aware_path_to(&start, &loc)
-                        else {
+                        let Some(mut planned_path) = self.r.fog_exploring_path(
+                            &current_loc,
+                            &current_loc,
+                            &destination,
+                        ) else {
                             return;
                         };
 
                         let Some(step) = planned_path.pop() else {
                             return;
                         };
-                        let Some(dir) = start.vec_towards(&step).map(s4::norm)
+                        let Some(dir) =
+                            current_loc.vec2_towards(&step).map(s4::norm)
                         else {
                             return;
                         };
@@ -380,29 +387,33 @@ impl Game {
                             return;
                         }
                     }
-                    p.set_goal(&mut self.r, Goal::GoTo(loc));
+                    p.order_go_to_zone(&mut self.r, destination);
                 } else {
                     // Non-player group: Everyone gets an attack-move command,
                     // will return to following player when done.
                     for p in self.selection.iter() {
-                        p.set_goal(&mut self.r, Goal::AttackMove(loc));
+                        p.order_attack_move(
+                            &mut self.r,
+                            destination.center().into(),
+                        );
                         p.exhaust_actions(&mut self.r);
                     }
                     self.select_next_commandable(true);
                 }
             }
-            (Command::Indirect(Goal::StartAutoexplore), Some(p)) => {
+            (Command::Indirect(Goal::StartAutoexplore(zone)), Some(p)) => {
                 if !self.player_is_selected() {
                     for e in self.selected().collect::<Vec<_>>() {
-                        e.set_goal(&mut self.r, Goal::Autoexplore);
+                        e.set_goal(&mut self.r, Goal::Autoexplore(zone));
                         e.exhaust_actions(&mut self.r);
                     }
                     self.select_next_commandable(true);
                 } else {
                     debug_assert!(p.is_player(&self.r));
+                    // TODO 2023-12-23 adjacent sector search is retired, can this be simplified?
                     // Player can do the adjacent sector search with
                     // StartAutoexplore, NPCs just get regular autoexplore.
-                    p.set_goal(&mut self.r, Goal::StartAutoexplore);
+                    p.set_goal(&mut self.r, Goal::StartAutoexplore(zone));
 
                     for e in self.selected().collect::<Vec<_>>() {
                         // Set the others as escorts when player is doing the
@@ -431,6 +442,18 @@ impl Game {
         self.update_camera();
     }
 
+    pub fn travel(&mut self, dir: IVec3) {
+        if let Some(p) = self.current_active() {
+            let Some(origin) = p.loc(self) else { return };
+            let destination = Level::level_from(&origin).offset(dir).floor();
+            self.act(Goal::GoTo {
+                origin,
+                destination,
+                is_attack_move: false,
+            });
+        }
+    }
+
     pub fn process_action(&mut self, action: InputAction) {
         use InputAction::*;
         match action {
@@ -446,9 +469,12 @@ impl Game {
             SouthWest => {}
             NorthWest => {}
             NorthEast => {}
-            ClimbUp => {}
-            ClimbDown => {}
-            LongMove => {}
+            TravelNorth => self.travel(NORTH),
+            TravelEast => self.travel(EAST),
+            TravelSouth => self.travel(SOUTH),
+            TravelWest => self.travel(WEST),
+            TravelUp => self.travel(UP),
+            TravelDown => self.travel(DOWN),
             Cycle => self.select_next_commandable(false),
             BecomePlayer => {
                 if let Some(p) = self.current_active() {
@@ -487,8 +513,9 @@ impl Game {
             }
             Roam => {
                 if let Some(p) = self.current_active() {
+                    let Some(loc) = p.loc(&self.r) else { return };
                     if !self.autofight(p) {
-                        self.act(Goal::StartAutoexplore);
+                        self.act(Goal::StartAutoexplore(loc.sector()));
                     }
                 }
             }
@@ -611,7 +638,7 @@ impl Game {
 fn draw_anims(
     r: &impl AsRef<Runtime>,
     win: &Window,
-    draw_offset: IVec2,
+    view: SectorView,
     set: &mut Vec<Box<dyn Anim>>,
 ) {
     let n_updates = navni::logical_frames_elapsed();
@@ -619,7 +646,7 @@ fn draw_anims(
     for i in (0..set.len()).rev() {
         // Iterate anims backwards so when we swap-remove expired
         // animations this doesn't affect upcoming elements.
-        if !set[i].render(r, n_updates, win, draw_offset) {
+        if !set[i].render(r, n_updates, win, view) {
             set.swap_remove(i);
         }
     }
@@ -627,7 +654,7 @@ fn draw_anims(
 
 #[derive(Default)]
 pub struct PlannedPath {
-    posns: Vec<IVec2>,
+    posns: Vec<Location>,
     mouse_pos: IVec2,
 }
 
@@ -653,39 +680,14 @@ impl PlannedPath {
         self.mouse_pos = mouse_pos;
 
         self.posns.clear();
-        if let Some(mut path) = r.fov_aware_path_to(&orig, &dest) {
-            if !path.is_empty() {
-                // If the path goes down a stairwell,
-                // the actual endpoint will be on
-                // another sector and won't be shown.
-                // Tweak the visible path so it's all
-                // on the local screen.
-                path[0] = dest;
-            } else {
-                return;
-            }
-
-            self.posns.push(path[0].unfold_wide());
-
-            for w in path.windows(2) {
-                let [a, c] = w else { continue };
-                let (a, c) = (a.unfold_wide(), c.unfold_wide());
-
-                // The in-between part for horizontal step.
-                let b = a + (c - a) / ivec2(2, 2);
-
-                if b != self.posns[self.posns.len() - 1] {
-                    self.posns.push(b);
-                }
-
-                if c != self.posns[self.posns.len() - 1] {
-                    self.posns.push(c);
-                }
-            }
+        if let Some(path) =
+            r.fog_exploring_path(&orig, &orig, &Cube::unit(dest))
+        {
+            self.posns = path;
         }
     }
 
-    pub fn posns(&self) -> &[IVec2] {
+    pub fn posns(&self) -> &[Location] {
         &self.posns
     }
 }

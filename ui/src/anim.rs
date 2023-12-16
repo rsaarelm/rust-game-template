@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{prelude::*, SectorView};
 use engine::prelude::*;
 use glam::Vec2;
 use navni::{prelude::*, X256Color as X};
@@ -11,19 +11,19 @@ pub trait Anim {
         r: &Runtime,
         n_updates: u32,
         win: &Window,
-        draw_offset: IVec2,
+        view: SectorView,
     ) -> bool;
 }
 
-impl<F: FnMut(&Runtime, u32, &Window, IVec2) -> bool> Anim for F {
+impl<F: FnMut(&Runtime, u32, &Window, SectorView) -> bool> Anim for F {
     fn render(
         &mut self,
         r: &Runtime,
         n_updates: u32,
         win: &Window,
-        draw_offset: IVec2,
+        view: SectorView,
     ) -> bool {
-        (self)(r, n_updates, win, draw_offset)
+        (self)(r, n_updates, win, view)
     }
 }
 
@@ -37,8 +37,6 @@ pub enum Anchor {
     /// Animation will always be drawn relative to the entity.
     /// If the entity disappears, the animation will as well.
     Entity(Entity),
-
-    WidePos(IVec2),
 }
 
 impl From<Location> for Anchor {
@@ -54,11 +52,19 @@ impl From<Entity> for Anchor {
 }
 
 impl Anchor {
-    fn to_wide_vec(self, r: &Runtime) -> Option<IVec2> {
+    fn project(self, r: &Runtime, view: SectorView) -> Option<IVec2> {
+        let Some(loc) = self.loc(r) else { return None };
+        if (loc.snap_above_floor(r).z - view.z).abs() <= 1 {
+            Some(view.project(loc))
+        } else {
+            None
+        }
+    }
+
+    fn loc(self, r: &Runtime) -> Option<Location> {
         match self {
-            Anchor::Location(loc) => Some(loc.unfold_wide()),
-            Anchor::Entity(e) => e.loc(r).map(|loc| loc.unfold_wide()),
-            Anchor::WidePos(p) => Some(p),
+            Anchor::Location(loc) => Some(loc),
+            Anchor::Entity(e) => e.loc(r),
         }
     }
 }
@@ -127,15 +133,15 @@ impl Anim for Particle {
         r: &Runtime,
         n_updates: u32,
         win: &Window,
-        draw_offset: IVec2,
+        view: SectorView,
     ) -> bool {
         // If origin is None, particle was attached to an entity that's gone
         // now and the particle should be gone as well.
-        let Some(origin) = self.origin.to_wide_vec(r) else {
+        let Some(origin) = self.origin.project(r, view) else {
             return false;
         };
 
-        win.put(origin + self.pos.as_ivec2() - draw_offset, self.cell);
+        win.put(origin + self.pos.as_ivec2(), self.cell);
 
         // Tick down lifetime and update position.
         self.pos += self.velocity * n_updates as f32;
@@ -164,10 +170,9 @@ impl Anim for Explosion {
         r: &Runtime,
         n_updates: u32,
         win: &Window,
-        draw_offset: IVec2,
+        view: SectorView,
     ) -> bool {
-        let Some(origin) = self.origin.to_wide_vec(r).map(|p| p - draw_offset)
-        else {
+        let Some(origin) = self.origin.project(r, view) else {
             return false;
         };
         let bounds = Rect::new(origin - ivec2(2, 1), origin + ivec2(3, 2));
@@ -218,10 +223,9 @@ impl Anim for Lightning {
         r: &Runtime,
         n_updates: u32,
         win: &Window,
-        draw_offset: IVec2,
+        view: SectorView,
     ) -> bool {
-        let Some(origin) = self.origin.to_wide_vec(r).map(|p| p - draw_offset)
-        else {
+        let Some(origin) = self.origin.project(r, view) else {
             return false;
         };
 

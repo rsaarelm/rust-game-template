@@ -1,8 +1,9 @@
+use content::{Level, Zone};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
-use ui::prelude::*;
-use util::v2;
+use ui::{prelude::*, render_fog, DisplayTile, SectorView};
+use util::{v2, PolyLineIter};
 
 #[derive(Clone, Debug)]
 pub enum MapAction {
@@ -58,106 +59,130 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
     camera += scroll * SCROLL_STEP;
 
-    let wide_sector_bounds = wide_unfolded_sector_bounds(camera);
-    let offset =
-        scroll_offset(&win.area(), camera.unfold_wide(), &wide_sector_bounds);
+    let view = SectorView::new(win.dim(), camera);
 
-    // Snap camera to view center.
-    let camera =
-        Location::fold_wide_sides(offset + v2(win.area().dim()) / ivec2(2, 2))
-            .0;
+    // Snap camera to view center, which might have been adjusted by
+    // SectorView.
+    let camera = view.center(win.dim());
 
-    // Calculate offset again with new camera to cover for off-by-one problems
-    // from the half-cells.
-    let offset =
-        scroll_offset(&win.area(), camera.unfold_wide(), &wide_sector_bounds);
-
-    // Camera has moved, return this as the action unless we end up with a
-    // better one
     if camera != game().camera {
+        // Camera has moved, return this as the action unless we end up with a
+        // better one
         ret = Some(RepositionCamera(camera));
     }
 
-    // Solid background for off-sector extra space.
-    win.fill(CharCell::c('█').col(X::BROWN));
-    // Constrain sub-window to current sector only.
-    let sector_win = win.sub(wide_sector_bounds - offset);
-    // Adjust offset for sub-window position.
-    let offset = v2(wide_sector_bounds.min()).max(offset);
+    let sector_area = {
+        let bounds = Level::sector_from(&camera).wide();
 
-    // Draw main map contents, animations and fog of war.
-    draw_map(r, &sector_win, offset);
-    game().draw_ground_anims(&sector_win, offset);
-    draw_fog(r, &sector_win, offset);
-    game().draw_sky_anims(&sector_win, offset);
+        Rect::new(
+            view.project(bounds.min()),
+            view.project(bounds.max()) - ivec2(1, 0),
+        )
+    };
 
-    // Highlight planned path.
-    for &p in game().planned_path.posns() {
-        if let Some(c) = sector_win.get_mut(p - offset) {
+    for (p, loc) in view.iter(win.dim()) {
+        DisplayTile::new(game(), loc).render(win, p);
+
+        if let Some(e) = loc.snap_above_floor(&game().r).item_at(game()) {
+            let cell = CharCell::c(e.icon(r));
+            win.put(p, cell);
+        }
+
+        if let Some(e) = loc.snap_above_floor(&game().r).mob_at(game()) {
+            let mut cell = CharCell::c(e.icon(r));
+            if e.is_player_aligned(game()) {
+                if game().r.player() == Some(e) {
+                    cell.set_c('@');
+                } else if !e.can_be_commanded(r) {
+                    // Friendly mob out of moves.
+                    cell = cell.col(X::GRAY);
+                } else if e.goal(r) != Goal::FollowPlayer {
+                    // Frindly mob out on a mission.
+                    cell = cell.col(X::GREEN);
+                } else if e.acts_before_next_player_frame(r) {
+                    // Friendly mob ready for next command
+                    cell = cell.col(X::AQUA);
+                } else {
+                    // Friendly mob still building up it's actions.
+                    cell = cell.col(X::TEAL);
+                }
+
+                if game().selected().any(|a| a == e) {
+                    cell = cell.inv();
+                }
+            }
+            win.put(p, cell);
+        }
+    }
+
+    // Ground animations are hidden under fog of war.
+    game().draw_ground_anims(&win, view);
+
+    for (p, loc) in view.iter(win.dim()) {
+        render_fog(game(), win, p, loc);
+    }
+
+    // Cover up area outside the sector if viewport is big enough to show it.
+    for p in win.area() {
+        if !sector_area.contains(p) {
+            win.put(p, CharCell::c('█').col(X::BROWN));
+        }
+    }
+
+    // Sky animations are shown above fog of war.
+    game().draw_sky_anims(&win, view);
+
+    // Project locations of planned path and use polyline to fill in the gaps
+    // to make a continuous line.
+    for p in PolyLineIter::new(
+        game().planned_path.posns().iter().map(|&a| view.project(a)),
+    ) {
+        if let Some(c) = win.get_mut(p) {
             c.invert();
         }
     }
 
-    // Coordinate space helpers.
-    let screen_to_wide_pos = |screen_pos: [i32; 2]| {
-        v2(screen_pos) - v2(sector_win.bounds().min()) + offset
-    };
+    let mut mouse = navni::mouse_state();
+    // Adjust coordinates from screen to window.
+    mouse -= win.origin();
 
-    let screen_to_loc_pos = |screen_pos: [i32; 2]| {
-        // Get wide location pos corresponding to screen space pos.
-        let wide_pos = screen_to_wide_pos(screen_pos);
-        // Snap to cell.
-        ivec2(wide_pos.x.div_euclid(2), wide_pos.y)
-    };
-
-    // Get a click target, preferring cells with mobs in them.
-    let click_target = |r: &Runtime, wide_pos: IVec2| -> Location {
-        let (a, b) = Location::fold_wide_sides(wide_pos);
-        // Prefer left cell unless right has a mob and left doesn't.
-        if b.mob_at(r).is_some() && a.mob_at(r).is_none() {
-            b
-        } else {
-            a
-        }
-    };
-
-    let mouse = navni::mouse_state();
-    if win.contains(mouse) && game().current_active().is_some() {
+    if sector_area.contains(mouse) && game().current_active().is_some() {
         match mouse {
             MouseState::Hover(p) => {
                 // This is a low-priority event, so don't overwrite an
                 // existing ret.
                 if ret.is_none() {
-                    ret = Some(HoverOver(Location::smart_fold_wide(
-                        screen_to_wide_pos(p),
-                        r,
-                    )));
+                    ret = Some(HoverOver(view.unproject_1(p)));
                 }
             }
 
             MouseState::Drag(p, q, MouseButton::Left) if win.contains(q) => {
-                let (a, b) = (screen_to_loc_pos(q), screen_to_loc_pos(p));
-
                 // Marquee drag in progress, draw box.
-                if wide_sector_bounds.contains(a)
-                    && wide_sector_bounds.contains(b)
+                if p != q && sector_area.contains(p) && sector_area.contains(q)
                 {
-                    for c in Rect::from_points([p, q])
+                    for c in Rect::from_points_inclusive([p, q])
                         .into_iter()
-                        .map(|sp| v2(sp) - v2(sector_win.bounds().min()))
-                        .filter_map(|p| sector_win.get_mut(p))
+                        .filter_map(|p| win.get_mut(p))
                     {
                         c.invert();
                     }
+
+                    // Planned path and marquee select are mutually exclusive
+                    // visualizations.
+                    game().planned_path.clear();
                 }
             }
 
             MouseState::Release(p, q, MouseButton::Left) => {
                 // Was this a local click or the end result of a drag?
-                let (a, b) = (screen_to_wide_pos(q), screen_to_wide_pos(p));
-                if a == b {
+                if p == q {
                     // Left click.
-                    let loc = click_target(r, a);
+                    let loc = view.unproject_1(p);
+
+                    let origin = game()
+                        .current_active()
+                        .and_then(|p| p.loc(game()))
+                        .unwrap_or(loc);
 
                     match loc.mob_at(r) {
                         Some(npc) if npc.is_player_aligned(r) => {
@@ -167,7 +192,11 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                         Some(_enemy) if game().player_is_selected() => {
                             // Player group gets a move command that gets
                             // transformed into autofight when near enough.
-                            ret = Some(Order(Goal::GoTo(loc)));
+                            ret = Some(Order(Goal::GoTo {
+                                origin,
+                                destination: Cube::unit(loc),
+                                is_attack_move: false,
+                            }));
                         }
                         Some(enemy) => {
                             // NPCs get a direct kill task instead.
@@ -175,19 +204,20 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                         }
                         None => {
                             // Move to location.
-                            ret = Some(Order(Goal::GoTo(loc)));
+                            ret = Some(Order(Goal::GoTo {
+                                origin,
+                                destination: Cube::unit(loc),
+                                is_attack_move: false,
+                            }));
                         }
                     }
                 } else {
                     // A drag ended. Collect covered friendly units into
                     // selection.
-                    if wide_sector_bounds.contains(a)
-                        && wide_sector_bounds.contains(b)
-                    {
+                    if sector_area.contains(p) && sector_area.contains(q) {
                         ret = Some(SelectActive(
-                            Rect::from_points([a, b])
+                            view.view_rect_locations(p, q)
                                 .into_iter()
-                                .filter_map(Location::fold_wide)
                                 .filter_map(|loc| loc.mob_at(game()))
                                 .filter(|e| e.is_player_aligned(game()))
                                 .collect(),
@@ -197,10 +227,9 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
             }
 
             MouseState::Release(p, q, MouseButton::Right) => {
-                let (a, b) = (screen_to_wide_pos(q), screen_to_wide_pos(p));
-                if a == b {
+                if p == q {
                     // Right click.
-                    let loc = click_target(r, a);
+                    let loc = view.unproject_1(p);
 
                     match loc.mob_at(r) {
                         Some(npc) if npc.is_player_aligned(r) => {
@@ -220,6 +249,8 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
 
             _ => {}
         }
+    } else {
+        game().planned_path.clear();
     }
 
     // Capture direct commands.
@@ -236,105 +267,4 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     ret
-}
-
-fn draw_map(r: &Runtime, win: &Window, offset: IVec2) {
-    for draw_pos in win.area().into_iter().map(v2) {
-        let p = draw_pos + offset;
-
-        win.put(draw_pos, ui::flat_terrain_cell(r, p));
-
-        if let Some(loc) = Location::fold_wide(p) {
-            if let Some(e) = loc.mob_at(r) {
-                let mut cell = CharCell::c(e.icon(r));
-                if e.is_player_aligned(r) {
-                    if r.player() == Some(e) {
-                        cell.set_c('@');
-                    } else if !e.can_be_commanded(r) {
-                        // Friendly mob out of moves.
-                        cell = cell.col(X::GRAY);
-                    } else if e.goal(r) != Goal::FollowPlayer {
-                        // Frindly mob out on a mission.
-                        cell = cell.col(X::GREEN);
-                    } else if e.acts_before_next_player_frame(r) {
-                        // Friendly mob ready for next command
-                        cell = cell.col(X::AQUA);
-                    } else {
-                        // Friendly mob still building up it's actions.
-                        cell = cell.col(X::TEAL);
-                    }
-
-                    if game().selected().any(|a| a == e) {
-                        cell = cell.inv();
-                    }
-                }
-                win.put(draw_pos, cell);
-            } else if let Some(e) = loc.item_at(r) {
-                win.put(draw_pos, CharCell::c(e.icon(r)));
-            }
-        }
-    }
-}
-
-fn draw_fog(r: &Runtime, win: &Window, offset: IVec2) {
-    for draw_pos in win.area().into_iter().map(v2) {
-        if r.wide_pos_is_shrouded(draw_pos + offset) {
-            win.put(draw_pos, CharCell::c('░').col(X::BROWN));
-        }
-    }
-}
-
-/// Rectangle containing cells of location's sector plus one-cell rim of
-/// adjacent sectors projected into wide unfolded space.
-fn wide_unfolded_sector_bounds(loc: Location) -> Rect {
-    // Get sector area with the rim to adjacent sectors.
-    let bounds = loc.expanded_sector_bounds();
-
-    // Convert to wide space.
-    let p1 = IVec2::from(bounds.min()) * ivec2(2, 1);
-    let mut p2 = IVec2::from(bounds.max()) * ivec2(2, 1);
-
-    // Trim out the part that would be in-between cells for cells that don't
-    // belong in the original set.
-    p2.x = 0.max(p2.x - 1);
-
-    Rect::new(p1, p2)
-}
-
-/// Compute an offset to add to canvas rectangle points to show map rectangle
-/// points.
-///
-/// Offsetting will try to ensure maximum amount of map is shown on canvas. If
-/// the map center is near map rectangle's edge, map rectangle will be offset
-/// so it's edge will snap the inside of the canvas rectangle. If the map
-/// rectangle is smaller than the canvas rectangle along either dimension, it
-/// can't fill the canvas rectangle and will be centered on the canvas
-/// rectangle instead along that dimension.
-fn scroll_offset(
-    canvas_rect: &Rect,
-    view_pos: IVec2,
-    map_rect: &Rect,
-) -> IVec2 {
-    // Starting point, snap to the center of the canvas.
-    let mut offset = view_pos - IVec2::from(canvas_rect.center());
-
-    let offset_rect = *map_rect - offset;
-
-    // Check each axis
-    for d in 0..2 {
-        if offset_rect.dim()[d] < canvas_rect.dim()[d] {
-            // Canvas is big enough (along this axis) to fit the whole arena.
-            // Just center the arena rect then.
-            offset[d] = map_rect.min()[d] - canvas_rect.min()[d]
-                + (map_rect.dim()[d] - canvas_rect.dim()[d]) / 2;
-        } else if offset_rect.min()[d] > canvas_rect.min()[d] {
-            // Snap inside inner edge of the canvas_rect.
-            offset[d] += offset_rect.min()[d] - canvas_rect.min()[d];
-        } else if offset_rect.max()[d] < canvas_rect.max()[d] {
-            // Snap inside outer edge of the canvas_rect.
-            offset[d] -= canvas_rect.max()[d] - offset_rect.max()[d];
-        }
-    }
-
-    offset
 }

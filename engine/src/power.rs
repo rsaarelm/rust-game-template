@@ -1,6 +1,6 @@
 //! Special powers entities can use
 
-use content::{Power, Rect};
+use content::{Power, Rect, Zone};
 use serde::{Deserialize, Serialize};
 use util::{v2, Neighbors2D};
 
@@ -53,6 +53,8 @@ impl Runtime {
         };
 
         for (i, loc) in from.trace(dir).enumerate() {
+            let loc = loc.snap_above_floor(self);
+
             // Hit a wall, pull back one tile.
             if loc.blocks_shot(self) {
                 return loc - dir.extend(0);
@@ -160,11 +162,11 @@ impl Runtime {
             // Location that stops FOV, do not proceed.
             let mut ret = Vec::new();
 
-            if !loc.is_walkable(self) && loc.blocks_sight(self) {
+            if !loc.can_be_stood_in(self) && loc.blocks_sight(self) {
                 return ret;
             }
             // Stop at sector edge.
-            if loc.sector() != from.sector() {
+            if !from.sector().fat().contains(*loc) {
                 return ret;
             }
 

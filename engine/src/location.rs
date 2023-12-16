@@ -1,74 +1,165 @@
-use glam::{ivec3, IVec3};
-use serde::{Deserialize, Serialize};
-use util::s4;
+use content::{Block, Coordinates, Environs};
+use util::{s4, Neighbors2D};
 
-use crate::prelude::*;
+use crate::{prelude::*, Grammatize};
 
-#[derive(
-    Copy,
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Serialize,
-    Deserialize,
-)]
-pub enum SectorDir {
-    North,
-    East,
-    South,
-    West,
-    Up,
-    Down,
-}
+pub trait RuntimeCoordinates: Coordinates {
+    /// Tile setter that doesn't cover functional terrain.
+    fn decorate_block(&self, r: &mut impl AsMut<Runtime>, b: Block);
 
-impl From<SectorDir> for IVec3 {
-    fn from(value: SectorDir) -> Self {
-        use SectorDir::*;
-        match value {
-            North => ivec3(0, -SECTOR_HEIGHT, 0),
-            East => ivec3(SECTOR_WIDTH, 0, 0),
-            South => ivec3(0, SECTOR_HEIGHT, 0),
-            West => ivec3(-SECTOR_WIDTH, 0, 0),
-            Up => ivec3(0, 0, 1),
-            Down => ivec3(0, 0, -1),
+    /// Internal method for FoV
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool;
+
+    /// Location has been seen by an allied unit at some point.
+    fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool;
+
+    /// List steppable neighbors optimistically, any unexplored neighbor cell
+    /// is listed as rising, falling and horizontal steps. Explored neighbors
+    /// will only provide the actual step, if any.
+    fn fog_exploring_walk_neighbors<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Self> + 'a;
+
+    fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+        match self.voxel(r) {
+            // Door is held open by someone passing through.
+            Some(Block::Door) if self.mob_at(r).is_some() => false,
+            Some(_) => true,
+            None => false,
         }
     }
-}
 
-impl TryFrom<IVec2> for SectorDir {
-    type Error = ();
+    fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+        match self.voxel(r) {
+            // Door is held open by someone passing through.
+            Some(Block::Door) if self.mob_at(r).is_some() => false,
+            Some(b) => b.blocks_sight(),
+            None => false,
+        }
+    }
 
-    fn try_from(value: IVec2) -> Result<Self, Self::Error> {
-        use SectorDir::*;
+    fn entities_at<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Entity> + 'a;
 
-        let value = IVec2::ZERO.dir4_towards(&value);
+    /// Return entities at cell sorted to draw order.
+    fn drawable_entities_at(&self, r: &impl AsRef<Runtime>) -> Vec<Entity> {
+        let mut ret: Vec<Entity> = self.entities_at(r).collect();
+        ret.sort_by_key(|e| e.draw_layer(r));
+        ret
+    }
 
-        if value == IVec2::ZERO {
-            Err(())
-        } else {
-            for (a, b) in s4::DIR.iter().zip([North, East, South, West]) {
-                if *a == value {
-                    return Ok(b);
-                }
+    fn mob_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        self.entities_at(r).find(|e| e.is_mob(r))
+    }
+
+    fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
+        self.entities_at(r).find(|e| e.is_item(r))
+    }
+
+    /// Create a printable description of interesting features at location.
+    fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
+        let mut ret = String::new();
+        if let Some(mob) = self.mob_at(r) {
+            ret.push_str(&Grammatize::format(&(mob.noun(r),), "[Some]"));
+            if let Some(item) = self.item_at(r) {
+                ret.push_str(&Grammatize::format(&(item.noun(r),), ", [some]"));
             }
-            panic!("Bad IVec2 dir4_towards {:?}", value);
+            Some(ret)
+        } else if let Some(item) = self.item_at(r) {
+            ret.push_str(&Grammatize::format(&(item.noun(r),), "[Some]"));
+            Some(ret)
+        } else {
+            None
         }
+        // Add more stuff here as needed.
     }
+
+    /// Description for the general area of the location.
+    fn region_name(&self, _r: &impl AsRef<Runtime>) -> String {
+        let depth = -self.z();
+        format!("Mazes of Menace: {depth}")
+    }
+
+    fn damage(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        perp: Option<Entity>,
+        amount: i32,
+    );
 }
 
-impl SectorDir {
-    pub fn to_vec3(&self) -> IVec3 {
-        match self {
-            SectorDir::East => ivec3(SECTOR_WIDTH, 0, 0),
-            SectorDir::South => ivec3(0, SECTOR_HEIGHT, 0),
-            SectorDir::West => ivec3(-SECTOR_WIDTH, 0, 0),
-            SectorDir::North => ivec3(0, -SECTOR_HEIGHT, 0),
-            SectorDir::Up => ivec3(0, 0, 1),
-            SectorDir::Down => ivec3(0, 0, -1),
+impl RuntimeCoordinates for Location {
+    fn decorate_block(&self, r: &mut impl AsMut<Runtime>, b: Block) {
+        let r = r.as_mut();
+
+        use Block::*;
+
+        if matches!(
+            self.voxel(r),
+            Some(Rock) | Some(SplatteredRock) | Some(Grass)
+        ) {
+            r.set_voxel(self, Some(b));
+        }
+    }
+
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+
+        r.fov.contains(self)
+    }
+
+    fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+
+        self.snap_above_floor(r).is_in_fov_set(r)
+            || self.tile(r).is_wall()
+                && self.ns_8().any(|loc| {
+                    loc.is_in_fov_set(r) || (loc.above()).is_in_fov_set(r)
+                })
+    }
+
+    fn fog_exploring_walk_neighbors<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Self> + 'a {
+        let r = r.as_ref();
+        let origin = *self;
+
+        s4::DIR.iter().flat_map(move |&dir| {
+            let loc = origin + dir.extend(0);
+            if loc.is_explored(r) {
+                // Only step into the concrete location (if any) when target
+                // is explored.
+                origin.walk_step(r, dir).into_iter().collect::<Vec<_>>()
+            } else {
+                // Assume all possible steps are valid in unexplored space.
+                vec![loc, loc.above(), loc.below()]
+            }
+        })
+    }
+
+    fn entities_at<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Entity> + 'a {
+        let r = r.as_ref();
+        r.placement.entities_at(self)
+    }
+
+    fn damage(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        perp: Option<Entity>,
+        amount: i32,
+    ) {
+        let r = r.as_mut();
+        if let Some(mob) = self.mob_at(r) {
+            mob.damage(r, perp, amount);
         }
     }
 }

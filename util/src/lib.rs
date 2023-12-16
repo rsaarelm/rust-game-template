@@ -14,8 +14,9 @@ pub use cloud::Cloud;
 
 mod geom;
 pub use geom::{
-    bresenham_line, s4, s8, s_hex, v2, v3, wallform_mask, Neighbors2D,
-    Neighbors3D, PlottedPoint, PolyLineIter, Sdf, VecExt, AXIS_DIRS,
+    bresenham_line, reverse_dir_mask_4, s4, s8, s_hex, v2, v3, wallform_mask,
+    Neighbors2D, Neighbors3D, PlottedPoint, PolyLineIter, Sdf, VecExt,
+    AXIS_DIRS,
 };
 
 mod grammar;
@@ -40,7 +41,7 @@ mod logos;
 pub use logos::Logos;
 
 mod path;
-pub use path::{astar_path, dijkstra_map, flood_fill_4, within_range};
+pub use path::{astar_path, dijkstra_map, within_range};
 
 mod rng;
 pub use rng::{srng, Odds, RngExt};
