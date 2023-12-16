@@ -75,7 +75,7 @@ impl Patch {
     }
 }
 
-pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+pub fn bigroom(_rng: &mut dyn RngCore, _lot: &Lot) -> anyhow::Result<Patch> {
     todo!()
     /*
     let mut ret = Patch::default();
@@ -126,7 +126,7 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
     */
 }
 
-fn monster_spawns(depth: u32) -> Vec<Spawn> {
+fn _monster_spawns(depth: u32) -> Vec<Spawn> {
     Data::get()
         .bestiary
         .iter()
@@ -135,7 +135,7 @@ fn monster_spawns(depth: u32) -> Vec<Spawn> {
         .collect()
 }
 
-fn item_spawns(depth: u32) -> Vec<Spawn> {
+fn _item_spawns(depth: u32) -> Vec<Spawn> {
     Data::get()
         .armory
         .iter()

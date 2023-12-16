@@ -273,7 +273,7 @@ pub fn wallform_mask<T: Neighbors2D + Copy>(
     // Is `pos` exposed to air in at least one neighbor.
     let mut is_visible = false;
 
-    // Which of the four neighbors are walls to begin witn.
+    // Which of the four neighbors are walls to begin with.
     let mut wall_mask = 0;
 
     // Which of the four neighboring walls are exposed to open air by a

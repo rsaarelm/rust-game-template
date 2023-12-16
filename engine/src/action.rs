@@ -79,12 +79,10 @@ impl Entity {
         debug_assert!(dir.taxi_len() == 1);
 
         let Some(loc) = self.loc(r) else { return false };
-        let new_loc = (loc + dir.extend(0)).follow(r);
 
-        // Early exit here if the target terrain is unwalkable.
-        if !new_loc.is_walkable(r) {
+        let Some(new_loc) = loc.walk_step(r, dir) else {
             return false;
-        }
+        };
 
         // Assume terrain is valid, there might be a displaceable friendly
         // mob.

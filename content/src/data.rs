@@ -253,7 +253,7 @@ impl SectorMap {
                     ret.insert(p, None);
                     ret.insert(p.below(), Some(Magma));
                 }
-                '>' => {
+                '>' | '_' => {
                     ret.insert(p, None);
                     ret.insert(p.below(), None);
                 }

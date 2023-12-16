@@ -1,7 +1,7 @@
 use std::ops::{Add, AddAssign};
 
 use glam::{ivec2, ivec3, IVec2, IVec3};
-use util::{s4, Cloud, Neighbors2D};
+use util::{s4, wallform_mask, Cloud, Neighbors2D};
 
 use crate::{Block, Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -240,26 +240,25 @@ impl Coordinates for Location {
     }
 
     fn cliff_form(&self, r: &impl Environs) -> Option<usize> {
-        fn is_cliff(loc: &Location, r: &impl Environs) -> bool {
-            let c = loc.tile(r);
-            if matches!(c, Tile::Surface(b, _) if b.z > loc.z) {
-                loc.ns_8().any(
-                    |a| matches!(a.tile(r), Tile::Surface(b, _) if b.z < loc.z),
-                )
-            } else {
-                false
-            }
+        fn is_mesa(loc: Location, r: &impl Environs) -> bool {
+            matches!(loc.tile(r), Tile::Surface(b, _) if b.z > loc.z)
         }
 
-        if is_cliff(self, r) {
-            let mut mask = 0;
-            for (i, loc) in self.truncate().ns_4().enumerate() {
-                let loc = loc.extend(self.z);
+        fn is_depression(loc: Location, r: &impl Environs) -> bool {
+            matches!(loc.tile(r), Tile::Surface(b, _) if b.z < loc.z)
+        }
 
-                if is_cliff(&loc, r) {
-                    mask |= 1 << i;
-                }
-            }
+        fn is_cliff(loc: Location, r: &impl Environs) -> bool {
+            is_mesa(loc, r) && loc.ns_8().any(|a| is_depression(a, r))
+        }
+
+        if is_cliff(*self, r) {
+            let Some(mask) = wallform_mask(
+                |loc| is_mesa(loc, r) || matches!(loc.tile(r), Tile::Wall(_)),
+                *self,
+            ) else {
+                return None;
+            };
             // Ignore cliff bits that aren't connected to any other cliff.
             // They seem to mostly end up being display noise.
             if mask != 0 {
