@@ -258,9 +258,9 @@ pub fn v3(a: impl Into<glam::IVec3>) -> glam::IVec3 {
 /// walls (in `s4::DIR` order of directions) that the wall at `pos` should be
 /// drawn connected to. If `pos` is not a wall or is enclosed by walls from
 /// all 8 directions, return `None`.
-pub fn wallform_mask(
-    is_wall: impl Fn(IVec2) -> bool,
-    pos: impl Into<IVec2>,
+pub fn wallform_mask<T: Neighbors2D + Copy>(
+    is_wall: impl Fn(T) -> bool,
+    pos: impl Into<T>,
 ) -> Option<usize> {
     let pos = pos.into();
 

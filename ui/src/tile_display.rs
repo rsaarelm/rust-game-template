@@ -109,7 +109,7 @@ pub fn terrain_cell(
             Tile::Void => CharCell::c('░'),
             Tile::Solid(_) => {
                 if let Some(connectivity) = util::wallform_mask(
-                    |p| (loc + p.extend(0)).is_wall_tile(r),
+                    |p: IVec2| (loc + p.extend(0)).is_wall_tile(r),
                     [0, 0],
                 ) {
                     CharCell::c(DOUBLE_LINE[connectivity])
