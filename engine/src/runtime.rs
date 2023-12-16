@@ -1,5 +1,5 @@
 use anyhow::Result;
-use content::{Data, Environs, World};
+use content::{Data, Environs, Voxel, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{flood_fill_4, GameRng, Logos, Neighbors2D};
@@ -413,16 +413,12 @@ impl Runtime {
 }
 
 impl Environs for Runtime {
-    fn tile(&self, loc: &content::Location) -> Tile2D {
+    fn voxel(&self, loc: &Location) -> Voxel {
         self.world.get(loc)
     }
 
-    fn set_tile(&mut self, loc: &content::Location, tile: Tile2D) {
-        self.world.set(loc, tile);
-    }
-
-    fn voxel(&self, _loc: &content::Location) -> content::Voxel {
-        todo!()
+    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+        self.world.set(loc, voxel);
     }
 }
 

@@ -1,18 +1,38 @@
-use std::collections::BTreeMap;
+use std::{cmp::Ordering, collections::BTreeMap};
 
+use derive_more::Deref;
 use glam::{ivec2, IVec2, IVec3};
 use serde::{Deserialize, Serialize};
-use util::{v2, v3, HashMap, HashSet};
+use util::{v2, HashMap, HashSet};
 
-use crate::{Coordinates, Rect};
+use crate::{Coordinates, Location, Rect};
 
-// Use [i32; 3] as key since it implements Ord, unlike IVec3.
+/// Key for atlas segments that implements Ord.
+///
+/// Also it needs to be the reverse of your usual lexical order for the slices
+/// to show up in a "natural" order, sorted by depth first.
+#[derive(
+    Clone, Default, Debug, Eq, PartialEq, Hash, Deref, Serialize, Deserialize,
+)]
+struct AtlasKey(pub Location);
+
+impl Ord for AtlasKey {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.z, self.y, self.x).cmp(&(other.z, other.y, other.x))
+    }
+}
+
+impl PartialOrd for AtlasKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 /// Type for representing a space as a set of terrain patches.
 ///
 /// Intended for serialization.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
-pub struct Atlas(BTreeMap<[i32; 3], String>);
+pub struct Atlas(BTreeMap<AtlasKey, String>);
 
 impl<A: Into<char> + Default + Eq, K: Into<IVec3>> FromIterator<(K, A)>
     for Atlas
@@ -50,7 +70,7 @@ impl<A: Into<char> + Default + Eq, K: Into<IVec3>> FromIterator<(K, A)>
                 s.push('\n');
             }
             let origin = slice + v2(bounds.min()).extend(0);
-            bins.insert(origin.into(), s);
+            bins.insert(AtlasKey(origin), s);
         }
 
         Atlas(bins)
@@ -65,7 +85,7 @@ impl Atlas {
                     .enumerate()
                     .filter(|(_, c)| !c.is_whitespace())
                     .map(move |(x, c)| {
-                        (v3(*loc) + ivec2(x as i32, y as i32).extend(0), c)
+                        (loc.0 + ivec2(x as i32, y as i32).extend(0), c)
                     })
             })
         })
@@ -76,7 +96,7 @@ impl Atlas {
 ///
 /// Intended for serialization.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BitAtlas(BTreeMap<[i32; 3], String>);
+pub struct BitAtlas(BTreeMap<AtlasKey, String>);
 
 impl FromIterator<IVec3> for BitAtlas {
     fn from_iter<T: IntoIterator<Item = IVec3>>(iter: T) -> Self {
@@ -117,7 +137,7 @@ impl FromIterator<IVec3> for BitAtlas {
                 s.push('\n');
             }
             let origin = slice + v2(bounds.min()).extend(0);
-            bins.insert(origin.into(), s);
+            bins.insert(AtlasKey(origin), s);
         }
 
         BitAtlas(bins)
@@ -129,7 +149,7 @@ impl BitAtlas {
     /// pseudopixels.
     pub fn iter(&self) -> impl Iterator<Item = IVec3> + '_ {
         self.0.iter().flat_map(move |(loc, text)| {
-            let loc = v3(*loc);
+            let loc = loc.0;
             text.lines().enumerate().flat_map(move |(y, line)| {
                 line.chars()
                     .enumerate()

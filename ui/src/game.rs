@@ -1,9 +1,10 @@
 use anyhow::Result;
 use engine::prelude::*;
+use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
 
-use crate::{anim, prelude::*, Command, InputMap};
+use crate::{anim, prelude::*, Command, InputMap, SectorView};
 
 // Maximum GUI terminal size.
 // Get just about to a size where a whole sector fits on map screen.
@@ -177,25 +178,25 @@ impl Game {
                     // Map revealed cells into wide space and lengthen the
                     // reveal times so we can insert in-between times for the
                     // side cells.
-                    let posns: HashMap<IVec2, usize> = posns
+                    let posns: HashMap<IVec3, usize> = posns
                         .into_iter()
-                        .map(|(loc, n)| (loc.unfold_wide(), n * 2))
+                        .map(|(loc, n)| (loc.widen(), n * 2))
                         .collect();
 
                     // Fill the middle positions between two revealed cells.
-                    let sides: Vec<(IVec2, usize)> = posns
+                    let sides: Vec<(IVec3, usize)> = posns
                         .iter()
                         .filter_map(|(&loc, n)| {
                             posns
-                                .get(&(loc + ivec2(2, 0)))
-                                .map(|n2| (loc + ivec2(1, 0), n.min(n2) + 1))
+                                .get(&(loc + ivec3(2, 0, 0)))
+                                .map(|n2| (loc + ivec3(1, 0, 0), n.min(n2) + 1))
                         })
                         .collect();
 
                     for (p, mut t) in posns.into_iter().chain(sides) {
                         self.add_anim(Box::new(
-                            move |_: &Runtime, n, win: &Window, off| {
-                                let p = p - off;
+                            move |_: &Runtime, n, win: &Window, view: SectorView| {
+                                let p = view.project_wide(p);
                                 if t > 0 {
                                     win.put(p, CharCell::c('░').col(X::BROWN));
                                 } else {
@@ -258,12 +259,12 @@ impl Game {
         }
     }
 
-    pub fn draw_ground_anims(&mut self, win: &Window, draw_offset: IVec2) {
-        draw_anims(&self.r, win, draw_offset, &mut self.ground_anims);
+    pub fn draw_ground_anims(&mut self, win: &Window, view: SectorView) {
+        draw_anims(&self.r, win, view, &mut self.ground_anims);
     }
 
-    pub fn draw_sky_anims(&mut self, win: &Window, draw_offset: IVec2) {
-        draw_anims(&self.r, win, draw_offset, &mut self.sky_anims);
+    pub fn draw_sky_anims(&mut self, win: &Window, view: SectorView) {
+        draw_anims(&self.r, win, view, &mut self.sky_anims);
     }
 
     pub fn add_anim(&mut self, anim: Box<dyn Anim>) {
@@ -611,7 +612,7 @@ impl Game {
 fn draw_anims(
     r: &impl AsRef<Runtime>,
     win: &Window,
-    draw_offset: IVec2,
+    view: SectorView,
     set: &mut Vec<Box<dyn Anim>>,
 ) {
     let n_updates = navni::logical_frames_elapsed();
@@ -619,7 +620,7 @@ fn draw_anims(
     for i in (0..set.len()).rev() {
         // Iterate anims backwards so when we swap-remove expired
         // animations this doesn't affect upcoming elements.
-        if !set[i].render(r, n_updates, win, draw_offset) {
+        if !set[i].render(r, n_updates, win, view) {
             set.swap_remove(i);
         }
     }
@@ -627,7 +628,7 @@ fn draw_anims(
 
 #[derive(Default)]
 pub struct PlannedPath {
-    posns: Vec<IVec2>,
+    posns: Vec<Location>,
     mouse_pos: IVec2,
 }
 
@@ -653,39 +654,12 @@ impl PlannedPath {
         self.mouse_pos = mouse_pos;
 
         self.posns.clear();
-        if let Some(mut path) = r.fov_aware_path_to(&orig, &dest) {
-            if !path.is_empty() {
-                // If the path goes down a stairwell,
-                // the actual endpoint will be on
-                // another sector and won't be shown.
-                // Tweak the visible path so it's all
-                // on the local screen.
-                path[0] = dest;
-            } else {
-                return;
-            }
-
-            self.posns.push(path[0].unfold_wide());
-
-            for w in path.windows(2) {
-                let [a, c] = w else { continue };
-                let (a, c) = (a.unfold_wide(), c.unfold_wide());
-
-                // The in-between part for horizontal step.
-                let b = a + (c - a) / ivec2(2, 2);
-
-                if b != self.posns[self.posns.len() - 1] {
-                    self.posns.push(b);
-                }
-
-                if c != self.posns[self.posns.len() - 1] {
-                    self.posns.push(c);
-                }
-            }
+        if let Some(path) = r.fov_aware_path_to(&orig, &dest) {
+            self.posns = path;
         }
     }
 
-    pub fn posns(&self) -> &[IVec2] {
+    pub fn posns(&self) -> &[Location] {
         &self.posns
     }
 }

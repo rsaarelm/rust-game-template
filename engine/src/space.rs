@@ -6,22 +6,6 @@ use util::{s4, v3};
 use crate::{prelude::*, Grammatize, SectorDir};
 
 pub trait RuntimeCoordinates: Coordinates {
-    fn smart_fold_wide(
-        wide_loc_pos: impl Into<IVec2>,
-        r: &impl AsRef<Runtime>,
-    ) -> Self {
-        match Self::fold_wide_sides(wide_loc_pos) {
-            (a, b) if !a.is_explored(r) && b.is_explored(r) => b,
-            (a, b)
-                if a.entities_at(r).next().is_none()
-                    && !b.entities_at(r).next().is_none() =>
-            {
-                b
-            }
-            (a, _) => a,
-        }
-    }
-
     fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D;
 
     /// Get actual tiles from visible cells, assume ground for unexplored
@@ -162,12 +146,12 @@ pub trait RuntimeCoordinates: Coordinates {
 impl RuntimeCoordinates for Location {
     fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
         let r = r.as_ref();
-        r.world.get(self)
+        r.world.get_tile(self)
     }
 
-    fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
-        let r = r.as_mut();
-        r.world.set(self, t);
+    fn set_tile(&self, _r: &mut impl AsMut<Runtime>, _t: Tile2D) {
+        // TODO Replace with voxel set
+        log::warn!("set_tile is deprecated");
     }
 
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {

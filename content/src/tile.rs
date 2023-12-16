@@ -1,8 +1,4 @@
-use derive_more::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
-use util::Cloud;
-
-use crate::Atlas;
 
 /// Specific terrain in a single game world map cell.
 #[derive(
@@ -142,32 +138,5 @@ impl From<Tile2D> for char {
             Gore => '§',
             Exit => 'X',
         }
-    }
-}
-
-/// Game world terrain tiles.
-#[derive(Clone, Default, Deref, DerefMut, Serialize, Deserialize)]
-#[serde(try_from = "Atlas", into = "Atlas")]
-pub struct Terrain(Cloud<3, Tile2D>);
-
-impl TryFrom<Atlas> for Terrain {
-    type Error = &'static str;
-
-    fn try_from(value: Atlas) -> Result<Self, Self::Error> {
-        let mut ret = Terrain::default();
-
-        for (loc, c) in value.iter() {
-            let c = Tile2D::try_from(c)?;
-            if c != Default::default() {
-                ret.0.insert(loc, c);
-            }
-        }
-        Ok(ret)
-    }
-}
-
-impl From<Terrain> for Atlas {
-    fn from(map: Terrain) -> Self {
-        Atlas::from_iter(map.0)
     }
 }

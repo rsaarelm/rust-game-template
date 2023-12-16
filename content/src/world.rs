@@ -6,12 +6,12 @@ use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{text, v2, HashMap, Logos};
+use util::{text, v2, v3, HashMap, Logos};
 
 use crate::{
-    data::Region, Coordinates, Cube, Location, Lot, MapGenerator, Patch, Rect,
-    Scenario, Spawn, Terrain, Tile2D, SECTOR_DEPTH, SECTOR_HEIGHT,
-    SECTOR_WIDTH,
+    data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
+    MapGenerator, Patch, Rect, Scenario, Spawn, Terrain, Tile2D, Voxel,
+    SECTOR_DEPTH, SECTOR_HEIGHT, SECTOR_WIDTH,
 };
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -155,6 +155,7 @@ fn build_skeleton(
                 Site(map) | Vault(map) => {
                     for p in map.entrances() {
                         if start_pos.is_none() {
+                            // TODO Remove adjust after voxelization
                             start_pos = Some(origin + p.extend(0));
                         } else {
                             bail!("Scenario defines more than one start location.");
@@ -268,7 +269,11 @@ impl World {
             .run(&mut rng, &lot)
             .expect("Sector procgen failed");
 
-        self.terrain_cache.extend(patch.terrain);
+        for (loc, block) in patch.terrain.iter() {
+            if *block != self.default_terrain(&v3(*loc)) {
+                self.terrain_cache.insert(*loc, *block);
+            }
+        }
 
         if !spawns_done {
             spawns.extend(patch.spawns);
@@ -308,9 +313,12 @@ impl World {
         self.player_entrance
     }
 
-    pub fn get(&self, loc: &Location) -> Tile2D {
-        // XXX: Could a Borrow<[i32; 3]> interface in Cloud get us out of
-        // having to do the explicit conversion?
+    // TODO Remove after voxelization
+    pub fn get_tile(&self, loc: &Location) -> Tile2D {
+        self.terrain_cache.tile_2d(loc)
+    }
+
+    pub fn get(&self, loc: &Location) -> Voxel {
         let pt = <[i32; 3]>::from(*loc);
         if let Some(&mutated) = self.inner.overlay.get(&pt) {
             return mutated;
@@ -323,15 +331,15 @@ impl World {
         self.default_terrain(loc)
     }
 
-    pub fn set(&mut self, loc: &Location, tile: Tile2D) {
-        self.inner.overlay.insert(*loc, tile);
+    pub fn set(&mut self, loc: &Location, voxel: Voxel) {
+        self.inner.overlay.insert(*loc, voxel);
     }
 
-    fn default_terrain(&self, loc: &Location) -> Tile2D {
+    fn default_terrain(&self, loc: &Location) -> Voxel {
         if loc.z >= 0 {
-            Tile2D::Ground
+            None
         } else {
-            Tile2D::Wall
+            Some(Block::Rock)
         }
     }
 }
@@ -419,6 +427,10 @@ impl Sec {
         ]
         .into_iter()
         .map(move |d| s + Sec(d))
+    }
+
+    pub fn extended_bounds(&self) -> Cube {
+        Cube::from(*self).grow([1, 1, 0], [1, 1, 0])
     }
 }
 

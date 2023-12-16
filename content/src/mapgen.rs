@@ -1,11 +1,10 @@
 use derive_more::{Deref, DerefMut};
-use glam::{ivec3, IVec3};
-use rand::{prelude::*, seq::SliceRandom, RngCore};
+use rand::RngCore;
 use util::{Cloud, IndexMap};
 
 use crate::{
-    data::GenericSector, Cube, Data, Environs, Location, SectorMap, Spawn,
-    SpawnDist, Tile2D,
+    data::GenericSector, Cube, Data, Location, SectorMap, Spawn, SpawnDist,
+    Voxel,
 };
 
 pub trait MapGenerator {
@@ -60,7 +59,7 @@ pub struct Lot {
 pub struct Patch {
     #[deref]
     #[deref_mut]
-    pub terrain: Cloud<3, Tile2D>,
+    pub terrain: Cloud<3, Voxel>,
     pub spawns: IndexMap<Location, Spawn>,
 }
 
@@ -77,12 +76,15 @@ impl Patch {
 }
 
 pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+    todo!()
+    /*
     let mut ret = Patch::default();
 
     let floor = lot.volume.border([0, 0, -1]);
 
     for p in floor {
-        ret.set_tile(&p.into(), Tile2D::Ground);
+        ret.set_voxel(&p.into(), None);
+        ret.set_voxel(&p.into().below, Some(Rock));
     }
 
     let z = lot.volume.max()[2] - 1;
@@ -121,6 +123,7 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
     }
 
     Ok(ret)
+    */
 }
 
 fn monster_spawns(depth: u32) -> Vec<Spawn> {

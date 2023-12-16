@@ -4,7 +4,7 @@ mod atlas;
 pub use atlas::{Atlas, BitAtlas};
 
 mod block;
-pub use block::{Block, Tile, Voxel};
+pub use block::{Block, Terrain, Tile, Voxel};
 
 mod data;
 pub use data::{
@@ -18,8 +18,9 @@ pub use location::{Coordinates, Environs, Location};
 mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};
 
+// TODO Remove Tile2D after voxelization
 mod tile;
-pub use tile::{Terrain, Tile2D};
+pub use tile::Tile2D;
 
 mod world;
 pub use world::{Sec, World};
@@ -32,4 +33,4 @@ pub const SECTOR_WIDTH: i32 = 52;
 /// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 39;
 /// Depth of a single sector of the game world in tiles.
-pub const SECTOR_DEPTH: i32 = 1; // TODO: Change to 2 when going voxel
+pub const SECTOR_DEPTH: i32 = 2;

@@ -1,48 +1,58 @@
+use std::ops::{Add, AddAssign};
+
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use util::{s4, Cloud, Neighbors2D};
 
-use crate::{Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{Block, Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 pub type Location = IVec3;
 
+// Traits are used because we can't directly implement stuff for out-of-crate
+// IVec3. There's no intention of using anything other than IVec3 for
+// Location.
+
 /// Methods for points when treated as game world locations.
-pub trait Coordinates: Copy + Sized {
+pub trait Coordinates:
+    Copy + Sized + Add<IVec3, Output = Self> + AddAssign<IVec3>
+{
     fn z(&self) -> i32;
+
+    fn voxel(&self, r: &impl Environs) -> Voxel;
 
     /// Snap location to origin of it's current 2D sector-slice.
     fn sector_snap_2d(&self) -> Self;
 
-    /// If there is a tile floor location (an empty voxel above a filled
-    /// voxel) that corresponds to the given location, snap to that location.
-    fn snap_to_floor(&self, r: &impl Environs) -> Option<Self>;
+    /// 2D rectangle for the sector the location is in.
+    fn sector_rect(&self) -> Rect;
 
     /// Look for the valid neighboring floor adjacent to current location.
     ///
     /// Can step up or down one Z level. Returns `None` if terrain is blocked.
-    fn step(&self, r: &impl Environs, dir: IVec2) -> Option<Self>;
+    fn walk_step(&self, r: &impl Environs, dir: IVec2) -> Option<Self> {
+        let loc = *self + dir.extend(0);
+        [loc.above(), loc, loc.below()]
+            .into_iter()
+            .find(|loc| loc.can_be_stood_in(r))
+    }
 
     /// Return the location directly above self.
-    fn above(&self) -> Self;
+    fn above(&self) -> Self {
+        *self + ivec3(0, 0, 1)
+    }
 
     /// Return the location directly below self.
-    fn below(&self) -> Self;
+    fn below(&self) -> Self {
+        *self + ivec3(0, 0, -1)
+    }
 
-    /// Return whether location is solid in the environs and can be stood on.
-    fn is_solid(&self, r: &impl Environs) -> bool;
-
-    fn can_be_entered(&self, r: &impl Environs) -> bool;
-
-    fn can_be_stepped_in(&self, r: &impl Environs) -> bool {
-        self.can_be_entered(r) && self.below().is_solid(r)
+    /// Location is traversable space immediately above a support block.
+    fn can_be_stood_in(&self, r: &impl Environs) -> bool {
+        matches!(self.voxel(r), None | Some(Block::Door))
+            && self.below().voxel(r).map_or(false, |b| b.is_support())
     }
 
     /// Return the pseudo-2D tile for terrain at given location.
     fn tile(&self, r: &impl Environs) -> Tile;
-
-    /// Convenience method that's fast to call.
-    fn is_wall_tile(&self, r: &impl Environs) -> bool {
-        self.above().is_solid(r) && self.is_solid(r)
-    }
 
     /// 4-bit mask that has 1 on direction with a step up.
     fn high_connectivity(&self, r: &impl Environs) -> usize {
@@ -50,7 +60,8 @@ pub trait Coordinates: Copy + Sized {
             .iter()
             .enumerate()
             .map(|(i, &d)| {
-                if self.step(r, d).map_or(false, |loc| loc.z() > self.z()) {
+                if self.walk_step(r, d).map_or(false, |loc| loc.z() > self.z())
+                {
                     1 << i
                 } else {
                     0
@@ -65,7 +76,8 @@ pub trait Coordinates: Copy + Sized {
             .iter()
             .enumerate()
             .map(|(i, &d)| {
-                if self.step(r, d).map_or(false, |loc| loc.z() < self.z()) {
+                if self.walk_step(r, d).map_or(false, |loc| loc.z() < self.z())
+                {
                     1 << i
                 } else {
                     0
@@ -79,6 +91,21 @@ pub trait Coordinates: Copy + Sized {
     /// 4-adjacent cliff tiles.
     fn cliff_form(&self, r: &impl Environs) -> Option<usize>;
 
+    /// For FoV calculations, volume of non-opaque tiles within the current
+    /// sector slice.
+    ///
+    /// If the result is empty, this location should be treated as an opaque
+    /// tile in terms of FoV.
+    fn transparent_volume<'a>(
+        &'a self,
+        r: &'a impl Environs,
+    ) -> impl Iterator<Item = Self> + 'a {
+        [self.above(), *self, self.below()]
+            .into_iter()
+            .filter(|loc| matches!(loc.voxel(r), None | Some(Block::Glass)))
+    }
+
+    // TODO: Deprecate fold methods
     /// Convert to 2D vector, layering Z-levels vertically in 2-plane.
     ///
     /// Each location has a unique point on the `IVec2` plane and the original
@@ -92,11 +119,7 @@ pub trait Coordinates: Copy + Sized {
     /// Convenience method that doubles the x coordinate.
     ///
     /// Use for double-width character display.
-    fn unfold_wide(&self) -> IVec2 {
-        let mut ret = self.unfold();
-        ret.x *= 2;
-        ret
-    }
+    fn widen(&self) -> IVec3;
 
     fn fold_wide(wide_loc_pos: impl Into<IVec2>) -> Option<Self> {
         let wide_loc_pos = wide_loc_pos.into();
@@ -154,12 +177,24 @@ pub trait Coordinates: Copy + Sized {
     // Start tracing from self towards `dir` in `dir` size steps. Starts
     // from the point one step away from self. Panics if `dir` is a zero
     // vector. Does not follow portals.
-    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self>;
+    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self> {
+        assert!(dir != IVec2::ZERO);
+
+        let mut p = *self;
+        std::iter::from_fn(move || {
+            p += dir.extend(0);
+            Some(p)
+        })
+    }
 }
 
 impl Coordinates for Location {
     fn z(&self) -> i32 {
         self.z
+    }
+
+    fn voxel(&self, r: &impl Environs) -> Voxel {
+        r.voxel(self)
     }
 
     fn sector_snap_2d(&self) -> Self {
@@ -170,80 +205,33 @@ impl Coordinates for Location {
         )
     }
 
-    fn snap_to_floor(&self, r: &impl Environs) -> Option<Self> {
-        match (
-            self.above().is_solid(r),
-            self.is_solid(r),
-            self.below().is_solid(r),
-            self.below().below().is_solid(r),
-        ) {
-            (false, true, _, _) => Some(self.above()),
-            (_, false, true, _) => Some(*self),
-            (_, _, false, true) => Some(self.below()),
-            _ => None,
-        }
-    }
-
-    /// Look for the valid neighboring floor adjacent to current location.
-    ///
-    /// Can step up or down one Z level. Returns `None` if terrain is blocked.
-    fn step(&self, r: &impl Environs, dir: IVec2) -> Option<Self> {
-        if let Some(loc) = (*self + dir.extend(0)).snap_to_floor(r) {
-            if loc.can_be_stepped_in(r) {
-                return Some(loc);
-            }
-        }
-
-        None
-    }
-
-    fn above(&self) -> Self {
-        *self + ivec3(0, 0, 1)
-    }
-
-    fn below(&self) -> Self {
-        *self + ivec3(0, 0, -1)
-    }
-
-    fn is_solid(&self, _r: &impl Environs) -> bool {
-        todo!()
-    }
-
-    fn can_be_entered(&self, _r: &impl Environs) -> bool {
-        todo!()
+    fn sector_rect(&self) -> Rect {
+        let p = self.sector_snap_2d().truncate();
+        Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
     }
 
     fn tile(&self, r: &impl Environs) -> Tile {
-        match (
-            self.above().is_solid(r),
-            self.is_solid(r),
-            self.below().is_solid(r),
-        ) {
-            // Solid topside stack, makes a proper wall.
-            //
-            // Look for a voxel with an exposed side to show as wall.
-            (true, true, _) => Tile::Solid(r.voxel(self).unwrap()),
+        use Block::*;
+
+        match (self.above().voxel(r), self.voxel(r), self.below().voxel(r)) {
+            // Solid three block stack, makes a proper wall.
+            (Some(a), Some(b), Some(c)) => {
+                // HACK Doors change traversability of the tile, so snap to
+                // the door block even if it's found off-center.
+                if a == Door || c == Door {
+                    Tile::Wall(Door)
+                } else {
+                    Tile::Wall(b)
+                }
+            }
             // Raised floor.
-            //(false, true, _) => Some(Tile::Floor(self.voxel(r).unwrap())),
-            (false, true, _) => Tile::Floor {
-                block: r.voxel(self).unwrap(),
-                z: 1,
-                connectivity: self.above().high_connectivity(r),
-            },
+            (None, Some(a), _) => Tile::Surface(*self + ivec3(0, 0, 1), a),
             // Regular floor
-            (_, false, true) => Tile::Floor {
-                block: r.voxel(&self.below()).unwrap(),
-                z: 0,
-                connectivity: 0,
-            },
+            (_, None, Some(a)) => Tile::Surface(*self, a),
             // Depressed floor, check further down if there's surface.
-            (_, _, false) => {
-                if let Some(block) = r.voxel(&self.below().below()) {
-                    Tile::Floor {
-                        block,
-                        z: -1,
-                        connectivity: self.below().low_connectivity(r),
-                    }
+            (_, _, None) => {
+                if let Some(a) = self.below().below().voxel(r) {
+                    Tile::Surface(*self + ivec3(0, 0, -1), a)
                 } else {
                     Tile::Void
                 }
@@ -253,10 +241,14 @@ impl Coordinates for Location {
 
     fn cliff_form(&self, r: &impl Environs) -> Option<usize> {
         fn is_cliff(loc: &Location, r: &impl Environs) -> bool {
-            matches!(loc.tile(r), Tile::Floor { z: 1, .. })
-                && loc.truncate().ns_8().any(|a| {
-                    matches!(a.extend(loc.z).tile(r), Tile::Floor { z: -1, .. })
-                })
+            let c = loc.tile(r);
+            if matches!(c, Tile::Surface(b, _) if b.z > loc.z) {
+                loc.ns_8().any(
+                    |a| matches!(a.tile(r), Tile::Surface(b, _) if b.z < loc.z),
+                )
+            } else {
+                false
+            }
         }
 
         if is_cliff(self, r) {
@@ -268,8 +260,8 @@ impl Coordinates for Location {
                     mask |= 1 << i;
                 }
             }
-            // XXX: Seems like you get mostly artifacts if the cliff bits seem
-            // fully unconnected.
+            // Ignore cliff bits that aren't connected to any other cliff.
+            // They seem to mostly end up being display noise.
             if mask != 0 {
                 Some(mask)
             } else {
@@ -295,6 +287,10 @@ impl Coordinates for Location {
         let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i32;
 
         ivec3(x, y, z)
+    }
+
+    fn widen(&self) -> IVec3 {
+        *self * ivec3(2, 1, 1)
     }
 
     fn sector(&self) -> Location {
@@ -336,41 +332,42 @@ impl Coordinates for Location {
         let d = (*self - *other).abs();
         (d.x + d.y + d.z) as usize
     }
-
-    fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self> {
-        assert!(dir != IVec2::ZERO);
-
-        let mut p = *self;
-        std::iter::from_fn(move || {
-            p += dir.extend(0);
-            Some(p)
-        })
-    }
 }
 
 pub trait Environs {
-    fn tile(&self, loc: &Location) -> Tile2D;
-    fn set_tile(&mut self, loc: &Location, tile: Tile2D);
+    // TODO Deprecate tile interface after voxelization
+    fn tile_2d(&self, loc: &Location) -> Tile2D {
+        use Block::*;
+
+        match (self.voxel(&loc.below()), self.voxel(loc)) {
+            (Some(Rock), None) => Tile2D::Ground,
+            (Some(Grass), None) => Tile2D::Grass,
+            (Some(Water), None) => Tile2D::Water,
+            (Some(Magma), None) => Tile2D::Magma,
+            (_, Some(Rock)) => Tile2D::Wall,
+            (_, Some(Door)) => Tile2D::Door,
+            // Don't know, whatever.
+            (Some(_), None) => Tile2D::Ground,
+            (_, Some(_)) => Tile2D::Wall,
+            // Chasms or stairs, not handled now...
+            (None, None) => Tile2D::Ground,
+        }
+    }
 
     fn voxel(&self, loc: &Location) -> Voxel;
+    fn set_voxel(&mut self, loc: &Location, voxel: Voxel);
 }
 
-impl Environs for Cloud<3, Tile2D> {
-    fn tile(&self, loc: &Location) -> Tile2D {
+impl Environs for Cloud<3, Voxel> {
+    fn voxel(&self, loc: &Location) -> Voxel {
         util::HashMap::get(self, &<[i32; 3]>::from(*loc))
             .copied()
             .unwrap_or_default()
     }
 
-    fn set_tile(&mut self, loc: &Location, tile: Tile2D) {
-        if tile == Default::default() {
-            self.remove(*loc);
-        } else {
-            self.insert(*loc, tile);
-        }
-    }
-
-    fn voxel(&self, _loc: &Location) -> Voxel {
-        unimplemented!()
+    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+        // XXX: Empty voxels become explicit when first set and there isn't an
+        // interface to forget about them in Environs.
+        self.insert(*loc, voxel);
     }
 }
