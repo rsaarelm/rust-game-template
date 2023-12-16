@@ -54,6 +54,15 @@ pub trait Coordinates:
     /// Return the pseudo-2D tile for terrain at given location.
     fn tile(&self, r: &impl Environs) -> Tile;
 
+    /// Location is a wall tile and has wall tiles as all 8 neighbors.
+    fn is_interior_wall(&self, r: &impl Environs) -> bool;
+
+    /// If the location has a surface, snap to the space above the surface.
+    /// This may be offset above or below self.
+    ///
+    /// Otherwise return self unchanged.
+    fn snap_above_floor(&self, r: &impl Environs) -> Self;
+
     /// 4-bit mask that has 1 on direction with a step up.
     fn high_connectivity(&self, r: &impl Environs) -> usize {
         s4::DIR
@@ -236,6 +245,17 @@ impl Coordinates for Location {
                     Tile::Void
                 }
             }
+        }
+    }
+
+    fn is_interior_wall(&self, r: &impl Environs) -> bool {
+        self.tile(r).is_wall() && self.ns_8().all(|loc| loc.tile(r).is_wall())
+    }
+
+    fn snap_above_floor(&self, r: &impl Environs) -> Self {
+        match self.tile(r) {
+            Tile::Surface(loc, _) => loc,
+            _ => *self,
         }
     }
 

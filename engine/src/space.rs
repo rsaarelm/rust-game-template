@@ -1,7 +1,7 @@
 use content::{Coordinates, Rect};
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
-use util::{s4, v3};
+use util::{s4, v3, Neighbors2D};
 
 use crate::{prelude::*, Grammatize, SectorDir};
 
@@ -30,6 +30,9 @@ pub trait RuntimeCoordinates: Coordinates {
             self.set_tile(r, t);
         }
     }
+
+    /// Internal method for FoV
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool;
 
     /// Location has been seen by an allied unit at some point.
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool;
@@ -154,9 +157,18 @@ impl RuntimeCoordinates for Location {
         log::warn!("set_tile is deprecated");
     }
 
+    fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+
+        r.fov.contains(self)
+    }
+
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
-        r.fov.contains(self)
+
+        self.snap_above_floor(r).is_in_fov_set(r)
+            || self.tile(r).is_wall()
+                && self.ns_8().any(|loc| loc.is_in_fov_set(r))
     }
 
     fn entities_at<'a>(
