@@ -5,6 +5,7 @@ use navni::prelude::*;
 use rand::Rng;
 
 use navni::X256Color as X;
+use util::reverse_dir_mask_4;
 
 use crate::{prelude::*, Window};
 
@@ -178,7 +179,7 @@ impl DisplayTile {
             }
             // Chasms stick to walls.
             (Void, Void) | (Wall(_), Void) | (Void, Wall(_)) => {
-                c1 = CharCell::c('░');
+                c1 = CharCell::c('▒');
             }
             _ => {}
         }
@@ -196,6 +197,25 @@ impl DisplayTile {
                     }
                 } else {
                     c0 = floor_cell(&mut rng, block, true);
+                }
+
+                if loc_2.z > loc.z {
+                    let a = loc_2.high_connectivity(r);
+                    // Try to make a tighter mask by requiring there to be a
+                    // corresponding path from the other direction. If this
+                    // gets us a specific direction, use that.
+                    let b = a & reverse_dir_mask_4(loc_2.low_connectivity(r));
+                    let a = if b != 0 { b } else { a };
+                    if a != 0 {
+                        c0 = CharCell::c(UP_SLOPE[a]);
+                    }
+                } else if loc_2.z < loc.z {
+                    let a = loc_2.low_connectivity(r);
+                    let b = a & reverse_dir_mask_4(loc_2.high_connectivity(r));
+                    let a = if b != 0 { b } else { a };
+                    if a != 0 {
+                        c0 = CharCell::c(DOWN_SLOPE[a]);
+                    }
                 }
 
                 loc = loc_2;
@@ -231,7 +251,7 @@ impl DisplayTile {
                 }
             }
             Void => {
-                c0 = CharCell::c('░');
+                c0 = CharCell::c('▒');
             }
         }
 
