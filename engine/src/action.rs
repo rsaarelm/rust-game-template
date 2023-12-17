@@ -53,7 +53,7 @@ impl Entity {
         }
     }
 
-    /// Execute action
+    /// Execute action commanded by goal AI.
     pub fn execute_indirect(
         &self,
         r: &mut impl AsMut<Runtime>,
