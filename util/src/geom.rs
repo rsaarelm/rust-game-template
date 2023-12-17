@@ -311,6 +311,9 @@ pub trait VecExt: Sized + Default {
     /// Absolute size of vector in taxicab metric.
     fn taxi_len(&self) -> i32;
 
+    /// Absolute size of vector in chessboard metric.
+    fn chess_len(&self) -> i32;
+
     /// Vec points to an adjacent cell, left, right, up or down.
     fn is_adjacent(&self) -> bool {
         self.taxi_len() == 1
@@ -334,6 +337,10 @@ pub trait VecExt: Sized + Default {
 impl VecExt for IVec2 {
     fn taxi_len(&self) -> i32 {
         self[0].abs() + self[1].abs()
+    }
+
+    fn chess_len(&self) -> i32 {
+        self[0].abs().max(self[1].abs())
     }
 
     fn prefer_horizontals_here(&self) -> bool {
@@ -381,6 +388,10 @@ impl VecExt for IVec2 {
 impl VecExt for IVec3 {
     fn taxi_len(&self) -> i32 {
         self[0].abs() + self[1].abs() + self[2].abs()
+    }
+
+    fn chess_len(&self) -> i32 {
+        self[0].abs().max(self[1].abs()).max(self[2].abs())
     }
 
     fn prefer_horizontals_here(&self) -> bool {
