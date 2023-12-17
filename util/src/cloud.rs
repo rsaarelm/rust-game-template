@@ -2,20 +2,20 @@ use std::{fmt, str::FromStr};
 
 use derive_more::Deref;
 
-use crate::{text, HashMap, LatticeBox};
+use crate::{text, HashMap, IntegerBox};
 
 #[derive(Clone, Eq, PartialEq, Debug, Deref)]
 pub struct Cloud<const N: usize, V> {
     #[deref]
     points: HashMap<[i32; N], V>,
-    bounds: LatticeBox<N>,
+    bounds: IntegerBox<N>,
 }
 
 impl<V, const N: usize> Cloud<N, V> {
     pub fn insert(&mut self, p: impl Into<[i32; N]>, v: V) -> Option<V> {
         let p = p.into();
         if self.points.is_empty() {
-            self.bounds = LatticeBox::from_points_inclusive(Some(p));
+            self.bounds = IntegerBox::from_points_inclusive(Some(p));
         } else {
             self.bounds = self.bounds.grow_to_contain(p);
         }
@@ -31,7 +31,7 @@ impl<V, const N: usize> Cloud<N, V> {
         self.points.remove(&p.into())
     }
 
-    pub fn bounds(&self) -> &LatticeBox<N> {
+    pub fn bounds(&self) -> &IntegerBox<N> {
         &self.bounds
     }
 
@@ -39,7 +39,7 @@ impl<V, const N: usize> Cloud<N, V> {
     /// removals.
     pub fn recalculate_bounds(&mut self) {
         self.bounds =
-            LatticeBox::from_points_inclusive(self.points.keys().copied());
+            IntegerBox::from_points_inclusive(self.points.keys().copied());
     }
 
     pub fn clear(&mut self) {
@@ -70,7 +70,7 @@ impl<V, const N: usize> Cloud<N, V> {
         self.recalculate_bounds();
 
         let min = self.bounds.min();
-        let bounds = LatticeBox::sized(self.bounds.dim());
+        let bounds = IntegerBox::sized(self.bounds.dim());
 
         // Rip out the old points and make a new value.
         let Cloud {

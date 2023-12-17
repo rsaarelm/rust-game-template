@@ -12,7 +12,7 @@ use rand::{distributions::uniform::SampleUniform, prelude::Distribution};
 ///
 /// Axis boxes are mapped to lattices via a basis vector that determines the
 /// dimensions of a unit cell in the space of a box.
-pub type LatticeBox<const N: usize> = AxisBox<i32, N>;
+pub type IntegerBox<const N: usize> = AxisBox<i32, N>;
 
 pub type Rect<T> = AxisBox<T, 2>;
 pub type Cube<T> = AxisBox<T, 3>;
@@ -404,11 +404,11 @@ where
     pub fn intersecting_lattice(
         &self,
         basis: impl Into<[T; N]>,
-    ) -> LatticeBox<N> {
+    ) -> IntegerBox<N> {
         let basis = basis.into();
         let p0 = std::array::from_fn(|i| div_floor(self.p0[i], basis[i]).as_());
         let p1 = std::array::from_fn(|i| div_ceil(self.p1[i], basis[i]).as_());
-        LatticeBox::new(p0, p1)
+        IntegerBox::new(p0, p1)
     }
 
     /// Convenience method that iterates the lattice points as cell boxes.
@@ -424,13 +424,13 @@ where
 
     /// Return lattice box in given basis that has all cells that are fully
     /// contained in self.
-    pub fn enclosed_lattice(&self, basis: impl Into<[T; N]>) -> LatticeBox<N> {
+    pub fn enclosed_lattice(&self, basis: impl Into<[T; N]>) -> IntegerBox<N> {
         let basis = basis.into();
         let p1 = std::array::from_fn(|i| div_floor(self.p1[i], basis[i]).as_());
         let p0 = std::array::from_fn(|i| {
             div_ceil(self.p0[i], basis[i]).as_().min(p1[i])
         });
-        LatticeBox::new(p0, p1)
+        IntegerBox::new(p0, p1)
     }
 
     /// Convenience method that iterates the lattice points as cell boxes.
@@ -518,7 +518,7 @@ where
     }
 }
 
-impl<const N: usize> LatticeBox<N> {
+impl<const N: usize> IntegerBox<N> {
     /// Get a lattice index for a point in the original space using the given
     /// lattice basis.
     pub fn idx_using<T>(
@@ -645,7 +645,7 @@ impl<const N: usize> LatticeBox<N> {
     }
 }
 
-impl LatticeBox<2> {
+impl IntegerBox<2> {
     /// Iterate through the outermost points in the rectangle.
     pub fn edge(&self) -> impl Iterator<Item = [i32; 2]> {
         let [x0, y0] = self.p0;
@@ -729,7 +729,7 @@ where
     }
 }
 
-impl<const N: usize> IntoIterator for LatticeBox<N> {
+impl<const N: usize> IntoIterator for IntegerBox<N> {
     type Item = [i32; N];
 
     type IntoIter = LatticeIter<N>;
@@ -743,7 +743,7 @@ impl<const N: usize> IntoIterator for LatticeBox<N> {
 }
 
 pub struct LatticeIter<const N: usize> {
-    inner: LatticeBox<N>,
+    inner: IntegerBox<N>,
     x: [i32; N],
 }
 

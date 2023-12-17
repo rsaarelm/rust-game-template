@@ -2,7 +2,7 @@
 #![feature(lazy_cell)]
 
 mod axis_box;
-pub use axis_box::{AxisBox, Cube, Element, LatticeBox, Rect};
+pub use axis_box::{AxisBox, Cube, Element, IntegerBox, Rect};
 
 mod bits;
 pub use bits::{
