@@ -1,4 +1,4 @@
-use content::Sec;
+use content::{Level, Zone};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
@@ -72,7 +72,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     let sector_area = {
-        let bounds = Sec::from(camera).extended_bounds();
+        let bounds = Level::sector_from(&camera).wide();
 
         Rect::new(
             view.project(bounds.min()),

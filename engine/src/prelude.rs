@@ -1,4 +1,4 @@
-pub use content::{Coordinates, Location, Tile2D, SECTOR_HEIGHT, SECTOR_WIDTH};
+pub use content::{Coordinates, Location, SECTOR_HEIGHT, SECTOR_WIDTH};
 pub use glam::{ivec2, IVec2};
 pub use util::{Error, HashMap, HashSet, IndexMap, IndexSet, Odds, VecExt};
 

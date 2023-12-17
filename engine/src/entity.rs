@@ -1,7 +1,7 @@
 //! Generic entity logic.
 use std::{fmt, str::FromStr};
 
-use content::EquippedAt;
+use content::{Block, EquippedAt};
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -129,28 +129,6 @@ impl Entity {
         }
     }
 
-    /// Place an item near `loc`, deviating to avoid similar entities.
-    ///
-    /// Items will avoid other items, mobs will avoid other mobs.
-    pub fn place_on_open_spot(
-        &self,
-        r: &mut impl AsMut<Runtime>,
-        loc: &Location,
-    ) {
-        let r = r.as_mut();
-        // If no open position is found, just squeeze the thing right where it
-        // was asked to go.
-        let mut place_loc = *loc;
-        for loc in r.perturbed_fill_positions(&loc) {
-            if self.can_enter(r, loc) {
-                place_loc = loc;
-                break;
-            }
-        }
-
-        self.place(r, place_loc);
-    }
-
     fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
         self.scan_fov(r);
         // Equipped items become unequipped.
@@ -158,9 +136,9 @@ impl Entity {
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
-    pub fn preferred_tile(&self, _c: &impl AsRef<Runtime>) -> Tile2D {
-        // Return a different tile if entity is aquatic or another weird type.
-        Tile2D::Ground
+    pub fn preferred_block(&self, _c: &impl AsRef<Runtime>) -> Block {
+        // Return a different block if entity is aquatic or another weird type.
+        Block::Rock
     }
 
     pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
@@ -208,15 +186,12 @@ impl Entity {
     }
 
     pub fn can_enter(&self, r: &impl AsRef<Runtime>, loc: Location) -> bool {
-        if !loc.is_walkable(r) {
+        let r = r.as_ref();
+
+        if !loc.can_be_stood_in(r) {
             return false;
         }
         if self.is_mob(r) && loc.mob_at(r).is_some() {
-            return false;
-        }
-        if self.is_item(r)
-            && (loc.item_at(r).is_some() || loc.map_tile(r).is_exit())
-        {
             return false;
         }
 
@@ -231,41 +206,6 @@ impl Entity {
             // Clear momentum from previous turn at the start of the next one.
             self.set(r, Momentum::default());
         }
-    }
-
-    /// Movement direction along a given Dijkstra map for given location, if
-    /// the map provides any valid steps.
-    pub fn dijkstra_map_direction(
-        &self,
-        r: &impl AsRef<Runtime>,
-        map: &HashMap<Location, usize>,
-        loc: Location,
-    ) -> Option<IVec2> {
-        // Default to max, always prefer stepping from non-map to map.
-        let start = map.get(&loc).copied().unwrap_or(usize::MAX);
-
-        if let Some((best, n)) = loc
-            .flat_neighbors_4()
-            .filter_map(|loc| {
-                // Don't walk into enemies.
-                if let Some(mob) = loc.mob_at(r) {
-                    if self.is_enemy(r, &mob) {
-                        return None;
-                    }
-                    // Friendlies are okay, assume they can be displaced.
-                }
-                map.get(&loc).map(|u| (loc, u))
-            })
-            .min_by_key(|(_, u)| *u)
-        {
-            if *n < start {
-                debug_assert!(best.z() == loc.z());
-                let a = loc.unfold();
-                let b = best.unfold();
-                return Some(a.dir4_towards(&b));
-            }
-        }
-        None
     }
 
     pub fn max_wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
@@ -311,7 +251,9 @@ impl Entity {
             let splat: Vec<Location> =
                 r.perturbed_fill_positions(&loc).take(6).collect();
             for loc in splat {
-                loc.decorate_tile(r, Tile2D::Gore);
+                if let Some(loc) = loc.ground_voxel(r) {
+                    loc.decorate_block(r, Block::SplatteredRock);
+                }
             }
 
             // Drop stuff.
@@ -336,17 +278,6 @@ impl Entity {
     pub fn destroy(&self, r: &mut impl AsMut<Runtime>) {
         let r = r.as_mut();
         r.placement.remove(self);
-    }
-
-    pub(crate) fn vec_towards(
-        &self,
-        r: &impl AsRef<Runtime>,
-        other: &Entity,
-    ) -> Option<IVec2> {
-        let (Some(a), Some(b)) = (self.loc(r), other.loc(r)) else {
-            return None;
-        };
-        a.vec_towards(&b)
     }
 
     pub fn contents<'a>(

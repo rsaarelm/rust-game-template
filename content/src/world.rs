@@ -1,17 +1,16 @@
 use std::collections::hash_map::Entry;
 
 use anyhow::bail;
-use derive_more::{Add, Deref, Sub};
-use glam::{ivec2, ivec3, IVec2, IVec3};
+use glam::{ivec2, IVec2};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
 use util::{text, v2, v3, HashMap, Logos};
 
 use crate::{
-    data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
-    MapGenerator, Patch, Rect, Scenario, Spawn, Terrain, Tile2D, Voxel,
-    SECTOR_DEPTH, SECTOR_HEIGHT, SECTOR_WIDTH,
+    data::Region, Block, Coordinates, Cube, Location, Lot, MapGenerator, Patch,
+    Rect, Scenario, Spawn, Terrain, Voxel, Zone, LEVEL_DEPTH, SECTOR_HEIGHT,
+    SECTOR_WIDTH,
 };
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -22,7 +21,7 @@ struct SerWorld {
     /// Terrain that has been changed at runtime.
     overlay: Terrain,
     /// Sectors that have already had their entities spawned.
-    spawn_history: Vec<Sec>,
+    spawn_history: Vec<Level>,
     /// Game scenario spec.
     scenario: Scenario,
 }
@@ -56,9 +55,9 @@ pub struct World {
     // This means that skeleton construction needs access to the whole
     // SerWorld type.
     /// Built from scenario.
-    skeleton: HashMap<Sec, Segment>,
+    skeleton: HashMap<Level, Segment>,
 
-    gen_status: HashMap<Sec, GenStatus>,
+    gen_status: HashMap<Level, GenStatus>,
 
     player_entrance: Location,
 }
@@ -121,7 +120,7 @@ impl TryFrom<SerWorld> for World {
 fn build_skeleton(
     seed: &Logos,
     scenario: &Scenario,
-) -> anyhow::Result<(Location, HashMap<Sec, Segment>)> {
+) -> anyhow::Result<(Location, HashMap<Level, Segment>)> {
     use Region::*;
 
     let mut start_pos = None;
@@ -134,10 +133,9 @@ fn build_skeleton(
         let z = -1
             + stack.iter().take_while(|a| a.is_above_ground()).count() as i32;
 
-        let s = Sec::new(p.x, p.y, z);
         for (depth, region) in stack.iter().enumerate() {
-            let s = s + Sec::new(0, 0, -(depth as i32));
-            let origin = Location::from(s);
+            let s = Level::level_at([p.x, p.y, z - (depth as i32)]);
+            let origin = Location::from(s.min());
 
             let at_bottom = depth == stack.len() - 1;
 
@@ -155,7 +153,6 @@ fn build_skeleton(
                 Site(map) | Vault(map) => {
                     for p in map.entrances() {
                         if start_pos.is_none() {
-                            // TODO Remove adjust after voxelization
                             start_pos = Some(origin + p.extend(0));
                         } else {
                             bail!("Scenario defines more than one start location.");
@@ -211,7 +208,7 @@ impl World {
         &mut self,
         loc: &Location,
     ) -> Vec<(Location, Spawn)> {
-        let s = Sec::from(*loc);
+        let s = Level::level_from(loc);
 
         // Early exit if this is already a core generated sector.
         if matches!(self.gen_status.get(&s), Some(&GenStatus::Core)) {
@@ -233,7 +230,7 @@ impl World {
 
     fn generate_sector(
         &mut self,
-        s: &Sec,
+        s: &Level,
         spawns: &mut Vec<(Location, Spawn)>,
     ) {
         match self.gen_status.entry(*s) {
@@ -280,7 +277,7 @@ impl World {
         }
     }
 
-    fn construct_lot(&self, s: &Sec) -> Lot {
+    fn construct_lot(&self, s: &Level) -> Lot {
         let mut sides =
             self.skeleton.get(s).map_or(0, |a| a.connected_north as u8);
         sides |= self
@@ -299,7 +296,7 @@ impl World {
         let up = self.skeleton.get(&s.above()).and_then(|a| a.connected_down);
         let down = self.skeleton.get(s).and_then(|a| a.connected_down);
 
-        let volume = Cube::from(*s);
+        let volume = *s;
 
         Lot {
             volume,
@@ -311,11 +308,6 @@ impl World {
 
     pub fn player_entrance(&self) -> Location {
         self.player_entrance
-    }
-
-    // TODO Remove after voxelization
-    pub fn get_tile(&self, loc: &Location) -> Tile2D {
-        self.terrain_cache.tile_2d(loc)
     }
 
     pub fn get(&self, loc: &Location) -> Voxel {
@@ -344,97 +336,12 @@ impl World {
     }
 }
 
-/// Sector position.
-#[derive(
-    Copy,
-    Clone,
-    Eq,
-    PartialEq,
-    Hash,
-    Debug,
-    Deref,
-    Add,
-    Sub,
-    Serialize,
-    Deserialize,
-)]
-pub struct Sec(IVec3);
+// NB. This is specifically the sort of Cube you get from Zone::level(), but
+// there's currently no type wrapping to enforce it. Let's see if things can
+// work like this without a mess-up.
+pub type Level = Cube;
 
-impl From<Location> for Sec {
-    fn from(value: Location) -> Self {
-        Sec(ivec3(
-            (value.x).div_floor(SECTOR_WIDTH),
-            (value.y).div_floor(SECTOR_HEIGHT),
-            (value.z).div_floor(SECTOR_DEPTH),
-        ))
-    }
-}
-
-impl From<Sec> for IVec3 {
-    fn from(value: Sec) -> Self {
-        ivec3(
-            value.x * SECTOR_WIDTH,
-            value.y * SECTOR_HEIGHT,
-            value.z * SECTOR_DEPTH,
-        )
-    }
-}
-
-impl From<Sec> for Cube {
-    fn from(value: Sec) -> Self {
-        let sector_size = ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
-        let origin = *value * ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, SECTOR_DEPTH);
-        Cube::new(origin, origin + sector_size)
-    }
-}
-
-impl Sec {
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
-        Sec(ivec3(x, y, z))
-    }
-
-    pub fn east(&self) -> Self {
-        *self + Sec::new(1, 0, 0)
-    }
-
-    pub fn south(&self) -> Self {
-        *self + Sec::new(0, 1, 0)
-    }
-
-    pub fn above(&self) -> Self {
-        *self + Sec::new(0, 0, 1)
-    }
-
-    /// Return the sector neighborhood which should have maps generated for it
-    /// when the central sector is being set up as an active play area.
-    pub fn cache_volume(&self) -> impl Iterator<Item = Sec> {
-        let s = *self;
-        // All 8 chess-metric neighbors plus above and below sectors. Should
-        // be enough to cover everything needed while moving around the center
-        // sector.
-        [
-            ivec3(0, 0, 0),
-            ivec3(0, -1, 0),
-            ivec3(1, -1, 0),
-            ivec3(1, 0, 0),
-            ivec3(1, 1, 0),
-            ivec3(0, 1, 0),
-            ivec3(-1, 1, 0),
-            ivec3(-1, 0, 0),
-            ivec3(-1, -1, 0),
-            ivec3(0, 0, -1),
-            ivec3(0, 0, 1),
-        ]
-        .into_iter()
-        .map(move |d| s + Sec(d))
-    }
-
-    pub fn extended_bounds(&self) -> Cube {
-        Cube::from(*self).grow([1, 1, 0], [1, 1, 0])
-    }
-}
-
-fn default_down_stairs(seed: &Logos, s: Sec) -> Location {
+fn default_down_stairs(seed: &Logos, s: Level) -> Location {
     snap_stairwell_position(
         Cube::from(s)
             .border([0, 0, -1])
@@ -467,7 +374,7 @@ fn snap_stairwell_position(loc: Location) -> Location {
 
     // Use location sector for parity, alternate valid squares for every other
     // sector, and snap to the position.
-    snap_to_chessboard3(loc.z.div_floor(SECTOR_DEPTH), &bounds, loc.truncate())
+    snap_to_chessboard3(loc.z.div_floor(LEVEL_DEPTH), &bounds, loc.truncate())
         .extend(loc.z)
 }
 

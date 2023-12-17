@@ -3,7 +3,9 @@ use std::ops::{Add, AddAssign};
 use glam::{ivec2, ivec3, IVec2, IVec3};
 use util::{s4, wallform_mask, Cloud, Neighbors2D};
 
-use crate::{Block, Rect, Tile, Tile2D, Voxel, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{
+    Block, Cube, Rect, Tile, Voxel, Zone, SECTOR_HEIGHT, SECTOR_WIDTH,
+};
 
 pub type Location = IVec3;
 
@@ -35,6 +37,11 @@ pub trait Coordinates:
             .find(|loc| loc.can_be_stood_in(r))
     }
 
+    fn walk_neighbors<'a>(
+        self,
+        r: &impl Environs,
+    ) -> impl Iterator<Item = (IVec2, Self)> + '_;
+
     /// Return the location directly above self.
     fn above(&self) -> Self {
         *self + ivec3(0, 0, 1)
@@ -62,6 +69,14 @@ pub trait Coordinates:
     ///
     /// Otherwise return self unchanged.
     fn snap_above_floor(&self, r: &impl Environs) -> Self;
+
+    fn ground_voxel(&self, r: &impl Environs) -> Option<Location> {
+        if let Tile::Surface(loc, _) = self.tile(r) {
+            Some(loc.below())
+        } else {
+            None
+        }
+    }
 
     /// 4-bit mask that has 1 on direction with a step up.
     fn high_connectivity(&self, r: &impl Environs) -> usize {
@@ -114,74 +129,22 @@ pub trait Coordinates:
             .filter(|loc| matches!(loc.voxel(r), None | Some(Block::Glass)))
     }
 
-    // TODO: Deprecate fold methods
-    /// Convert to 2D vector, layering Z-levels vertically in 2-plane.
-    ///
-    /// Each location has a unique point on the `IVec2` plane and the original
-    /// location can be retrieved by calling `Coordinates::fold` on the
-    /// `IVec2` value.
-    fn unfold(&self) -> IVec2;
-
-    /// Convert an unfolded 2D vector back to a Location.
-    fn fold(loc_pos: impl Into<IVec2>) -> Self;
-
     /// Convenience method that doubles the x coordinate.
     ///
     /// Use for double-width character display.
     fn widen(&self) -> IVec3;
 
-    fn fold_wide(wide_loc_pos: impl Into<IVec2>) -> Option<Self> {
-        let wide_loc_pos = wide_loc_pos.into();
-
-        if wide_loc_pos.x % 2 == 0 {
-            Some(Coordinates::fold(wide_loc_pos / ivec2(2, 1)))
-        } else {
-            None
-        }
-    }
-
-    /// Return the two locations on two sides of an off-center wide pos.
-    ///
-    /// If pos is not off-center, returns the same centered location twice.
-    fn fold_wide_sides(wide_loc_pos: impl Into<IVec2>) -> (Self, Self) {
-        let wide_loc_pos = wide_loc_pos.into();
-
-        match Self::fold_wide(wide_loc_pos) {
-            Some(loc) => (loc, loc),
-            None => (
-                Self::fold_wide(wide_loc_pos - ivec2(1, 0)).unwrap(),
-                Self::fold_wide(wide_loc_pos + ivec2(1, 0)).unwrap(),
-            ),
-        }
-    }
-
-    /// Return location snapped to the origin of this location's sector.
-    fn sector(&self) -> Location;
-
-    /// How many sector transitions there are between self and other.
-    fn sector_dist(&self, other: &Self) -> usize;
-
-    /// Return sector bounding box containing this loc.
-    fn sector_bounds(&self) -> Rect {
-        let p = self.sector().unfold();
-        Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
-    }
+    /// Return the 1 z level thick sector zone of this location.
+    fn sector(&self) -> Cube;
 
     fn at_sector_edge(&self) -> bool;
 
-    /// Return sector bounds extended for the adjacent sector rim.
-    fn expanded_sector_bounds(&self) -> Rect {
-        self.sector_bounds().grow([1, 1], [1, 1])
-    }
-
-    fn vec_towards(&self, other: &Self) -> Option<IVec2>;
+    /// Return a vector pointing to other location if locations are within 1 z
+    /// level from each other.
+    fn vec2_towards(&self, other: &Self) -> Option<IVec2>;
 
     /// Same sector plus the facing rims of adjacent sectors.
-    fn has_same_screen_as(&self, other: &Self) -> bool {
-        self.expanded_sector_bounds().contains(other.unfold())
-    }
-
-    fn astar_heuristic(&self, other: &Self) -> usize;
+    fn has_same_screen_as(&self, other: &Self) -> bool;
 
     // Start tracing from self towards `dir` in `dir` size steps. Starts
     // from the point one step away from self. Panics if `dir` is a zero
@@ -217,6 +180,16 @@ impl Coordinates for Location {
     fn sector_rect(&self) -> Rect {
         let p = self.sector_snap_2d().truncate();
         Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
+    }
+
+    fn walk_neighbors<'a>(
+        self,
+        r: &impl Environs,
+    ) -> impl Iterator<Item = (IVec2, Self)> + '_ {
+        self.ns_4_alternating().filter_map(move |loc_2| {
+            let d = (loc_2 - self).truncate();
+            self.walk_step(r, d).map(|loc| (d, loc))
+        })
     }
 
     fn tile(&self, r: &impl Environs) -> Tile {
@@ -264,12 +237,12 @@ impl Coordinates for Location {
             matches!(loc.tile(r), Tile::Surface(b, _) if b.z > loc.z)
         }
 
-        fn is_depression(loc: Location, r: &impl Environs) -> bool {
+        fn is_basin(loc: Location, r: &impl Environs) -> bool {
             matches!(loc.tile(r), Tile::Surface(b, _) if b.z < loc.z)
         }
 
         fn is_cliff(loc: Location, r: &impl Environs) -> bool {
-            is_mesa(loc, r) && loc.ns_8().any(|a| is_depression(a, r))
+            is_mesa(loc, r) && loc.ns_8().any(|a| is_basin(a, r))
         }
 
         if is_cliff(*self, r) {
@@ -291,42 +264,12 @@ impl Coordinates for Location {
         }
     }
 
-    fn unfold(&self) -> IVec2 {
-        // Maps y: i16::MIN, z: i16::MIN to i32::MIN.
-        let y = self.y as i64 + self.z as i64 * 0x1_0000 - i16::MIN as i64;
-        ivec2(self.x, y as i32)
-    }
-
-    fn fold(loc_pos: impl Into<IVec2>) -> Self {
-        let loc_pos = loc_pos.into();
-
-        let x = loc_pos.x;
-        let y =
-            ((loc_pos.y as i64).rem_euclid(0x1_0000) + i16::MIN as i64) as i32;
-        let z = (loc_pos.y as i64).div_euclid(0x1_0000) as i32;
-
-        ivec3(x, y, z)
-    }
-
     fn widen(&self) -> IVec3 {
         *self * ivec3(2, 1, 1)
     }
 
-    fn sector(&self) -> Location {
-        Location::new(
-            self.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
-            self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
-            self.z,
-        )
-    }
-
-    fn sector_dist(&self, other: &Self) -> usize {
-        let a = Into::<IVec3>::into(self.sector())
-            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
-        let b = Into::<IVec3>::into(other.sector())
-            / ivec3(SECTOR_WIDTH, SECTOR_HEIGHT, 1);
-        let d = (a - b).abs();
-        (d.x + d.y + d.z) as usize
+    fn sector(&self) -> Cube {
+        Zone::sector_from(self)
     }
 
     fn at_sector_edge(&self) -> bool {
@@ -338,41 +281,20 @@ impl Coordinates for Location {
             || (v == 0 || v == (SECTOR_HEIGHT - 1))
     }
 
-    fn vec_towards(&self, other: &Self) -> Option<IVec2> {
-        if self.z == other.z {
+    fn vec2_towards(&self, other: &Self) -> Option<IVec2> {
+        if (self.z - other.z).abs() <= 1 {
             Some((*other - *self).truncate())
         } else {
             None
         }
     }
 
-    fn astar_heuristic(&self, other: &Self) -> usize {
-        // NB. This will work badly if pathing between Z-layers.
-        let d = (*self - *other).abs();
-        (d.x + d.y + d.z) as usize
+    fn has_same_screen_as(&self, other: &Self) -> bool {
+        self.sector().fat().wide().contains(*other)
     }
 }
 
 pub trait Environs {
-    // TODO Deprecate tile interface after voxelization
-    fn tile_2d(&self, loc: &Location) -> Tile2D {
-        use Block::*;
-
-        match (self.voxel(&loc.below()), self.voxel(loc)) {
-            (Some(Rock), None) => Tile2D::Ground,
-            (Some(Grass), None) => Tile2D::Grass,
-            (Some(Water), None) => Tile2D::Water,
-            (Some(Magma), None) => Tile2D::Magma,
-            (_, Some(Rock)) => Tile2D::Wall,
-            (_, Some(Door)) => Tile2D::Door,
-            // Don't know, whatever.
-            (Some(_), None) => Tile2D::Ground,
-            (_, Some(_)) => Tile2D::Wall,
-            // Chasms or stairs, not handled now...
-            (None, None) => Tile2D::Ground,
-        }
-    }
-
     fn voxel(&self, loc: &Location) -> Voxel;
     fn set_voxel(&mut self, loc: &Location, voxel: Voxel);
 }

@@ -1,5 +1,6 @@
 use std::{borrow::Cow, fmt::Write};
 
+use content::{DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use navni::X256Color as X;
 use ui::{prelude::*, ConfirmationDialog};
@@ -151,6 +152,12 @@ pub async fn explore() {
                     break;
                 }
             }
+            Some(InputAction::TravelNorth) => game().travel(NORTH),
+            Some(InputAction::TravelEast) => game().travel(EAST),
+            Some(InputAction::TravelSouth) => game().travel(SOUTH),
+            Some(InputAction::TravelWest) => game().travel(WEST),
+            Some(InputAction::TravelUp) => game().travel(UP),
+            Some(InputAction::TravelDown) => game().travel(DOWN),
             _ => {}
         }
     }

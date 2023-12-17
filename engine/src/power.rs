@@ -1,6 +1,6 @@
 //! Special powers entities can use
 
-use content::{Power, Rect};
+use content::{Power, Rect, Zone};
 use serde::{Deserialize, Serialize};
 use util::{v2, Neighbors2D};
 
@@ -160,11 +160,11 @@ impl Runtime {
             // Location that stops FOV, do not proceed.
             let mut ret = Vec::new();
 
-            if !loc.is_walkable(self) && loc.blocks_sight(self) {
+            if !loc.can_be_stood_in(self) && loc.blocks_sight(self) {
                 return ret;
             }
             // Stop at sector edge.
-            if loc.sector() != from.sector() {
+            if !from.sector().fat().contains(*loc) {
                 return ret;
             }
 

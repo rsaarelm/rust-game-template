@@ -1,8 +1,8 @@
 //! Mobs figuring out what to do on their own.
-use content::EquippedAt;
+use content::{Cube, EquippedAt};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::s4;
+use util::{s4, Sdf};
 
 use crate::{ecs::IsFriendly, prelude::*, FOV_RADIUS, THROW_RANGE};
 
@@ -14,7 +14,7 @@ impl Entity {
         goal: Goal,
     ) -> Option<Action> {
         let r = r.as_ref();
-        let mut dest;
+        let mut dest: Box<dyn Sdf>;
 
         let loc = self.loc(r)?;
 
@@ -36,10 +36,10 @@ impl Entity {
                     self.first_visible_enemy(r).and_then(|e| e.loc(r))
                 {
                     // Enemies visible! Go fight them.
-                    dest = enemy_loc;
+                    dest = Box::new(enemy_loc);
                 } else if let Some(loc) = player.loc(r) {
                     // Otherwise follow player.
-                    dest = loc;
+                    dest = Box::new(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
@@ -59,24 +59,6 @@ impl Entity {
 
                 let explore_map = r.autoexplore_map(&loc);
                 if explore_map.is_empty() {
-                    // If starting out and done exploring the current sector,
-                    // branch off to neighboring sectors.
-                    if start {
-                        use crate::SectorDir::*;
-                        // Direction list set up to do a boustrophedon on a
-                        // big flat open sector-plane.
-                        for sector_dir in [East, West, South, North, Down, Up] {
-                            if let Some(dest) = loc
-                                .path_dest_to_neighboring_sector(r, sector_dir)
-                            {
-                                if !r.autoexplore_map(&dest).is_empty() {
-                                    return self.decide(r, Goal::GoTo(dest));
-                                }
-                            }
-                        }
-                    }
-
-                    // If not just starting autoexplore, stop here.
                     return None;
                 }
 
@@ -97,19 +79,23 @@ impl Entity {
             }
 
             Goal::GoTo(loc) => {
-                dest = loc;
+                dest = Box::new(loc);
+            }
+
+            Goal::GoToZone(zone) => {
+                dest = Box::new(zone);
             }
 
             Goal::AttackMove(loc) => {
                 // Move towards actual target by default.
-                dest = loc;
+                dest = Box::new(loc);
 
                 // Look for targets of opportunity, redirect towards them.
                 //
                 // Mob will bump-to-attack the target.
                 if let Some(e) = self.first_visible_enemy(r) {
                     if let Some(enemy_loc) = e.loc(r) {
-                        dest = enemy_loc;
+                        dest = Box::new(enemy_loc);
                     }
                 }
             }
@@ -120,7 +106,7 @@ impl Entity {
                 }
 
                 if let Some(loc) = e.loc(r) {
-                    dest = loc;
+                    dest = Box::new(loc);
                 } else {
                     // Attack target can't be found, abandon goal.
                     return None;
@@ -139,7 +125,7 @@ impl Entity {
                     return None;
                 }
                 if let Some(loc) = e.loc(r) {
-                    dest = loc;
+                    dest = Box::new(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
@@ -148,25 +134,23 @@ impl Entity {
         }
 
         // We've got a pathfinding task from loc to dest.
-        if loc.follow(r) == dest.follow(r) {
+        if dest.sd(loc) <= 0 {
             // Drop out if already arrived.
             return None;
         }
 
-        let enemy_at_dest =
-            dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self));
+        // Right next to dest, see if we need to watch out for mobs.
+        if let Some((dir, dest)) =
+            loc.walk_neighbors(r).find(|(_, loc)| dest.sd(*loc) <= 0)
+        {
+            // There's an enemy, fight it.
+            if dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self)) {
+                return Some(Action::Bump(dir));
+            }
 
-        if let Some(dir) = loc.vec_towards(&dest) {
-            // Right next to the target. If it's a mob, we can attack.
-            if dir.is_adjacent() {
-                // Pointed towards an enemy, fight it.
-                if enemy_at_dest {
-                    return Some(Action::Bump(dir));
-                }
-                // Don't try to move into escorted mob's space.
-                if matches!(goal, Goal::Escort(_)) {
-                    return Some(Action::Pass);
-                }
+            // Don't try to move into escorted mob's space.
+            if matches!(goal, Goal::Escort(_)) {
+                return Some(Action::Pass);
             }
         }
 
@@ -174,9 +158,9 @@ impl Entity {
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
         if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fov_aware_path_to(&loc, &dest)
+            r.fog_exploring_path(&loc, &dest)
         } else {
-            r.path_to(&loc, &dest)
+            r.enemy_path(&loc, &dest)
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -184,8 +168,13 @@ impl Entity {
 
             // Path should be steppable.
             let dir = loc
-                .find_step_towards(r, &next)
+                .vec2_towards(&next)
                 .expect("Invalid pathfind: Not steppable");
+            assert_eq!(
+                dir.length_squared(),
+                1,
+                "Invaild pathfind: Bad step distance"
+            );
 
             if self.can_step(r, dir) {
                 return Some(Action::Bump(dir));
@@ -229,7 +218,7 @@ impl Entity {
                     self.clear_goal(r);
                 }
             }
-            Goal::GoTo(_) => {
+            Goal::GoTo(_) | Goal::GoToZone(_) => {
                 self.clear_goal(r);
             }
             Goal::AttackMove(_) => {
@@ -440,6 +429,9 @@ pub enum Goal {
     /// NPCs will not resume following player when they arrive, used to
     /// detach NPCs from party.
     GoTo(Location),
+
+    /// Move to a sector.
+    GoToZone(Cube),
 
     /// Like `GoTo`, but attack everything on the way.
     ///

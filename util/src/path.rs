@@ -78,7 +78,7 @@ where
     T: Clone + Eq + Hash + Neighbors2D + 'a,
 {
     crate::dijkstra_map(
-        move |n| n.ns_4().filter(is_valid).collect::<Vec<_>>(),
+        move |n| n.clone().ns_4().filter(is_valid).collect::<Vec<_>>(),
         starts,
     )
 }

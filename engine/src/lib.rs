@@ -36,14 +36,13 @@ pub use crate::fov::Fov;
 
 mod item;
 
-mod location;
-pub use location::SectorDir;
-
 mod mob;
 pub use mob::Buff;
 
 mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
+
+mod pathing;
 
 mod placement;
 pub use placement::Placement;

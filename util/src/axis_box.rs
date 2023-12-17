@@ -157,6 +157,20 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
         AxisBox::new(p0, p1)
     }
 
+    /// Create the lattice cell in the given basis containing the given point.
+    pub fn cell_containing(
+        basis: impl Into<[T; N]>,
+        pos: impl Into<[T; N]>,
+    ) -> Self
+    where
+        T: Euclid + AsPrimitive<i32> + FromPrimitive,
+    {
+        let basis = basis.into();
+        let pos = pos.into();
+        let pos = std::array::from_fn(|i| (pos[i].div_euclid(&basis[i])).as_());
+        Self::cell(basis, pos)
+    }
+
     /// Get the lattice point for this box if it were a lattice cell.
     ///
     /// If the box is part of a lattice that has a box corner snapping to

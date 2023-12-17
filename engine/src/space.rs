@@ -1,35 +1,11 @@
-use content::{Coordinates, Rect};
-use glam::{ivec2, ivec3, IVec2, IVec3};
-use rand::prelude::*;
-use util::{s4, v3, Neighbors2D};
+use content::{Block, Coordinates, Environs};
+use util::{s4, Neighbors2D};
 
-use crate::{prelude::*, Grammatize, SectorDir};
+use crate::{prelude::*, Grammatize};
 
 pub trait RuntimeCoordinates: Coordinates {
-    fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D;
-
-    /// Get actual tiles from visible cells, assume ground for unexplored
-    /// cell.
-    fn assumed_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
-        if self.is_explored(r) {
-            self.map_tile(r)
-        } else {
-            Tile2D::Ground
-        }
-    }
-
-    fn set_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D);
-
     /// Tile setter that doesn't cover functional terrain.
-    fn decorate_tile(&self, r: &mut impl AsMut<Runtime>, t: Tile2D) {
-        let r = r.as_mut();
-
-        if self.map_tile(r) == Tile2D::Ground
-            || self.map_tile(r).is_decoration()
-        {
-            self.set_tile(r, t);
-        }
-    }
+    fn decorate_block(&self, r: &mut impl AsMut<Runtime>, b: Block);
 
     /// Internal method for FoV
     fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool;
@@ -37,23 +13,31 @@ pub trait RuntimeCoordinates: Coordinates {
     /// Location has been seen by an allied unit at some point.
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool;
 
-    fn is_walkable(&self, r: &impl AsRef<Runtime>) -> bool {
-        !self.map_tile(r).blocks_movement()
-    }
+    /// List steppable neighbors optimistically, any unexplored neighbor cell
+    /// is listed as rising, falling and horizontal steps. Explored neighbors
+    /// will only provide the actual step, if any.
+    fn fog_exploring_walk_neighbors<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Self> + 'a;
 
     fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
-        match self.map_tile(r) {
+        let r = r.as_ref();
+        match self.voxel(r) {
             // Door is held open by someone passing through.
-            Tile2D::Door if self.mob_at(r).is_some() => false,
-            t => t.blocks_shot(),
+            Some(Block::Door) if self.mob_at(r).is_some() => false,
+            Some(_) => true,
+            None => false,
         }
     }
 
     fn blocks_sight(&self, r: &impl AsRef<Runtime>) -> bool {
-        match self.map_tile(r) {
+        let r = r.as_ref();
+        match self.voxel(r) {
             // Door is held open by someone passing through.
-            Tile2D::Door if self.mob_at(r).is_some() => false,
-            t => t.blocks_sight(),
+            Some(Block::Door) if self.mob_at(r).is_some() => false,
+            Some(b) => b.blocks_sight(),
+            None => false,
         }
     }
 
@@ -76,43 +60,6 @@ pub trait RuntimeCoordinates: Coordinates {
     fn item_at(&self, r: &impl AsRef<Runtime>) -> Option<Entity> {
         self.entities_at(r).find(|e| e.is_item(r))
     }
-
-    /// Try to reconstruct step towards adjacent other location. Handles
-    /// folding.
-    fn find_step_towards(
-        &self,
-        r: &impl AsRef<Runtime>,
-        other: &Self,
-    ) -> Option<IVec2>;
-
-    /// Follow upstairs, downstairs and possible other portals until you end
-    /// up at a non-portaling location starting from this location.
-    fn follow(&self, r: &impl AsRef<Runtime>) -> Self;
-
-    fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Self>;
-
-    fn sector_locs(&self) -> impl Iterator<Item = Self>;
-
-    fn expanded_sector_locs(&self) -> impl Iterator<Item = Self>;
-
-    /// Return the four neighbors to this location in an arbitrary order.
-    fn perturbed_flat_neighbors_4(&self) -> Vec<Self>;
-
-    fn flat_neighbors_4(&self) -> impl Iterator<Item = Self> + '_;
-
-    fn fold_neighbors_4(&self, r: &Runtime) -> Vec<Self> {
-        // TODO Figure out lifetime annotations to turn return value into iterator
-        self.flat_neighbors_4()
-            .map(move |loc| loc.follow(r))
-            .collect()
-    }
-
-    /// Find the closest pathable location on neighboring sector.
-    fn path_dest_to_neighboring_sector(
-        &self,
-        r: &impl AsRef<Runtime>,
-        neighbor_dir: SectorDir,
-    ) -> Option<Self>;
 
     /// Create a printable description of interesting features at location.
     fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
@@ -147,14 +94,17 @@ pub trait RuntimeCoordinates: Coordinates {
 }
 
 impl RuntimeCoordinates for Location {
-    fn map_tile(&self, r: &impl AsRef<Runtime>) -> Tile2D {
-        let r = r.as_ref();
-        r.world.get_tile(self)
-    }
+    fn decorate_block(&self, r: &mut impl AsMut<Runtime>, b: Block) {
+        let r = r.as_mut();
 
-    fn set_tile(&self, _r: &mut impl AsMut<Runtime>, _t: Tile2D) {
-        // TODO Replace with voxel set
-        log::warn!("set_tile is deprecated");
+        use Block::*;
+
+        if matches!(
+            self.voxel(r),
+            Some(Rock) | Some(SplatteredRock) | Some(Grass)
+        ) {
+            r.set_voxel(self, Some(b));
+        }
     }
 
     fn is_in_fov_set(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -171,154 +121,32 @@ impl RuntimeCoordinates for Location {
                 && self.ns_8().any(|loc| loc.is_in_fov_set(r))
     }
 
+    fn fog_exploring_walk_neighbors<'a>(
+        &self,
+        r: &'a impl AsRef<Runtime>,
+    ) -> impl Iterator<Item = Self> + 'a {
+        let r = r.as_ref();
+        let origin = *self;
+
+        s4::DIR.iter().flat_map(move |&dir| {
+            let loc = origin + dir.extend(0);
+            if loc.is_explored(r) {
+                // Only step into the concrete location (if any) when target
+                // is explored.
+                origin.walk_step(r, dir).into_iter().collect::<Vec<_>>()
+            } else {
+                // Assume all possible steps are valid in unexplored space.
+                vec![loc, loc.above(), loc.below()]
+            }
+        })
+    }
+
     fn entities_at<'a>(
         &self,
         r: &'a impl AsRef<Runtime>,
     ) -> impl Iterator<Item = Entity> + 'a {
         let r = r.as_ref();
         r.placement.entities_at(self)
-    }
-
-    fn find_step_towards(
-        &self,
-        r: &impl AsRef<Runtime>,
-        other: &Self,
-    ) -> Option<IVec2> {
-        // They're on the same Z-plane, just do the normal pointing direction.
-        if self.z == other.z {
-            let a = self.unfold();
-            let b = other.unfold();
-            return Some(a.dir4_towards(&b));
-        }
-
-        // Otherwise look for immediate fold portals that lead to the other
-        // loc.
-        s4::DIR
-            .into_iter()
-            .find(|&d| (*self + d.extend(0)).follow(r) == *other)
-    }
-
-    fn follow(&self, r: &impl AsRef<Runtime>) -> Self {
-        let path = || {
-            let mut p = Some(*self);
-            std::iter::from_fn(move || {
-                let Some(loc) = p else {
-                    return None;
-                };
-                let ret = p;
-                p = loc.portal_dest(r);
-                ret
-            })
-        };
-
-        // If the map data is bad, there might be cycles, run a cycle
-        // detection before trying to follow the path to the end.
-        for (a, b) in path().zip(path().skip(1).step_by(2)) {
-            if a == b {
-                log::warn!(
-                    "Location::fold: cycle detected starting from {self:?}"
-                );
-                return *self;
-            }
-        }
-
-        path().last().unwrap_or(*self)
-    }
-
-    fn portal_dest(&self, r: &impl AsRef<Runtime>) -> Option<Self> {
-        match self.map_tile(r) {
-            Tile2D::Upstairs => Some(*self + ivec3(0, 0, 1)),
-            Tile2D::Downstairs => Some(*self + ivec3(0, 0, -1)),
-            _ => None,
-        }
-    }
-
-    fn sector_locs(&self) -> impl Iterator<Item = Self> {
-        let origin = self.sector();
-        Rect::sized([SECTOR_WIDTH, SECTOR_HEIGHT])
-            .into_iter()
-            .map(move |p| origin + IVec2::from(p).extend(0))
-    }
-
-    fn expanded_sector_locs(&self) -> impl Iterator<Item = Self> {
-        let origin = self.sector();
-        Rect::sized([SECTOR_WIDTH + 2, SECTOR_HEIGHT + 2])
-            .into_iter()
-            .map(move |p| origin + (IVec2::from(p) - ivec2(1, 1)).extend(0))
-    }
-
-    fn perturbed_flat_neighbors_4(&self) -> Vec<Self> {
-        let mut rng = util::srng(self);
-        let mut dirs: Vec<Location> =
-            s4::DIR.iter().map(|&d| *self + d.extend(0)).collect();
-        dirs.shuffle(&mut rng);
-        dirs
-    }
-
-    fn flat_neighbors_4(&self) -> impl Iterator<Item = Self> {
-        // Alternate biasing based on location so algs will perform zig-zags
-        // on diagonals.
-        const H4: [IVec2; 4] = [
-            IVec2::from_array([1, 0]),
-            IVec2::from_array([-1, 0]),
-            IVec2::from_array([0, 1]),
-            IVec2::from_array([0, -1]),
-        ];
-
-        const V4: [IVec2; 4] = [
-            IVec2::from_array([0, 1]),
-            IVec2::from_array([0, -1]),
-            IVec2::from_array([1, 0]),
-            IVec2::from_array([-1, 0]),
-        ];
-        let o = *self;
-        if ivec2(self.x as i32, self.y as i32).prefer_horizontals_here() {
-            &H4
-        } else {
-            &V4
-        }
-        .iter()
-        .map(move |d| o + d.extend(0))
-    }
-
-    fn path_dest_to_neighboring_sector(
-        &self,
-        r: &impl AsRef<Runtime>,
-        neighbor_dir: SectorDir,
-    ) -> Option<Self> {
-        for (loc, _) in util::dijkstra_map(
-            move |loc| {
-                let mut ret = Vec::new();
-                for d in s4::DIR {
-                    let loc = (*loc + d.extend(0)).follow(r);
-                    if !loc.is_walkable(r) {
-                        continue;
-                    }
-
-                    // Skip unexplored sectors, but allow one to get through
-                    // if it gets us to destination (unmapped stairwell)
-                    if loc.sector() != self.sector() + v3(neighbor_dir)
-                        && !loc.is_explored(r)
-                    {
-                        continue;
-                    }
-                    let sd = loc.sector() - self.sector();
-                    if sd != IVec3::ZERO && sd != neighbor_dir.to_vec3() {
-                        continue;
-                    }
-                    ret.push(loc);
-                }
-                ret
-            },
-            vec![*self],
-        ) {
-            let sd = loc.sector() - self.sector();
-            if sd == neighbor_dir.to_vec3() {
-                return Some(loc);
-            }
-        }
-
-        None
     }
 
     fn damage(

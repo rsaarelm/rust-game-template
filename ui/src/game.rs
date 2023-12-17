@@ -1,4 +1,5 @@
 use anyhow::Result;
+use content::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
@@ -342,6 +343,31 @@ impl Game {
                     p.execute_direct(r, act);
                 }
             }
+            (Command::Indirect(Goal::GoToZone(zone)), Some(_)) => {
+                // TODO Merge GoTo and GoToZone goals into a procedure.
+                if self.player_is_selected() {
+                    // For player group, player gets the goal, others follow
+                    // player.
+
+                    let Some(p) = self.r.player() else { return };
+
+                    for e in self.selection.iter() {
+                        if !e.is_player(&self.r) {
+                            e.set_goal(&mut self.r, Goal::FollowPlayer);
+                        }
+                    }
+
+                    p.set_goal(&mut self.r, Goal::GoToZone(zone));
+                } else {
+                    // Non-player group: Everyone gets an attack-move command,
+                    // will return to following player when done.
+                    for p in self.selection.iter() {
+                        p.set_goal(&mut self.r, Goal::GoToZone(zone));
+                        p.exhaust_actions(&mut self.r);
+                    }
+                    self.select_next_commandable(true);
+                }
+            }
             (Command::Indirect(Goal::GoTo(loc)), Some(_)) => {
                 if self.player_is_selected() {
                     // For player group, player gets the goal, others follow
@@ -360,7 +386,7 @@ impl Game {
                         // If player is threatened, see if it looks like
                         // you're trying to fight or flee.
                         let Some(mut planned_path) =
-                            self.r.fov_aware_path_to(&start, &loc)
+                            self.r.fog_exploring_path(&start, &loc)
                         else {
                             return;
                         };
@@ -368,7 +394,7 @@ impl Game {
                         let Some(step) = planned_path.pop() else {
                             return;
                         };
-                        let Some(dir) = start.vec_towards(&step).map(s4::norm)
+                        let Some(dir) = start.vec2_towards(&step).map(s4::norm)
                         else {
                             return;
                         };
@@ -401,6 +427,7 @@ impl Game {
                     self.select_next_commandable(true);
                 } else {
                     debug_assert!(p.is_player(&self.r));
+                    // TODO 2023-12-23 adjacent sector search is retired, can this be simplified?
                     // Player can do the adjacent sector search with
                     // StartAutoexplore, NPCs just get regular autoexplore.
                     p.set_goal(&mut self.r, Goal::StartAutoexplore);
@@ -432,6 +459,14 @@ impl Game {
         self.update_camera();
     }
 
+    pub fn travel(&mut self, dir: IVec3) {
+        if let Some(p) = self.current_active() {
+            let Some(loc) = p.loc(self) else { return };
+            let sec = Level::level_from(&loc);
+            self.act(Goal::GoToZone(sec.offset(dir).floor()))
+        }
+    }
+
     pub fn process_action(&mut self, action: InputAction) {
         use InputAction::*;
         match action {
@@ -447,9 +482,12 @@ impl Game {
             SouthWest => {}
             NorthWest => {}
             NorthEast => {}
-            ClimbUp => {}
-            ClimbDown => {}
-            LongMove => {}
+            TravelNorth => self.travel(NORTH),
+            TravelEast => self.travel(EAST),
+            TravelSouth => self.travel(SOUTH),
+            TravelWest => self.travel(WEST),
+            TravelUp => self.travel(UP),
+            TravelDown => self.travel(DOWN),
             Cycle => self.select_next_commandable(false),
             BecomePlayer => {
                 if let Some(p) = self.current_active() {
@@ -654,7 +692,7 @@ impl PlannedPath {
         self.mouse_pos = mouse_pos;
 
         self.posns.clear();
-        if let Some(path) = r.fov_aware_path_to(&orig, &dest) {
+        if let Some(path) = r.fog_exploring_path(&orig, &dest) {
             self.posns = path;
         }
     }
