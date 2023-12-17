@@ -629,6 +629,20 @@ impl<const N: usize> LatticeBox<N> {
 
         ret
     }
+
+    /// Return signed distance of a point from the box that is the maximum of
+    /// the point's distance from the six half-planes spanned by points
+    /// contained in the box. The result is in chessboard metric.
+    pub fn signed_distance(&self, p: [i32; N]) -> i32 {
+        let mut ret = i32::MIN;
+
+        for i in 0..N {
+            ret = ret.max(self.p0[0] - p[i]);
+            ret = ret.max(p[i] - self.p1[i] + 1);
+        }
+
+        ret
+    }
 }
 
 impl LatticeBox<2> {
@@ -963,5 +977,20 @@ mod tests {
                 .snap_to(&Rect::new([20, 20], [80, 80]), [1.0, 1.0]),
             Rect::new([70, 70], [80, 80])
         );
+    }
+
+    #[test]
+    fn signed_distance() {
+        let rect = Rect::new([10, 10], [30, 20]);
+
+        assert_eq!(rect.signed_distance([20, 15]), -4);
+        assert_eq!(rect.signed_distance([9, 10]), 1);
+        assert_eq!(rect.signed_distance([10, 10]), 0);
+        assert_eq!(rect.signed_distance([29, 19]), 0);
+        assert_eq!(rect.signed_distance([30, 19]), 1);
+        assert_eq!(rect.signed_distance([29, 20]), 1);
+        assert_eq!(rect.signed_distance([20, 10]), 0);
+        assert_eq!(rect.signed_distance([40, 15]), 11);
+        assert_eq!(rect.signed_distance([5, 5]), 5);
     }
 }
