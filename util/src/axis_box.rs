@@ -399,8 +399,8 @@ impl<T, const N: usize> AxisBox<T, N>
 where
     T: Element + Euclid + AsPrimitive<i32> + FromPrimitive,
 {
-    // Return lattice box in given basis that has all cells that intersect
-    // with self.
+    /// Return lattice box in given basis that has all cells that intersect
+    /// with self.
     pub fn intersecting_lattice(
         &self,
         basis: impl Into<[T; N]>,
@@ -422,8 +422,8 @@ where
             .map(move |p| Self::cell(basis, p))
     }
 
-    // Return lattice box in given basis that has all cells that are fully
-    // contained in self.
+    /// Return lattice box in given basis that has all cells that are fully
+    /// contained in self.
     pub fn enclosed_lattice(&self, basis: impl Into<[T; N]>) -> LatticeBox<N> {
         let basis = basis.into();
         let p1 = std::array::from_fn(|i| div_floor(self.p1[i], basis[i]).as_());
