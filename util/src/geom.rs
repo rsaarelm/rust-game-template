@@ -499,8 +499,12 @@ pub trait Sdf {
 
 impl Sdf for IVec3 {
     fn sd(&self, p: impl Into<IVec3>) -> i32 {
-        let p = p.into();
-        (p - *self).chess_len()
+        // Had chessboard distance here but it was causing weird artifacts in
+        // pathfinding. Squared euclidean seems to work better, though it
+        // might be screwing with A*'s expectation that the heuristic is
+        // optimistic.
+        let d = p.into() - *self;
+        d.dot(d)
     }
 }
 
