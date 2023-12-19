@@ -7,6 +7,8 @@ use std::{
 use glam::{ivec2, ivec3, vec2, IVec2, IVec3, Vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
+use crate::Cube;
+
 /// Axis-aligned directions in 3D space, canonical order.
 pub const AXIS_DIRS: [IVec3; 6] = [
     ivec3(0, -1, 0),
@@ -487,6 +489,25 @@ impl Neighbors3D for IVec3 {
             ivec3(0, 0, 1),
         ];
         ns(*self, A.iter().copied())
+    }
+}
+
+/// A signed distance field for a 3D body.
+pub trait Sdf {
+    fn sd(&self, p: impl Into<IVec3>) -> i32;
+}
+
+impl Sdf for IVec3 {
+    fn sd(&self, p: impl Into<IVec3>) -> i32 {
+        let p = p.into();
+        (p - *self).chess_len()
+    }
+}
+
+impl Sdf for Cube<i32> {
+    fn sd(&self, p: impl Into<IVec3>) -> i32 {
+        let p = p.into();
+        self.signed_distance(p)
     }
 }
 
