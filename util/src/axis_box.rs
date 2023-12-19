@@ -633,7 +633,9 @@ impl<const N: usize> IntegerBox<N> {
     /// Return signed distance of a point from the box that is the maximum of
     /// the point's distance from the six half-planes spanned by points
     /// contained in the box. The result is in chessboard metric.
-    pub fn signed_distance(&self, p: [i32; N]) -> i32 {
+    pub fn signed_distance(&self, p: impl Into<[i32; N]>) -> i32 {
+        let p = p.into();
+
         let mut ret = i32::MIN;
 
         for i in 0..N {
