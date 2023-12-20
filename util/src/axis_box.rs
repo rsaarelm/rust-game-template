@@ -8,7 +8,7 @@ use std::{
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, One, Zero};
 use rand::{distributions::uniform::SampleUniform, prelude::Distribution};
 
-/// A lattice box describes a region over a discrete cellular lattice.
+/// An integer box describes a region over a discrete cellular lattice.
 ///
 /// Axis boxes are mapped to lattices via a basis vector that determines the
 /// dimensions of a unit cell in the space of a box.
@@ -109,6 +109,28 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
         });
         let p1 = std::array::from_fn(|i| p0[i] + basis[i]);
         AxisBox::new(p0, p1)
+    }
+
+    /// Get the lattice point for this box if it were a lattice cell.
+    ///
+    /// If the box is part of a lattice that has a box corner snapping to
+    /// origin, this will be a dual of `cell`:
+    ///
+    /// ```
+    /// use util::Rect;
+    ///
+    /// assert_eq!(Rect::new([120, 80], [130, 90]).lattice_point(), [12, 8]);
+    /// assert_eq!(Rect::new([120, -80], [130, -70]).lattice_point(), [12, -8]);
+    ///
+    /// assert_eq!(Rect::cell([10, 10], [12, 8]), Rect::new([120, 80], [130, 90]));
+    /// assert_eq!(Rect::cell([10, 10], [12, -8]), Rect::new([120, -80], [130, -70]));
+    /// ```
+    pub fn lattice_point(&self) -> [i32; N]
+    where
+        T: Euclid + AsPrimitive<i32>,
+    {
+        let dim = self.dim();
+        std::array::from_fn(|i| self.p0[i].div_euclid(&dim[i]).as_())
     }
 
     /// Create a new axis box. If p1 has components that are smaller than
