@@ -462,6 +462,23 @@ impl Neighbors2D for IVec3 {
     }
 }
 
+impl Neighbors2D for Cube<i32> {
+    fn ns_4(&self) -> impl Iterator<Item = Self> + '_ {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_4().map(move |d| *self + (d * basis))
+    }
+
+    fn ns_hex(&self) -> impl Iterator<Item = Self> + '_ {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_hex().map(move |d| *self + (d * basis))
+    }
+
+    fn ns_8(&self) -> impl Iterator<Item = Self> + '_ {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_8().map(move |d| *self + (d * basis))
+    }
+}
+
 pub trait Neighbors3D: Sized {
     /// List neighbors in 6 3D cardinal directions.
     fn ns_6(&self) -> impl Iterator<Item = Self> + '_;
@@ -489,6 +506,18 @@ impl Neighbors3D for IVec3 {
             ivec3(0, 0, 1),
         ];
         ns(*self, A.iter().copied())
+    }
+}
+
+impl Neighbors3D for Cube<i32> {
+    fn ns_6(&self) -> impl Iterator<Item = Self> + '_ {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_6().map(move |d| *self + (d * basis))
+    }
+
+    fn ns_10(&self) -> impl Iterator<Item = Self> + '_ {
+        let basis = v3(self.dim());
+        IVec3::ZERO.ns_10().map(move |d| *self + (d * basis))
     }
 }
 
