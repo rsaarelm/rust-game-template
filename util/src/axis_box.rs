@@ -7,6 +7,7 @@ use std::{
 
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, One, Zero};
 use rand::{distributions::uniform::SampleUniform, prelude::Distribution};
+use serde::{Deserialize, Serialize};
 
 /// An integer box describes a region over a discrete cellular lattice.
 ///
@@ -50,6 +51,45 @@ impl<T> Element for T where
 pub struct AxisBox<T, const N: usize> {
     pub p0: [T; N],
     pub p1: [T; N],
+}
+
+impl<T, const N: usize> Serialize for AxisBox<T, N>
+where
+    T: Serialize + Element,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // WAIT: (here and deserialize) Use fixed-size arrays (nicer for IDM) once we are allowed to write [T; N * 2] (generic_const_exprs)
+        let mut elts = Vec::new();
+        for &i in self.p0.iter() {
+            elts.push(i);
+        }
+        for &i in self.p1.iter() {
+            elts.push(i);
+        }
+        elts.serialize(serializer)
+    }
+}
+
+impl<'de, T, const N: usize> Deserialize<'de> for AxisBox<T, N>
+where
+    T: Deserialize<'de> + Element,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let elts = <Vec<T>>::deserialize(deserializer)?;
+        if elts.len() != 2 * N {
+            return Err(serde::de::Error::custom("bad element count"));
+        }
+        Ok(AxisBox::new(
+            std::array::from_fn(|i| elts[i]),
+            std::array::from_fn(|i| elts[i + N]),
+        ))
+    }
 }
 
 impl<T, const N: usize> AxisBox<T, N> {
