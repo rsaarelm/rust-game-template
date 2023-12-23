@@ -701,7 +701,7 @@ impl<const N: usize> IntegerBox<N> {
         let mut ret = i32::MIN;
 
         for i in 0..N {
-            ret = ret.max(self.p0[0] - p[i]);
+            ret = ret.max(self.p0[i] - p[i]);
             ret = ret.max(p[i] - self.p1[i] + 1);
         }
 
