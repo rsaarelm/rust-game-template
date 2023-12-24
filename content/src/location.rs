@@ -1,11 +1,9 @@
 use std::ops::{Add, AddAssign};
 
-use glam::{ivec2, ivec3, IVec2, IVec3};
+use glam::{ivec3, IVec2, IVec3};
 use util::{s4, wallform_mask, Cloud, Neighbors2D};
 
-use crate::{
-    Block, Cube, Rect, Tile, Voxel, Zone, SECTOR_HEIGHT, SECTOR_WIDTH,
-};
+use crate::{Block, Cube, Tile, Voxel, Zone, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 pub type Location = IVec3;
 
@@ -23,9 +21,6 @@ pub trait Coordinates:
 
     /// Snap location to origin of it's current 2D sector-slice.
     fn sector_snap_2d(&self) -> Self;
-
-    /// 2D rectangle for the sector the location is in.
-    fn sector_rect(&self) -> Rect;
 
     /// Look for the valid neighboring floor adjacent to current location.
     ///
@@ -175,11 +170,6 @@ impl Coordinates for Location {
             self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
             self.z,
         )
-    }
-
-    fn sector_rect(&self) -> Rect {
-        let p = self.sector_snap_2d().truncate();
-        Rect::new(p, p + ivec2(SECTOR_WIDTH, SECTOR_HEIGHT))
     }
 
     fn walk_neighbors<'a>(

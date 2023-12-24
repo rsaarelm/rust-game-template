@@ -1,4 +1,4 @@
-use content::{Block, Coordinates, Tile};
+use content::{Block, Coordinates, Tile, Zone};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::prelude::*;
@@ -25,7 +25,7 @@ impl SectorView {
         // only the sector area. The sector is expanded since the on-screen
         // sector should show a single-tile rim from adjacent sectors as an
         // exit zone.
-        let mut map_rect = loc.sector_rect().grow([1, 1], [1, 1]);
+        let mut map_rect = loc.sector().wide().flatten();
 
         // Widen the map rect into 2x and trim the right edge, the center
         // cells of both edges should go right on the map rect border.
