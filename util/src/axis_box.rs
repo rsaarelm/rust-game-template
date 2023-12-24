@@ -137,6 +137,12 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
         }
     }
 
+    /// Create a volume 1 unit box with origin at `p0`.
+    pub fn unit(p0: impl Into<[T; N]>) -> Self {
+        let p0 = p0.into();
+        Self::new(p0, std::array::from_fn(|i| p0[i] + T::one()))
+    }
+
     /// Create a cell from a lattice point using the given basis.
     pub fn cell(basis: impl Into<[T; N]>, point: impl Into<[i32; N]>) -> Self
     where
@@ -706,6 +712,21 @@ impl<const N: usize> IntegerBox<N> {
         }
 
         ret
+    }
+
+    /// Clamp a vector type into the box so that `contains` will be true for
+    /// the result.
+    pub fn clamp_inclusive<E>(&self, val: E) -> E
+    where
+        E: From<[i32; N]> + Into<[i32; N]>,
+    {
+        let mut val = val.into();
+        for i in 0..N {
+            val[i] = pmax(self.p0[i], val[i]);
+            val[i] = pmin(self.p1[i] - 1, val[i]);
+        }
+
+        E::from(val)
     }
 }
 
