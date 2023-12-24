@@ -463,6 +463,15 @@ impl<T: Element, const N: usize> AxisBox<T, N> {
     }
 }
 
+impl<T: Element> AxisBox<T, 3> {
+    pub fn flatten(&self) -> AxisBox<T, 2> {
+        AxisBox::new(
+            std::array::from_fn(|i| self.p0[i]),
+            std::array::from_fn(|i| self.p1[i]),
+        )
+    }
+}
+
 impl<T, const N: usize> AxisBox<T, N>
 where
     T: Element + Euclid + AsPrimitive<i32> + FromPrimitive,
