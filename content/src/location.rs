@@ -187,10 +187,10 @@ impl Coordinates for Location {
 
         match (self.above().voxel(r), self.voxel(r), self.below().voxel(r)) {
             // Solid three block stack, makes a proper wall.
-            (Some(a), Some(b), Some(c)) => {
+            (Some(a), Some(b), c) => {
                 // HACK Doors change traversability of the tile, so snap to
                 // the door block even if it's found off-center.
-                if a == Door || c == Door {
+                if a == Door || c == Some(Door) {
                     Tile::Wall(Door)
                 } else {
                     Tile::Wall(b)
@@ -201,7 +201,7 @@ impl Coordinates for Location {
             // Regular floor
             (_, None, Some(a)) => Tile::Surface(*self, a),
             // Depressed floor, check further down if there's surface.
-            (_, _, None) => {
+            (_, None, None) => {
                 if let Some(a) = self.below().below().voxel(r) {
                     Tile::Surface(*self + ivec3(0, 0, -1), a)
                 } else {
