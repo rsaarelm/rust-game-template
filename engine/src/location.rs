@@ -118,7 +118,9 @@ impl RuntimeCoordinates for Location {
 
         self.snap_above_floor(r).is_in_fov_set(r)
             || self.tile(r).is_wall()
-                && self.ns_8().any(|loc| loc.is_in_fov_set(r))
+                && self.ns_8().any(|loc| {
+                    loc.is_in_fov_set(r) || (loc.above()).is_in_fov_set(r)
+                })
     }
 
     fn fog_exploring_walk_neighbors<'a>(
