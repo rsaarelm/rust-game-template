@@ -157,24 +157,25 @@ impl DisplayTile {
         let left = loc.tile(r);
         let right = (loc + ivec3(1, 0, 0)).tile(r);
 
-        let mut rng = util::srng(&loc);
-
         // Do c1 here, overwrite later if needed...
 
         match (left, right) {
             // Merge same.
-            (Surface(_, a), Surface(_, b)) if a == b => {
+            (Surface(loc, a), Surface(_, b)) if a == b => {
+                let mut rng = util::srng(&loc);
                 c1 = floor_cell(&mut rng, a, false);
             }
             // Magma overrides water.
             // Fluids stick to walls.
-            (Wall(_), Surface(_, Magma))
-            | (Surface(_, Magma), Wall(_))
-            | (Surface(_, Water), Surface(_, Magma))
-            | (Surface(_, Magma), Surface(_, Water)) => {
+            (Wall(_), Surface(loc, Magma))
+            | (Surface(loc, Magma), Wall(_))
+            | (Surface(loc, Water), Surface(_, Magma))
+            | (Surface(loc, Magma), Surface(_, Water)) => {
+                let mut rng = util::srng(&loc);
                 c1 = floor_cell(&mut rng, Magma, false);
             }
-            (Wall(_), Surface(_, Water)) | (Surface(_, Water), Wall(_)) => {
+            (Wall(_), Surface(loc, Water)) | (Surface(loc, Water), Wall(_)) => {
+                let mut rng = util::srng(&loc);
                 c1 = floor_cell(&mut rng, Water, false);
             }
             // Chasms are sticky.
@@ -196,6 +197,7 @@ impl DisplayTile {
                         c1 = CharCell::c(SINGLE_LINE[0b10]).col(X::BROWN);
                     }
                 } else {
+                    let mut rng = util::srng(&loc_2);
                     c0 = floor_cell(&mut rng, block, true);
                 }
 
