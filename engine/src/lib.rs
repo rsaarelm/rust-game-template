@@ -36,6 +36,9 @@ pub use crate::fov::Fov;
 
 mod item;
 
+mod location;
+pub use location::RuntimeCoordinates;
+
 mod mob;
 pub use mob::Buff;
 
@@ -53,9 +56,6 @@ pub mod prelude;
 
 mod runtime;
 pub use runtime::Runtime;
-
-mod space;
-pub use space::RuntimeCoordinates;
 
 mod time;
 pub use time::Instant;
