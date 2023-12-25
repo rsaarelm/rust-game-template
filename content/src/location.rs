@@ -227,12 +227,11 @@ impl Coordinates for Location {
             matches!(loc.tile(r), Tile::Surface(b, _) if b.z > loc.z)
         }
 
-        fn is_basin(loc: Location, r: &impl Environs) -> bool {
-            matches!(loc.tile(r), Tile::Surface(b, _) if b.z < loc.z)
-        }
-
         fn is_cliff(loc: Location, r: &impl Environs) -> bool {
-            is_mesa(loc, r) && loc.ns_8().any(|a| is_basin(a, r))
+            is_mesa(loc, r)
+                && (loc + ivec3(0, 0, 1))
+                    .ns_8()
+                    .any(|a| matches!(a.tile(r), Tile::Void))
         }
 
         if is_cliff(*self, r) {
