@@ -1,7 +1,7 @@
 use content::{Cube, Zone};
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
-use util::{flood_fill_4, v3, Neighbors2D, Sdf};
+use util::{dijkstra_map, v3, Neighbors2D, Sdf};
 
 use crate::prelude::*;
 
@@ -12,13 +12,24 @@ impl Runtime {
         start: &Location,
     ) -> HashMap<Location, usize> {
         let travel_zone = zone.fat();
-        let ret: HashMap<Location, usize> = flood_fill_4(
-            &|loc2: &Location| travel_zone.contains(*loc2),
-            zone.wide().into_iter().map(v3).filter(|loc2| {
+        let ret: HashMap<Location, usize> = dijkstra_map(
+            &|loc: &Location| {
+                loc.walk_neighbors(self)
+                    .map(|(_, x)| x)
+                    .filter(|a| travel_zone.contains(*a))
+            },
+            zone.wide().into_iter().map(v3).filter(|loc| {
+                if loc.is_impassable(self) {
+                    return false;
+                }
+
+                let loc2 = loc.snap_above_floor(self);
                 !loc2.is_explored(self)
                     || (loc2.is_explored(self)
-                        && travel_zone.contains(*loc2)
-                        && loc2.ns_8().any(|loc| !loc.is_explored(self)))
+                        && travel_zone.contains(*loc)
+                        && loc.ns_8().any(|loc| {
+                            !loc.snap_above_floor(self).is_explored(self)
+                        }))
             }),
         )
         .collect();
@@ -177,7 +188,7 @@ impl Entity {
             // Hope that a better gradient is found. This can cause endless
             // back-and-forth if caught in a pocket of flat cells with no way
             // out.
-            if *n <= start {
+            if *n < start {
                 return Some(dir);
             }
         }

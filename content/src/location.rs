@@ -105,6 +105,15 @@ pub trait Coordinates:
             .sum()
     }
 
+    fn is_impassable(&self, r: &impl Environs) -> bool {
+        match self.tile(r) {
+            Tile::Void => true,
+            Tile::Wall(b) if b != Block::Door => true,
+            Tile::Surface(_, b) if !b.is_support() => true,
+            _ => false,
+        }
+    }
+
     /// Return whether this location produces a z+1 floor and at least one
     /// 8-adjacent location produces a z-1 floor. Returns the mask of
     /// 4-adjacent cliff tiles.

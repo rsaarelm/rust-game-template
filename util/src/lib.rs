@@ -41,7 +41,7 @@ mod logos;
 pub use logos::Logos;
 
 mod path;
-pub use path::{astar_path, dijkstra_map, flood_fill_4, within_range};
+pub use path::{astar_path, dijkstra_map, within_range};
 
 mod rng;
 pub use rng::{srng, Odds, RngExt};
