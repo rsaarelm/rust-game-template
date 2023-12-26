@@ -235,7 +235,7 @@ impl Runtime {
                     // calling decide when under threat.)
                     match goal {
                         Goal::GoTo { .. } => e.next_goal(self),
-                        Goal::Autoexplore => e.next_goal(self),
+                        Goal::Autoexplore(_) => e.next_goal(self),
                         _ => {}
                     }
                 }

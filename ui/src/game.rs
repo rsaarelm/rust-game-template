@@ -401,10 +401,10 @@ impl Game {
                     self.select_next_commandable(true);
                 }
             }
-            (Command::Indirect(Goal::StartAutoexplore), Some(p)) => {
+            (Command::Indirect(Goal::StartAutoexplore(zone)), Some(p)) => {
                 if !self.player_is_selected() {
                     for e in self.selected().collect::<Vec<_>>() {
-                        e.set_goal(&mut self.r, Goal::Autoexplore);
+                        e.set_goal(&mut self.r, Goal::Autoexplore(zone));
                         e.exhaust_actions(&mut self.r);
                     }
                     self.select_next_commandable(true);
@@ -413,7 +413,7 @@ impl Game {
                     // TODO 2023-12-23 adjacent sector search is retired, can this be simplified?
                     // Player can do the adjacent sector search with
                     // StartAutoexplore, NPCs just get regular autoexplore.
-                    p.set_goal(&mut self.r, Goal::StartAutoexplore);
+                    p.set_goal(&mut self.r, Goal::StartAutoexplore(zone));
 
                     for e in self.selected().collect::<Vec<_>>() {
                         // Set the others as escorts when player is doing the
@@ -513,8 +513,9 @@ impl Game {
             }
             Roam => {
                 if let Some(p) = self.current_active() {
+                    let Some(loc) = p.loc(&self.r) else { return };
                     if !self.autofight(p) {
-                        self.act(Goal::StartAutoexplore);
+                        self.act(Goal::StartAutoexplore(loc.sector()));
                     }
                 }
             }

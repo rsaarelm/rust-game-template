@@ -47,8 +47,8 @@ impl Entity {
                 }
             }
 
-            Goal::Autoexplore | Goal::StartAutoexplore => {
-                let start = matches!(goal, Goal::StartAutoexplore);
+            Goal::Autoexplore(zone) | Goal::StartAutoexplore(zone) => {
+                let start = matches!(goal, Goal::StartAutoexplore(_));
 
                 if !self.is_player(r) {
                     // Non-players fight when they run into enemies when
@@ -58,7 +58,7 @@ impl Entity {
                     }
                 }
 
-                let explore_map = r.autoexplore_map(&loc);
+                let explore_map = r.autoexplore_map(&zone, &loc);
                 if explore_map.is_empty() {
                     return None;
                 }
@@ -208,10 +208,10 @@ impl Entity {
                 // Becomes invalid when you can't path to player.
                 self.clear_goal(r);
             }
-            Goal::StartAutoexplore => {
-                self.set_goal(r, Goal::Autoexplore);
+            Goal::StartAutoexplore(zone) => {
+                self.set_goal(r, Goal::Autoexplore(zone));
             }
-            Goal::Autoexplore => {
+            Goal::Autoexplore(_) => {
                 if self.is_npc(r) {
                     self.set_goal(r, Goal::FollowPlayer);
                 } else {
@@ -455,7 +455,7 @@ pub enum Goal {
     /// If the current sector is fully explored and ongoing autoexploration
     /// would end, `StartAutoexplore` will instead look for unexplored
     /// adjacent sectors and plot a way to one if found.
-    StartAutoexplore,
+    StartAutoexplore(Cube),
 
     /// Autoexplore the current sector.
     ///
@@ -464,7 +464,7 @@ pub enum Goal {
     /// reachable unexplored cells in the current sector.
     ///
     /// NPCs return to party when done.
-    Autoexplore,
+    Autoexplore(Cube),
 
     /// Move to a location.
     ///

@@ -1,4 +1,4 @@
-use content::Zone;
+use content::{Cube, Zone};
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
 use util::{flood_fill_4, v3, Neighbors2D, Sdf};
@@ -6,19 +6,24 @@ use util::{flood_fill_4, v3, Neighbors2D, Sdf};
 use crate::prelude::*;
 
 impl Runtime {
-    pub fn autoexplore_map(&self, loc: &Location) -> HashMap<Location, usize> {
+    pub fn autoexplore_map(
+        &self,
+        zone: &Cube,
+        start: &Location,
+    ) -> HashMap<Location, usize> {
+        let travel_zone = zone.fat();
         let ret: HashMap<Location, usize> = flood_fill_4(
-            &|loc2: &Location| loc.sector().fat().contains(*loc2),
-            loc.sector().wide().into_iter().map(v3).filter(|loc2| {
+            &|loc2: &Location| travel_zone.contains(*loc2),
+            zone.wide().into_iter().map(v3).filter(|loc2| {
                 !loc2.is_explored(self)
                     || (loc2.is_explored(self)
-                        && loc2.sector() == loc.sector()
+                        && travel_zone.contains(*loc2)
                         && loc2.ns_8().any(|loc| !loc.is_explored(self)))
             }),
         )
         .collect();
 
-        if !ret.contains_key(&loc) {
+        if !ret.contains_key(start) {
             // Map must reach the starting location.
             Default::default()
         } else {

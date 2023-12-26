@@ -138,8 +138,10 @@ pub async fn explore() {
             }
             Some(InputAction::Roam) if !side.is_zero() => {
                 if let Some(p) = game().current_active() {
-                    if !game().autofight(p) {
-                        game().act(Goal::StartAutoexplore);
+                    if let Some(loc) = p.loc(game()) {
+                        if !game().autofight(p) {
+                            game().act(Goal::StartAutoexplore(loc.sector()));
+                        }
                     }
                 }
             }
