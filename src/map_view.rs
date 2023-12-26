@@ -65,6 +65,9 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     // SectorView.
     let camera = view.center(win.dim());
 
+    // Recalculate view because sometimes the camera change messes it up.
+    let view = SectorView::new(win.dim(), camera);
+
     if camera != game().camera {
         // Camera has moved, return this as the action unless we end up with a
         // better one
