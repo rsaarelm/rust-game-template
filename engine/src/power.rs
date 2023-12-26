@@ -53,6 +53,8 @@ impl Runtime {
         };
 
         for (i, loc) in from.trace(dir).enumerate() {
+            let loc = loc.snap_above_floor(self);
+
             // Hit a wall, pull back one tile.
             if loc.blocks_shot(self) {
                 return loc - dir.extend(0);
