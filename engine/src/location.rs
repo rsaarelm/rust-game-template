@@ -81,8 +81,12 @@ pub trait RuntimeCoordinates: Coordinates {
 
     /// Description for the general area of the location.
     fn region_name(&self, _r: &impl AsRef<Runtime>) -> String {
-        let depth = -self.z();
-        format!("Mazes of Menace: {depth}")
+        let depth = -self.z().div_floor(2);
+        if depth > 0 {
+            format!("Mazes of Menace: {depth}")
+        } else {
+            format!("Surface world")
+        }
     }
 
     fn damage(
