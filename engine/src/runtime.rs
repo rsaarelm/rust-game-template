@@ -234,7 +234,7 @@ impl Runtime {
                     // player can still be made to single-step the goal by
                     // calling decide when under threat.)
                     match goal {
-                        Goal::GoTo(_) => e.next_goal(self),
+                        Goal::GoTo { .. } => e.next_goal(self),
                         Goal::Autoexplore => e.next_goal(self),
                         _ => {}
                     }

@@ -14,9 +14,10 @@ impl Entity {
         goal: Goal,
     ) -> Option<Action> {
         let r = r.as_ref();
-        let mut dest: Box<dyn Sdf>;
 
         let loc = self.loc(r)?;
+        let mut path_origin = loc;
+        let mut path_dest: Cube;
 
         match goal {
             Goal::None => return Some(Action::Pass),
@@ -36,10 +37,10 @@ impl Entity {
                     self.first_visible_enemy(r).and_then(|e| e.loc(r))
                 {
                     // Enemies visible! Go fight them.
-                    dest = Box::new(enemy_loc);
+                    path_dest = Cube::unit(enemy_loc);
                 } else if let Some(loc) = player.loc(r) {
                     // Otherwise follow player.
-                    dest = Box::new(loc);
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
@@ -78,24 +79,22 @@ impl Entity {
                 }
             }
 
-            Goal::GoTo(loc) => {
-                dest = Box::new(loc);
-            }
-
-            Goal::GoToZone(zone) => {
-                dest = Box::new(zone);
-            }
-
-            Goal::AttackMove(loc) => {
-                // Move towards actual target by default.
-                dest = Box::new(loc);
+            Goal::GoTo {
+                origin,
+                destination,
+                is_attack_move,
+            } => {
+                path_origin = origin;
+                path_dest = destination;
 
                 // Look for targets of opportunity, redirect towards them.
                 //
                 // Mob will bump-to-attack the target.
-                if let Some(e) = self.first_visible_enemy(r) {
-                    if let Some(enemy_loc) = e.loc(r) {
-                        dest = Box::new(enemy_loc);
+                if is_attack_move {
+                    if let Some(e) = self.first_visible_enemy(r) {
+                        if let Some(enemy_loc) = e.loc(r) {
+                            path_dest = Cube::unit(enemy_loc);
+                        }
                     }
                 }
             }
@@ -106,7 +105,7 @@ impl Entity {
                 }
 
                 if let Some(loc) = e.loc(r) {
-                    dest = Box::new(loc);
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Attack target can't be found, abandon goal.
                     return None;
@@ -125,7 +124,7 @@ impl Entity {
                     return None;
                 }
                 if let Some(loc) = e.loc(r) {
-                    dest = Box::new(loc);
+                    path_dest = Cube::unit(loc);
                 } else {
                     // Follow target can't be found, abandon goal.
                     return None;
@@ -134,14 +133,15 @@ impl Entity {
         }
 
         // We've got a pathfinding task from loc to dest.
-        if dest.sd(loc) <= 0 {
+        if path_dest.sd(loc) <= 0 {
             // Drop out if already arrived.
             return None;
         }
 
         // Right next to dest, see if we need to watch out for mobs.
-        if let Some((dir, dest)) =
-            loc.walk_neighbors(r).find(|(_, loc)| dest.sd(*loc) <= 0)
+        if let Some((dir, dest)) = loc
+            .walk_neighbors(r)
+            .find(|(_, loc)| path_dest.sd(*loc) <= 0)
         {
             // There's an enemy, fight it.
             if dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self)) {
@@ -158,9 +158,9 @@ impl Entity {
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
         if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fog_exploring_path(&loc, &dest)
+            r.fog_exploring_path(&path_origin, &loc, &path_dest)
         } else {
-            r.enemy_path(&loc, &dest)
+            r.enemy_path(&loc, &path_dest)
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -218,11 +218,8 @@ impl Entity {
                     self.clear_goal(r);
                 }
             }
-            Goal::GoTo(_) | Goal::GoToZone(_) => {
-                self.clear_goal(r);
-            }
-            Goal::AttackMove(_) => {
-                if self.is_npc(r) {
+            Goal::GoTo { is_attack_move, .. } => {
+                if is_attack_move && self.is_npc(r) {
                     self.set_goal(r, Goal::FollowPlayer);
                 } else {
                     self.clear_goal(r);
@@ -288,6 +285,49 @@ impl Entity {
         self.set(r, goal);
     }
 
+    pub fn order_go_to(&self, r: &mut impl AsMut<Runtime>, loc: Location) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: Cube::unit(loc),
+                is_attack_move: false,
+            },
+        )
+    }
+
+    pub fn order_go_to_zone(&self, r: &mut impl AsMut<Runtime>, zone: Cube) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: zone,
+                is_attack_move: false,
+            },
+        )
+    }
+
+    pub fn order_attack_move(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        loc: Location,
+    ) {
+        let r = r.as_mut();
+        let Some(origin) = self.loc(r) else { return };
+        self.set_goal(
+            r,
+            Goal::GoTo {
+                origin,
+                destination: Cube::unit(loc),
+                is_attack_move: true,
+            },
+        )
+    }
+
     pub fn clear_goal(&self, r: &mut impl AsMut<Runtime>) {
         self.set(r, Goal::default());
     }
@@ -324,8 +364,10 @@ impl Entity {
 
     pub(crate) fn is_looking_for_fight(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
-        matches!(self.goal(r), Goal::None | Goal::GoTo(_) | Goal::Escort(_))
-            && Some(*self) != r.player()
+        matches!(
+            self.goal(r),
+            Goal::None | Goal::GoTo { .. } | Goal::Escort(_)
+        ) && Some(*self) != r.player()
     }
 
     pub(crate) fn fov_mobs(
@@ -426,18 +468,15 @@ pub enum Goal {
 
     /// Move to a location.
     ///
-    /// NPCs will not resume following player when they arrive, used to
-    /// detach NPCs from party.
-    GoTo(Location),
-
-    /// Move to a sector.
-    GoToZone(Cube),
-
-    /// Like `GoTo`, but attack everything on the way.
-    ///
-    /// Unlike `GoTo`, NPCs will return to party once they arrive at the
-    /// destination and see no targets of opportunity.
-    AttackMove(Location),
+    /// Option to attack anything encountered for player's NPCs.
+    GoTo {
+        /// Keep track of starting point to limit pathfinding queries.
+        origin: Location,
+        /// Destination is a zone, use an unit cube for a point.
+        destination: Cube,
+        /// If true, NPC will look for fights along the way.
+        is_attack_move: bool,
+    },
 
     /// Attack a mob, will complete when target mob is dead.
     ///

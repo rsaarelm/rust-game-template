@@ -580,26 +580,9 @@ pub trait Sdf {
     fn sd(&self, p: IVec3) -> i32;
 }
 
-impl Sdf for Box<dyn Sdf> {
-    fn sd(&self, p: IVec3) -> i32 {
-        self.as_ref().sd(p)
-    }
-}
-
-impl Sdf for IVec3 {
-    fn sd(&self, p: IVec3) -> i32 {
-        // Had chessboard distance here but it was causing weird artifacts in
-        // pathfinding. Squared euclidean seems to work better, though it
-        // might be screwing with A*'s expectation that the heuristic is
-        // optimistic.
-        let d = p - *self;
-        d.dot(d)
-    }
-}
-
 impl Sdf for Cube<i32> {
     fn sd(&self, p: IVec3) -> i32 {
-        self.signed_distance(p)
+        self.vec_to(p).taxi_len()
     }
 }
 

@@ -60,12 +60,13 @@ impl Runtime {
     /// single step from the fat slice.
     pub fn fog_exploring_path(
         &self,
-        start: &Location,
+        origin: &Location,
+        current: &Location,
         dest: &impl Sdf,
     ) -> Option<Vec<Location>> {
-        let sec = start.sector().fat();
+        let sec = origin.sector().fat();
         self.find_path_with(
-            start,
+            current,
             |loc| {
                 loc.fog_exploring_walk_neighbors(self)
                     .filter(move |&loc| sec.contains(loc) || dest.sd(loc) <= 0)

@@ -343,38 +343,15 @@ impl Game {
                     p.execute_direct(r, act);
                 }
             }
-            (Command::Indirect(Goal::GoToZone(zone)), Some(_)) => {
-                // TODO Merge GoTo and GoToZone goals into a procedure.
+            (Command::Indirect(Goal::GoTo { destination, .. }), Some(_)) => {
                 if self.player_is_selected() {
                     // For player group, player gets the goal, others follow
                     // player.
 
                     let Some(p) = self.r.player() else { return };
-
-                    for e in self.selection.iter() {
-                        if !e.is_player(&self.r) {
-                            e.set_goal(&mut self.r, Goal::FollowPlayer);
-                        }
-                    }
-
-                    p.set_goal(&mut self.r, Goal::GoToZone(zone));
-                } else {
-                    // Non-player group: Everyone gets an attack-move command,
-                    // will return to following player when done.
-                    for p in self.selection.iter() {
-                        p.set_goal(&mut self.r, Goal::GoToZone(zone));
-                        p.exhaust_actions(&mut self.r);
-                    }
-                    self.select_next_commandable(true);
-                }
-            }
-            (Command::Indirect(Goal::GoTo(loc)), Some(_)) => {
-                if self.player_is_selected() {
-                    // For player group, player gets the goal, others follow
-                    // player.
-
-                    let Some(p) = self.r.player() else { return };
-                    let Some(start) = p.loc(&self.r) else { return };
+                    let Some(current_loc) = p.loc(&self.r) else {
+                        return;
+                    };
 
                     for e in self.selection.iter() {
                         if !e.is_player(&self.r) {
@@ -385,16 +362,19 @@ impl Game {
                     if p.is_threatened(&self.r) {
                         // If player is threatened, see if it looks like
                         // you're trying to fight or flee.
-                        let Some(mut planned_path) =
-                            self.r.fog_exploring_path(&start, &loc)
-                        else {
+                        let Some(mut planned_path) = self.r.fog_exploring_path(
+                            &current_loc,
+                            &current_loc,
+                            &destination,
+                        ) else {
                             return;
                         };
 
                         let Some(step) = planned_path.pop() else {
                             return;
                         };
-                        let Some(dir) = start.vec2_towards(&step).map(s4::norm)
+                        let Some(dir) =
+                            current_loc.vec2_towards(&step).map(s4::norm)
                         else {
                             return;
                         };
@@ -407,12 +387,15 @@ impl Game {
                             return;
                         }
                     }
-                    p.set_goal(&mut self.r, Goal::GoTo(loc));
+                    p.order_go_to_zone(&mut self.r, destination);
                 } else {
                     // Non-player group: Everyone gets an attack-move command,
                     // will return to following player when done.
                     for p in self.selection.iter() {
-                        p.set_goal(&mut self.r, Goal::AttackMove(loc));
+                        p.order_attack_move(
+                            &mut self.r,
+                            destination.center().into(),
+                        );
                         p.exhaust_actions(&mut self.r);
                     }
                     self.select_next_commandable(true);
@@ -461,9 +444,13 @@ impl Game {
 
     pub fn travel(&mut self, dir: IVec3) {
         if let Some(p) = self.current_active() {
-            let Some(loc) = p.loc(self) else { return };
-            let sec = Level::level_from(&loc);
-            self.act(Goal::GoToZone(sec.offset(dir).floor()))
+            let Some(origin) = p.loc(self) else { return };
+            let destination = Level::level_from(&origin).offset(dir).floor();
+            self.act(Goal::GoTo {
+                origin,
+                destination,
+                is_attack_move: false,
+            });
         }
     }
 
@@ -692,7 +679,9 @@ impl PlannedPath {
         self.mouse_pos = mouse_pos;
 
         self.posns.clear();
-        if let Some(path) = r.fog_exploring_path(&orig, &dest) {
+        if let Some(path) =
+            r.fog_exploring_path(&orig, &orig, &Cube::unit(dest))
+        {
             self.posns = path;
         }
     }

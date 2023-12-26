@@ -174,6 +174,11 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                     // Left click.
                     let loc = view.unproject_1(p);
 
+                    let origin = game()
+                        .current_active()
+                        .and_then(|p| p.loc(game()))
+                        .unwrap_or(loc);
+
                     match loc.mob_at(r) {
                         Some(npc) if npc.is_player_aligned(r) => {
                             // Select NPC or player.
@@ -182,7 +187,11 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                         Some(_enemy) if game().player_is_selected() => {
                             // Player group gets a move command that gets
                             // transformed into autofight when near enough.
-                            ret = Some(Order(Goal::GoTo(loc)));
+                            ret = Some(Order(Goal::GoTo {
+                                origin,
+                                destination: Cube::unit(loc),
+                                is_attack_move: false,
+                            }));
                         }
                         Some(enemy) => {
                             // NPCs get a direct kill task instead.
@@ -190,7 +199,11 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                         }
                         None => {
                             // Move to location.
-                            ret = Some(Order(Goal::GoTo(loc)));
+                            ret = Some(Order(Goal::GoTo {
+                                origin,
+                                destination: Cube::unit(loc),
+                                is_attack_move: false,
+                            }));
                         }
                     }
                 } else {
