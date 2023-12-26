@@ -1,4 +1,5 @@
 use content::{Block, Coordinates, Tile, Zone};
+use derive_more::Deref;
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::prelude::*;
@@ -10,7 +11,7 @@ use util::reverse_dir_mask_4;
 use crate::{prelude::*, Window};
 
 /// Projection from a location into an on-screen wide-tile display space.
-#[derive(Copy, Clone, Default, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, Eq, PartialEq, Debug, Deref)]
 pub struct SectorView(IVec3);
 
 impl SectorView {
