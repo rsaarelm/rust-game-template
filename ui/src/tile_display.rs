@@ -120,12 +120,15 @@ impl SectorView {
         &self,
         view_size: impl Into<[i32; 2]>,
     ) -> impl Iterator<Item = (IVec2, Location)> + '_ {
-        Rect::sized(view_size).into_iter().filter_map(|p| {
-            // Filter result to positions that are at cell center. The pos is
-            // at center when both unprojections agree.
-            let (a, b) = (self.unproject_1(p), self.unproject_2(p));
-            (a == b).then_some((p.into(), a))
-        })
+        Rect::sized(view_size)
+            .grow([1, 0], [1, 0])
+            .into_iter()
+            .filter_map(|p| {
+                // Filter result to positions that are at cell center. The pos is
+                // at center when both unprojections agree.
+                let (a, b) = (self.unproject_1(p), self.unproject_2(p));
+                (a == b).then_some((p.into(), a))
+            })
     }
 }
 
