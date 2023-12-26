@@ -115,13 +115,21 @@ pub trait Coordinates:
     ///
     /// If the result is empty, this location should be treated as an opaque
     /// tile in terms of FoV.
-    fn transparent_volume<'a>(
-        &'a self,
-        r: &'a impl Environs,
-    ) -> impl Iterator<Item = Self> + 'a {
-        [self.above(), *self, self.below()]
-            .into_iter()
-            .filter(|loc| matches!(loc.voxel(r), None | Some(Block::Glass)))
+    fn transparent_volume<'a>(&'a self, r: &'a impl Environs) -> Vec<Self> {
+        let is_transparent =
+            |loc: &Self| matches!(loc.voxel(r), None | Some(Block::Glass));
+
+        let mut ret = Vec::new();
+        if is_transparent(&self.above()) {
+            ret.push(self.above());
+        }
+        if is_transparent(self) {
+            ret.push(*self);
+            if is_transparent(&self.below()) {
+                ret.push(self.below());
+            }
+        }
+        ret
     }
 
     /// Convenience method that doubles the x coordinate.

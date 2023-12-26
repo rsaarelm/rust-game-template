@@ -77,7 +77,7 @@ impl Runtime {
                     return None;
                 }
 
-                if loc.transparent_volume(self.r).next().is_none() {
+                if loc.transparent_volume(self.r).is_empty() {
                     return None;
                 }
 
@@ -89,6 +89,7 @@ impl Runtime {
             |(v, s)| {
                 (s.origin + v.extend(0))
                     .transparent_volume(self)
+                    .into_iter()
                     .map(move |loc| (v, loc))
                     .collect::<Vec<_>>()
             },
