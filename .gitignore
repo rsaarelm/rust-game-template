@@ -4,6 +4,9 @@
 .direnv/
 result
 
+# Generated source
+src/version.rs
+
 # Generated WASM files
 web/*.wasm
 

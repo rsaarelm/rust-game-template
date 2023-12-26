@@ -9,6 +9,7 @@ use util::{IncrementalOutline, Logos};
 
 mod map_view;
 mod run;
+mod version;
 mod view;
 
 pub const GAME_NAME: &str = "gametemplate";
@@ -90,6 +91,7 @@ fn main() -> anyhow::Result<()> {
             }
             break;
         }
+        msg!("Build version {}", version::GIT_HEAD);
 
         game().viewpoint = game()
             .r

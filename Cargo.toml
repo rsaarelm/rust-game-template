@@ -6,6 +6,7 @@ description = "Base project for game development"
 keywords = ["gamedev"]
 license = "GPL3"
 edition = "2021"
+build = "build.rs"
 
 [features]
 # For convenience, use GUI backend by default. When this default is enabled,
