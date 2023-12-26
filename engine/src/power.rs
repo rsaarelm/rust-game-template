@@ -158,40 +158,47 @@ impl Runtime {
     fn magic_map(&mut self, _perp: Option<Entity>, from: &Location) {
         const MAGIC_MAP_RANGE: usize = 100;
 
-        let neighbors = |loc: &Location| {
-            // Location that stops FOV, do not proceed.
-            let mut ret = Vec::new();
+        let zone = from.sector().fat();
 
-            if !loc.can_be_stood_in(self) && loc.blocks_sight(self) {
-                return ret;
-            }
-            // Stop at sector edge.
-            if !from.sector().fat().contains(*loc) {
-                return ret;
-            }
+        let mut revealed: Vec<(Location, usize)> = util::dijkstra_map(
+            |loc| {
+                loc.hover_neighbors(self)
+                    .map(|(_, loc)| loc)
+                    .filter(|&loc| zone.contains(loc))
+            },
+            [*from],
+        )
+        .filter(|(loc, d)| !loc.is_explored(self) && *d < MAGIC_MAP_RANGE)
+        .collect();
 
-            for loc2 in loc.ns_8() {
-                // Only add corners if they block further FOV, this is so that
-                // corners of rectangular rooms get added.
-                if (loc2 - *loc).taxi_len() == 2 && !loc.blocks_sight(self) {
-                    continue;
-                }
-
-                ret.push(loc2);
-            }
-            ret
-        };
-
-        let revealed: Vec<(Location, usize)> =
-            util::dijkstra_map(neighbors, [*from])
-                .filter(|(loc, d)| {
-                    !loc.is_explored(self) && *d < MAGIC_MAP_RANGE
-                })
-                .collect();
+        // Hack to add walls to the cover.
+        let rim: Vec<(Location, usize)> = revealed
+            .iter()
+            .flat_map(|(loc, n)| {
+                loc.ns_8().map(|loc| (loc.snap_above_floor(self), *n + 1))
+            })
+            .filter(|(loc, _)| {
+                !loc.is_explored(self)
+                    && revealed.iter().find(|(loc_2, _)| loc == loc_2).is_none()
+            })
+            .collect();
 
         // Reveal the terrain.
         for (loc, _) in &revealed {
             self.fov.insert(*loc);
+        }
+
+        for (loc, n) in rim {
+            if loc.is_explored(self) {
+                revealed.push((loc, n));
+            }
+        }
+
+        // Finally flatten everything to the base z level so all animations
+        // are visible at the same layer and revealed bumps don't show up
+        // early.
+        for (loc, _) in revealed.iter_mut() {
+            loc.z = from.z;
         }
 
         send_msg(Msg::MagicMap(revealed));

@@ -32,7 +32,20 @@ pub trait Coordinates:
             .find(|loc| loc.can_be_stood_in(r))
     }
 
+    fn hover_step(&self, r: &impl Environs, dir: IVec2) -> Option<Self> {
+        let loc = (*self + dir.extend(0)).snap_above_floor(r);
+        match loc.voxel(r) {
+            None | Some(Block::Door) => Some(loc),
+            _ => None,
+        }
+    }
+
     fn walk_neighbors<'a>(
+        self,
+        r: &impl Environs,
+    ) -> impl Iterator<Item = (IVec2, Self)> + '_;
+
+    fn hover_neighbors<'a>(
         self,
         r: &impl Environs,
     ) -> impl Iterator<Item = (IVec2, Self)> + '_;
@@ -196,6 +209,16 @@ impl Coordinates for Location {
         self.ns_4_alternating().filter_map(move |loc_2| {
             let d = (loc_2 - self).truncate();
             self.walk_step(r, d).map(|loc| (d, loc))
+        })
+    }
+
+    fn hover_neighbors<'a>(
+        self,
+        r: &impl Environs,
+    ) -> impl Iterator<Item = (IVec2, Self)> + '_ {
+        self.ns_4_alternating().filter_map(move |loc_2| {
+            let d = (loc_2 - self).truncate();
+            self.hover_step(r, d).map(|loc| (d, loc))
         })
     }
 
