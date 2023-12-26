@@ -83,6 +83,11 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     for (p, loc) in view.iter(win.dim()) {
         DisplayTile::new(game(), loc).render(win, p);
 
+        if let Some(e) = loc.snap_above_floor(&game().r).item_at(game()) {
+            let cell = CharCell::c(e.icon(r));
+            win.put(p, cell);
+        }
+
         if let Some(e) = loc.snap_above_floor(&game().r).mob_at(game()) {
             let mut cell = CharCell::c(e.icon(r));
             if e.is_player_aligned(game()) {
