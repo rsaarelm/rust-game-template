@@ -288,9 +288,7 @@ pub fn render_fog(
 
     let (cover_left, cover_right) =
         (!left.is_explored(r), !right.is_explored(r));
-    let cover_middle = (cover_left && cover_right)
-        || (cover_right && left.tile(r).is_wall())
-        || (cover_left && right.tile(r).is_wall());
+    let cover_middle = cover_left || cover_right;
 
     if cover_left {
         win.put(pos, CharCell::c('░').col(X::BROWN));

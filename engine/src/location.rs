@@ -1,5 +1,6 @@
 use content::{Block, Coordinates, Environs};
-use util::{s4, Neighbors2D};
+use glam::ivec3;
+use util::{s4, s8, Neighbors2D};
 
 use crate::{prelude::*, Grammatize};
 
@@ -119,12 +120,37 @@ impl RuntimeCoordinates for Location {
 
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
+        if self.snap_above_floor(r).is_in_fov_set(r) {
+            return true;
+        }
 
-        self.snap_above_floor(r).is_in_fov_set(r)
-            || self.tile(r).is_wall()
-                && self.ns_8().any(|loc| {
-                    loc.is_in_fov_set(r) || (loc.above()).is_in_fov_set(r)
-                })
+        if self.tile(r).is_wall() {
+            // Any 4-adjacent visible cell makes a wall visible.
+            if self
+                .ns_4()
+                .any(|loc| loc.snap_above_floor(r).is_in_fov_set(r))
+            {
+                return true;
+            }
+
+            for diag in s8::DIAGONALS.iter().map(|&p| p.extend(0)) {
+                // This is a corner wall and next to a visible floor.
+                //
+                // Since last step didn't return, there's no directly adjacent
+                // visible floor.
+                //
+                // Must have two adjacent walls to qualify as visible here.
+                if (*self + diag).snap_above_floor(r).is_in_fov_set(r) {
+                    if (*self + diag * ivec3(1, 0, 0)).tile(r).is_wall()
+                        && (*self + diag * ivec3(0, 1, 0)).tile(r).is_wall()
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
     }
 
     fn fog_exploring_walk_neighbors<'a>(

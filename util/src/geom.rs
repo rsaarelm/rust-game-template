@@ -208,6 +208,9 @@ pub mod s8 {
         ivec2(-1, -1),
     ];
 
+    pub const DIAGONALS: [IVec2; 4] =
+        [ivec2(1, -1), ivec2(1, 1), ivec2(-1, 1), ivec2(-1, -1)];
+
     /// Chessboard distance metric.
     pub fn d(a: &IVec2, b: &IVec2) -> i32 {
         let c = (*a - *b).abs();
