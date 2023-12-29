@@ -13,6 +13,7 @@ use crate::{
     SECTOR_WIDTH,
 };
 
+/// Non-cached world data that goes in a save file.
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 struct SerWorld {
@@ -341,6 +342,10 @@ impl World {
 // work like this without a mess-up.
 pub type Level = Cube;
 
+/// Fixed downstairs positions for every level given a world seed.
+///
+/// The up and down stairwell positions generated using this method are
+/// guaranteed to be apart for every level.
 fn default_down_stairs(seed: &Logos, s: Level) -> Location {
     snap_stairwell_position(
         Cube::from(s)

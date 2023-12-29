@@ -76,7 +76,6 @@ impl Entity {
     /// Access and mutate a component using a closure.
     ///
     /// Use for complex components that aren't just atomic values.
-    #[allow(dead_code)]
     pub(crate) fn with_mut<T: Component + Default + Eq, U>(
         &self,
         r: &mut impl AsMut<Runtime>,
