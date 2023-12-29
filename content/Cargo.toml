@@ -9,7 +9,7 @@ build = "build.rs"
 anyhow = "1"
 derive_more = "0.99"
 fdeflate = "0.3"
-glam = { version = "0.24", features = ["serde"] }
+glam = { version = "0.25", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
 log = "0.4"

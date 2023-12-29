@@ -8,7 +8,7 @@ description = "Miscellaneous low-level utilities"
 [dependencies]
 anyhow = "1"
 derive_more = "0.99"
-glam = { version = "0.24", features = ["serde"] }
+glam = { version = "0.25", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
 itertools = "0.12"

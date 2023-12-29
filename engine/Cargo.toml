@@ -10,7 +10,7 @@ content = { path = "../content" }
 derive_more = "0.99"
 fdeflate = "0.3"
 fov = { path = "../fov" }
-glam = { version = "0.24", features = ["serde"] }
+glam = { version = "0.25", features = ["serde"] }
 hecs = { version = "0.10", features = ["row-serialize"] }
 idm = "0.4"
 log = "0.4"
