@@ -1,7 +1,10 @@
 fn main() {
     std::fs::write(
         "src/version.rs",
-        format!("pub const GIT_HEAD: &'static str = \"{}\";", get_git_hash()),
+        format!(
+            "pub const GIT_HEAD: &'static str = \"{}\";\n",
+            get_git_hash()
+        ),
     )
     .unwrap();
 }
