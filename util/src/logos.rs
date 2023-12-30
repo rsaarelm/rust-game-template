@@ -89,15 +89,15 @@ impl Logos {
         s.as_ref().chars().collect()
     }
 
-    /// Construct a logos string, substituting missing letters with numbers.
+    /// Apply the nOISE letter substitution to turn arbitrary text into Logos.
     pub fn elite_new(s: impl AsRef<str>) -> Self {
         s.as_ref()
             .chars()
             .map(|c| match c.to_ascii_uppercase() {
-                'E' => '3',
-                'I' => '1',
                 'O' => '0',
+                'I' => '1',
                 'S' => '5',
+                'E' => '3',
                 a => a,
             })
             .collect()

@@ -16,7 +16,7 @@ pub const GAME_NAME: &str = "gametemplate";
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)), help = "Start a new game, optionally with specific seed")]
+    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)), help = "Start a new game, optionally with specific seed")]
     new_game: Option<Option<Logos>>,
 
     #[arg(
