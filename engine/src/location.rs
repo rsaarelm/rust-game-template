@@ -1,4 +1,4 @@
-use content::{Block, Coordinates, Cube, Environs};
+use content::{Block, Coordinates, Cube, Environs, Tile};
 use glam::ivec3;
 use util::{s4, s8, Neighbors2D};
 
@@ -22,6 +22,11 @@ pub trait RuntimeCoordinates: Coordinates {
         r: &'a impl AsRef<Runtime>,
         explore_area: Cube,
     ) -> impl Iterator<Item = Self> + 'a;
+
+    /// Destination for UI path selection, may dip outside the +/-1 slice if
+    /// the point is a wall above/below a position reached from an adjacent
+    /// slope.
+    fn ui_path_destination(&self, r: &impl AsRef<Runtime>) -> Self;
 
     fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
@@ -177,6 +182,34 @@ impl RuntimeCoordinates for Location {
                     .collect()
             }
         })
+    }
+
+    fn ui_path_destination(&self, r: &impl AsRef<Runtime>) -> Self {
+        let r = r.as_ref();
+
+        // Regular floors are returned as is.
+        if let Tile::Surface(loc, _) = self.tile(r) {
+            return loc;
+        }
+
+        // Now look for neighboring slopes that lead to a walkable tile just
+        // off the slice.
+        let mut candidates = HashSet::default();
+        for d in s4::DIR {
+            let loc_2 = (*self + d.extend(0)).snap_above_floor(r);
+            if let Some(loc) = loc_2.walk_step(r, -d) {
+                candidates.insert(loc);
+            }
+        }
+
+        // This only works if there's exactly one candidate cell, it's
+        // possible for one path to lead to a location above and another to a
+        // location below, in which case we won't try to choose.
+        if candidates.len() == 1 {
+            return candidates.into_iter().next().unwrap();
+        }
+
+        *self
     }
 
     fn entities_at<'a>(

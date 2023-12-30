@@ -47,7 +47,12 @@ pub async fn explore() {
                     game().current_active().and_then(|p| p.loc(game()))
                 {
                     let mouse_pos = navni::mouse_state().cursor_pos();
-                    game().planned_path.update(game(), orig, loc, mouse_pos);
+                    game().planned_path.update(
+                        game(),
+                        orig,
+                        loc.ui_path_destination(game()),
+                        mouse_pos,
+                    );
                 }
             }
             Some(SelectActive(sel)) => game().set_selection(sel),

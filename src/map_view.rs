@@ -180,7 +180,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                 // Was this a local click or the end result of a drag?
                 if p == q {
                     // Left click.
-                    let loc = view.unproject_1(p);
+                    let loc = view.unproject_1(p).ui_path_destination(game());
                     let is_exploring = !loc.is_explored(game());
 
                     let origin = game()
