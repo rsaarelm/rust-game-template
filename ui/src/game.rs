@@ -451,7 +451,7 @@ impl Game {
                 origin,
                 destination,
                 is_attack_move: false,
-                is_exploring: false,
+                is_exploring: true,
             });
         }
     }
@@ -683,7 +683,7 @@ impl PlannedPath {
 
         self.posns.clear();
         if let Some(path) =
-            r.fog_exploring_path(&orig, &orig, &Cube::unit(dest), true)
+            r.fog_exploring_path(&orig, &orig, &Cube::unit(dest), false)
         {
             self.posns = path;
         }

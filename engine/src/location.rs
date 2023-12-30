@@ -187,6 +187,11 @@ impl RuntimeCoordinates for Location {
     fn ui_path_destination(&self, r: &impl AsRef<Runtime>) -> Self {
         let r = r.as_ref();
 
+        // The starting point must be explored space.
+        if !self.is_explored(r) {
+            return *self;
+        }
+
         // Regular floors are returned as is.
         if let Tile::Surface(loc, _) = self.tile(r) {
             return loc;
