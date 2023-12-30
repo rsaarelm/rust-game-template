@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use anyhow::bail;
-use glam::{ivec2, IVec2};
+use glam::{ivec2, ivec3, IVec2};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
@@ -160,11 +160,12 @@ fn build_skeleton(
                         }
                     }
 
-                    // TODO Specify vertical connections for prefabs to interface with generated levels
                     Segment {
                         connected_north: false,
                         connected_west: false,
-                        connected_down: None,
+                        connected_down: map
+                            .downstairs()
+                            .map(|p| origin + p.extend(-1)),
                         generator: Box::new(Patch::from_sector_map(
                             &origin, map,
                         )?),
@@ -299,12 +300,7 @@ impl World {
 
         let volume = *s;
 
-        Lot {
-            volume,
-            sides,
-            up,
-            down,
-        }
+        Lot::new(volume, sides, up, down).unwrap()
     }
 
     pub fn player_entrance(&self) -> Location {
@@ -348,8 +344,7 @@ pub type Level = Cube;
 /// guaranteed to be apart for every level.
 fn default_down_stairs(seed: &Logos, s: Level) -> Location {
     snap_stairwell_position(
-        Cube::from(s)
-            .border([0, 0, -1])
+        (Cube::from(s).border([0, 0, -1]) + ivec3(0, 0, -1))
             .sample(&mut util::srng(&(seed, s))),
     )
 }
@@ -361,17 +356,18 @@ fn default_down_stairs(seed: &Logos, s: Level) -> Location {
 /// x,y and creating an ungenerateable map, stairwells on consecutive levels
 /// must alternate between black and white "chessboard squares" of a grid of
 /// 3x3 cells. Stairwells are also kept away from the very edge of the sector.
-fn snap_stairwell_position(loc: Location) -> Location {
+pub(crate) fn snap_stairwell_position(loc: Location) -> Location {
     // Find dimensions for the chessboard zone, leave some space at edges.
-    const W: i32 = (SECTOR_WIDTH - 2) / 6 * 6;
-    const H: i32 = (SECTOR_HEIGHT - 2) / 6 * 6;
+    const W: i32 = (SECTOR_WIDTH - 2) / 8 * 8;
+    const H: i32 = (SECTOR_HEIGHT - 2) / 8 * 8;
 
     // Sector dimensions too small for stairwell placement if this trips.
     const_assert!(W > 0 && H > 0);
 
-    // Offset of the chessboard zone off sector edge.
-    const X: i32 = (SECTOR_WIDTH - W) / 2;
-    const Y: i32 = (SECTOR_HEIGHT - H) / 2;
+    // Offset of the chessboard zone off sector edge. Make sure the offset
+    // coordinates are even, stairwells should snap to even positions.
+    const X: i32 = (SECTOR_WIDTH - W) / 4 * 2;
+    const Y: i32 = (SECTOR_HEIGHT - H) / 4 * 2;
 
     // Place the chessboard zone in location's sector.
     let bounds =
@@ -383,14 +379,16 @@ fn snap_stairwell_position(loc: Location) -> Location {
         .extend(loc.z)
 }
 
-/// Snap a point to the center of 3x3 "chessboard" squares within the area of
-/// `bounds`.
+/// Snap a point to the center of 4x4 "chessboard" squares within the area of
+/// `bounds`. (Why 4x4 instead of 3x3? Because we might have convenience
+/// conventions in generators that place corridors in even coordinates, and
+/// stairwells should fit in the pattern)
 ///
 /// The point is snapped to "white" or "black" squares based on whether
 /// `parity` is even or odd.
 fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
     // Chessboard square size.
-    const N: i32 = 3;
+    const N: i32 = 4;
     const N2: i32 = N * 2;
 
     assert!(

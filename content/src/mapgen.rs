@@ -1,10 +1,12 @@
+use anyhow::bail;
 use derive_more::{Deref, DerefMut};
-use rand::RngCore;
-use util::{Cloud, IndexMap};
+use glam::{ivec3, IVec3};
+use rand::{distributions::Distribution, seq::SliceRandom, RngCore};
+use util::{v3, Cloud, IndexMap};
 
 use crate::{
-    data::GenericSector, Cube, Data, Location, SectorMap, Spawn, SpawnDist,
-    Voxel,
+    data::GenericSector, Block, Coordinates, Cube, Data, Environs, Location,
+    SectorMap, Spawn, SpawnDist, Voxel,
 };
 
 pub trait MapGenerator {
@@ -49,10 +51,47 @@ pub struct Lot {
 
     /// Connection flags to the four horizontal neighbors. The bit order is
     /// NESW.
+    ///
+    /// If a connection bit is set, the generated map is expected to connect
+    /// to the single center (rounded down) cell in its corresponding edge. Ie
+    /// if there is a north connection (`lot.sides & 0b1 != 0`), the generated
+    /// map must have a path to (⌊`SECTOR_WIDTH` / 2⌋, 0).
     pub sides: u8,
 
     pub up: Option<Location>,
     pub down: Option<Location>,
+}
+
+impl Lot {
+    pub fn new(
+        volume: Cube,
+        sides: u8,
+        up: Option<Location>,
+        down: Option<Location>,
+    ) -> anyhow::Result<Self> {
+        use crate::world::snap_stairwell_position;
+
+        // Validate that stair positions fit in pattern.
+        if let Some(up) = up {
+            let expected = snap_stairwell_position(up);
+            if up != expected {
+                bail!("Bad upstairs spot in Lot: {up}, closest match is {expected}");
+            }
+        }
+        if let Some(down) = down {
+            let expected = snap_stairwell_position(down);
+            if down != expected {
+                bail!("Bad downstairs spot in Lot: {down}, closest match is {expected}");
+            }
+        }
+
+        Ok(Lot {
+            volume,
+            sides,
+            up,
+            down,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
@@ -75,30 +114,27 @@ impl Patch {
     }
 }
 
-pub fn bigroom(_rng: &mut dyn RngCore, _lot: &Lot) -> anyhow::Result<Patch> {
-    todo!()
-    /*
+pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
+    use Block::*;
+
     let mut ret = Patch::default();
 
     let floor = lot.volume.border([0, 0, -1]);
 
     for p in floor {
-        ret.set_voxel(&p.into(), None);
-        ret.set_voxel(&p.into().below, Some(Rock));
+        let p = v3(p);
+        ret.set_voxel(&p, None);
+        ret.set_voxel(&p.below(), Some(Rock));
     }
 
-    let z = lot.volume.max()[2] - 1;
-
-    // TODO: These should have wall enclosures around them.
-
-    if let Some(mut upstairs) = lot.up {
-        upstairs.z = z;
-        ret.set_tile(&(upstairs + ivec3(0, -1, 0)), Tile2D::Upstairs);
+    // TODO: Stairwells should have enclosures around them.
+    if let Some(upstairs) = lot.up {
+        ret.set_voxel(&upstairs.below(), Some(Rock));
     }
 
-    if let Some(mut downstairs) = lot.down {
-        downstairs.z = z;
-        ret.set_tile(&downstairs, Tile2D::Downstairs);
+    if let Some(downstairs) = lot.down {
+        ret.set_voxel(&downstairs, None);
+        ret.set_voxel(&(downstairs + ivec3(0, 1, 0)), None);
     }
 
     let depth = 0.max(-lot.volume.min()[2]) as u32;
@@ -123,10 +159,9 @@ pub fn bigroom(_rng: &mut dyn RngCore, _lot: &Lot) -> anyhow::Result<Patch> {
     }
 
     Ok(ret)
-    */
 }
 
-fn _monster_spawns(depth: u32) -> Vec<Spawn> {
+fn monster_spawns(depth: u32) -> Vec<Spawn> {
     Data::get()
         .bestiary
         .iter()
@@ -135,7 +170,7 @@ fn _monster_spawns(depth: u32) -> Vec<Spawn> {
         .collect()
 }
 
-fn _item_spawns(depth: u32) -> Vec<Spawn> {
+fn item_spawns(depth: u32) -> Vec<Spawn> {
     Data::get()
         .armory
         .iter()

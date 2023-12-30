@@ -191,6 +191,10 @@ impl SectorMap {
         text::char_grid(&self.map).filter_map(|(p, c)| (c == '@').then_some(p))
     }
 
+    pub fn downstairs(&self) -> Option<IVec2> {
+        text::char_grid(&self.map).find_map(|(p, c)| (c == '>').then_some(p))
+    }
+
     pub fn spawns(
         &self,
         origin: &Location,
