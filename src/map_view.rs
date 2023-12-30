@@ -181,6 +181,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                 if p == q {
                     // Left click.
                     let loc = view.unproject_1(p);
+                    let is_exploring = !loc.is_explored(game());
 
                     let origin = game()
                         .current_active()
@@ -199,6 +200,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                                 origin,
                                 destination: Cube::unit(loc),
                                 is_attack_move: false,
+                                is_exploring,
                             }));
                         }
                         Some(enemy) => {
@@ -211,6 +213,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                                 origin,
                                 destination: Cube::unit(loc),
                                 is_attack_move: false,
+                                is_exploring,
                             }));
                         }
                     }

@@ -1,4 +1,4 @@
-use content::{Block, Coordinates, Environs};
+use content::{Block, Coordinates, Cube, Environs};
 use glam::ivec3;
 use util::{s4, s8, Neighbors2D};
 
@@ -20,6 +20,7 @@ pub trait RuntimeCoordinates: Coordinates {
     fn fog_exploring_walk_neighbors<'a>(
         &self,
         r: &'a impl AsRef<Runtime>,
+        explore_area: Cube,
     ) -> impl Iterator<Item = Self> + 'a;
 
     fn blocks_shot(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -156,6 +157,7 @@ impl RuntimeCoordinates for Location {
     fn fog_exploring_walk_neighbors<'a>(
         &self,
         r: &'a impl AsRef<Runtime>,
+        explore_area: Cube,
     ) -> impl Iterator<Item = Self> + 'a {
         let r = r.as_ref();
         let origin = *self;
@@ -168,7 +170,11 @@ impl RuntimeCoordinates for Location {
                 origin.walk_step(r, dir).into_iter().collect::<Vec<_>>()
             } else {
                 // Assume all possible steps are valid in unexplored space.
-                vec![loc, loc.above(), loc.below()]
+
+                [loc, loc.above(), loc.below()]
+                    .into_iter()
+                    .filter(|&loc| explore_area.contains(loc))
+                    .collect()
             }
         })
     }

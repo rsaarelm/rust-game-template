@@ -79,13 +79,31 @@ impl Runtime {
         origin: &Location,
         current: &Location,
         dest: &impl Sdf,
+        is_exploring: bool,
     ) -> Option<Vec<Location>> {
-        let sec = origin.sector().fat();
+        // Only explore in the local sector slice. Make it wide so optimistic
+        // pathing to neighboring sectors works.
+        let explore_area = origin.sector().fat().wide();
+
+        // Follow known paths into nearby neighboring sectors too, except when
+        // this is targeting unknown territory (is_exploring is true), in
+        // which case stick to the local slice.
+        let range = if is_exploring {
+            explore_area
+        } else {
+            origin.sector().grow(
+                [SECTOR_WIDTH, SECTOR_HEIGHT, 2],
+                [SECTOR_WIDTH, SECTOR_HEIGHT, 2],
+            )
+        };
+
         self.find_path_with(
             current,
             |loc| {
-                loc.fog_exploring_walk_neighbors(self)
-                    .filter(move |&loc| sec.contains(loc) || dest.sd(loc) <= 0)
+                loc.fog_exploring_walk_neighbors(self, explore_area)
+                    .filter(move |&loc| {
+                        range.contains(loc) || dest.sd(loc) <= 0
+                    })
                     .collect::<Vec<_>>()
             },
             dest,

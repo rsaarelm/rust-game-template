@@ -18,6 +18,7 @@ impl Entity {
         let loc = self.loc(r)?;
         let mut path_origin = loc;
         let mut path_dest: Cube;
+        let mut path_exploring = false;
 
         match goal {
             Goal::None => return Some(Action::Pass),
@@ -83,9 +84,11 @@ impl Entity {
                 origin,
                 destination,
                 is_attack_move,
+                is_exploring,
             } => {
                 path_origin = origin;
                 path_dest = destination;
+                path_exploring = is_exploring;
 
                 // Look for targets of opportunity, redirect towards them.
                 //
@@ -158,7 +161,7 @@ impl Entity {
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
         if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fog_exploring_path(&path_origin, &loc, &path_dest)
+            r.fog_exploring_path(&path_origin, &loc, &path_dest, path_exploring)
         } else {
             r.enemy_path(&loc, &path_dest)
         } {
@@ -288,12 +291,14 @@ impl Entity {
     pub fn order_go_to(&self, r: &mut impl AsMut<Runtime>, loc: Location) {
         let r = r.as_mut();
         let Some(origin) = self.loc(r) else { return };
+        let is_exploring = self.is_player_aligned(r) && !loc.is_explored(r);
         self.set_goal(
             r,
             Goal::GoTo {
                 origin,
                 destination: Cube::unit(loc),
                 is_attack_move: false,
+                is_exploring,
             },
         )
     }
@@ -307,6 +312,7 @@ impl Entity {
                 origin,
                 destination: zone,
                 is_attack_move: false,
+                is_exploring: false,
             },
         )
     }
@@ -324,6 +330,7 @@ impl Entity {
                 origin,
                 destination: Cube::unit(loc),
                 is_attack_move: true,
+                is_exploring: false,
             },
         )
     }
@@ -476,6 +483,8 @@ pub enum Goal {
         destination: Cube,
         /// If true, NPC will look for fights along the way.
         is_attack_move: bool,
+        /// If true, move is into unexplored terrain.
+        is_exploring: bool,
     },
 
     /// Attack a mob, will complete when target mob is dead.
