@@ -102,7 +102,7 @@ fn main() -> anyhow::Result<()> {
 
         navni::set_palette(&ui::LIGHT_PALETTE);
 
-        run::explore().await;
+        run::main_gameplay().await;
 
         // Save the game if we exited with the game still running.
         if !game().is_game_over() {

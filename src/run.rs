@@ -11,7 +11,7 @@ use crate::{
     view,
 };
 
-pub async fn explore() {
+pub async fn main_gameplay() {
     loop {
         game().tick();
         game().draw().await;

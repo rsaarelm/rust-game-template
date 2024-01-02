@@ -32,6 +32,10 @@ pub trait Coordinates:
             .find(|loc| loc.can_be_stood_in(r))
     }
 
+    /// Like `walk_step`, but don't check whether there's solid support
+    /// ground.
+    ///
+    /// Hover_step will move through doors.
     fn hover_step(&self, r: &impl Environs, dir: IVec2) -> Option<Self> {
         let loc = (*self + dir.extend(0)).snap_above_floor(r);
         match loc.voxel(r) {
