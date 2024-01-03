@@ -151,7 +151,7 @@ fn build_skeleton(
                     },
                     generator: Box::new(*gen),
                 },
-                Site(map) | Vault(map) => {
+                Site(map) | Hall(map) => {
                     for p in map.entrances() {
                         if start_pos.is_none() {
                             start_pos = Some(origin + p.extend(0));

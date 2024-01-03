@@ -153,7 +153,7 @@ pub enum Region {
     /// An above-ground prefab level
     Site(SectorMap),
     /// An underground prefab level
-    Vault(SectorMap),
+    Hall(SectorMap),
     /// Branch a new stack off to the side
     Branch(Vec<Region>),
     /// A sequence of applying the same constructor multiple times.
