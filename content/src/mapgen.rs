@@ -55,7 +55,8 @@ pub struct Lot {
     /// If a connection bit is set, the generated map is expected to connect
     /// to the single center (rounded down) cell in its corresponding edge. Ie
     /// if there is a north connection (`lot.sides & 0b1 != 0`), the generated
-    /// map must have a path to (⌊`SECTOR_WIDTH` / 2⌋, 0).
+    /// map must have a path to (2 * ⌊`SECTOR_WIDTH` / 4⌋, 0) (snap to even
+    /// coordinates).
     pub sides: u8,
 
     pub up: Option<Location>,
