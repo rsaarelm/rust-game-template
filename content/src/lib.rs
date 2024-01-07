@@ -29,7 +29,7 @@ pub type Rect = util::Rect<i32>;
 pub type Cube = util::Cube<i32>;
 
 /// Width of a single sector of the game world in tiles.
-pub const SECTOR_WIDTH: i32 = 50;
+pub const SECTOR_WIDTH: i32 = 48;
 /// Height of a single sector of the game world in tiles.
 pub const SECTOR_HEIGHT: i32 = 40;
 /// Depth of a single sector of the game world in tiles.
