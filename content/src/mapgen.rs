@@ -2,7 +2,7 @@ use anyhow::bail;
 use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec3};
 use rand::{distributions::Distribution, seq::SliceRandom, RngCore};
-use util::{v3, Cloud, IndexMap, Logos};
+use util::{v3, Cloud, HashMap, IndexMap, Logos, Neighbors2D};
 
 use crate::{
     data::GenericSector, world, Block, Coordinates, Cube, Data, Environs,
@@ -137,7 +137,7 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
 
     let mut ret = Patch::default();
 
-    let floor = lot.volume.border([0, 0, -1]);
+    let floor = lot.volume.floor();
 
     for p in floor {
         let p = v3(p);
@@ -175,6 +175,134 @@ pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
             ret.spawns.insert(pos, item.clone());
         }
     }
+
+    Ok(ret)
+}
+
+/// A versatile map generator function.
+///
+/// Parameters are in range [0.0, 1.0]. `roominess` describes how much of the
+/// area should be covered by rooms (0: none other than entry/exit stairs to
+/// 1: as many as possible). `loopiness` describes how many extra connections
+/// are made beyond ones that connect all map parts (0: none to 1: every
+/// possible one). `maziness` describes how much of the area between rooms is
+/// filled with a maze with dead ends (0: only tunnels needed for connectivity
+/// to 1: fill the entire area). `caviness` describes how much the tunnel
+/// walls are eroded with a cellular automaton algorithm (0: none to 1: dig
+/// out everything).
+pub fn rooms_and_corridors(
+    rng: &mut dyn RngCore,
+    lot: &Lot,
+    roominess: f32,
+    loopiness: f32,
+    maziness: f32,
+    caviness: f32,
+) -> anyhow::Result<Patch> {
+    assert!((0.0..=1.0).contains(&roominess));
+    assert!((0.0..=1.0).contains(&loopiness));
+    assert!((0.0..=1.0).contains(&maziness));
+    assert!((0.0..=1.0).contains(&caviness));
+
+    let floor = lot.volume.floor();
+
+    let mut ret = Patch::default();
+
+    // TODO Support rooms, incl entry/exit
+
+    let mut regions = HashMap::default();
+
+    for (i, p) in floor
+        .into_iter()
+        .filter(|[x, y, _]| x.rem_euclid(2) == 0 && y.rem_euclid(2) == 0)
+        .enumerate()
+    {
+        let p = v3(p);
+        ret.set_voxel(&p, None);
+        regions.insert(p, i);
+    }
+
+    // Find diggable 1-cell edges that connect two separate regions.
+    let mut edges: Vec<(IVec3, [usize; 2])> = Vec::new();
+    for p in floor {
+        let p = v3(p);
+        if regions.contains_key(&p) {
+            continue;
+        }
+
+        let mut regs = Vec::new();
+        for p in p.ns_4() {
+            if let Some(i) = regions.get(&p) {
+                regs.push(*i);
+            }
+        }
+
+        if regs.len() == 2 && regs[0] != regs[1] {
+            edges.push((p, [regs[0], regs[1]]));
+        }
+    }
+
+    edges.shuffle(rng);
+
+    let mut extra_edges = Vec::new();
+
+    // Dig edges until map is connected.
+    while let Some((p, [a, b])) = edges.pop() {
+        // Open this one.
+        ret.set_voxel(&p, None);
+
+        // Mark the region merge in the others.
+        let mut rm_list = Vec::new();
+        for (i, (p, [a2, b2])) in edges.iter_mut().enumerate().rev() {
+            if *a2 == b {
+                *a2 = a;
+            }
+
+            if *b2 == b {
+                *b2 = a;
+            }
+
+            if a2 == b2 {
+                extra_edges.push(*p);
+                rm_list.push(i);
+            }
+        }
+
+        for i in rm_list {
+            edges.swap_remove(i);
+        }
+    }
+
+    let n_loops = (extra_edges.len() as f32 * loopiness) as usize;
+    for p in extra_edges.iter().take(n_loops) {
+        ret.set_voxel(p, None);
+    }
+
+    let dug = ret.terrain.len();
+    let mut n_demaze = (dug as f32 * (1.0 - maziness)) as usize;
+
+    'demaze: while n_demaze > 0 {
+        let mut changed = false;
+        for p in ret.terrain.keys().copied().collect::<Vec<_>>() {
+            if v3(p)
+                .ns_4()
+                .filter(|p| ret.terrain.contains_key(&<[i32; 3]>::from(*p)))
+                .count()
+                == 1
+            {
+                n_demaze -= 1;
+                changed = true;
+                ret.terrain.remove(p);
+                if n_demaze == 0 {
+                    break 'demaze;
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+
+    // TODO Dig some cellular automaton cave if caviness is requested
 
     Ok(ret)
 }

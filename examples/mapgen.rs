@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use content::{mapgen, Lot, Patch, SectorMap};
+use content::{mapgen, Block, Lot, Patch, SectorMap, Zone};
 use util::{GameRng, Logos};
 
 #[derive(Parser, Debug)]
@@ -30,19 +30,35 @@ impl CorridorsArgs {
     }
 
     fn gen(&self) -> Patch {
-        mapgen::bigroom(&mut self.rng(), &Default::default())
-            .expect("mapgen failed")
+        mapgen::rooms_and_corridors(
+            &mut self.rng(),
+            &Default::default(),
+            0.2,
+            0.03,
+            0.5,
+            0.0,
+        )
+        .expect("mapgen failed")
     }
 }
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let map = match args {
+    let mut map = match args {
         Args::Corridors(args) => args.gen(),
     };
-    let map =
-        SectorMap::from_area(&map.terrain, &Lot::default().volume, &map.spawns);
+
+    let volume = &Lot::default().volume;
+
+    // Fill unmapped area with earth.
+    for p in volume.fat() {
+        if !map.terrain.contains_key(&p) {
+            map.terrain.insert(p, Some(Block::Rock));
+        }
+    }
+
+    let map = SectorMap::from_area(&map.terrain, &volume, &map.spawns);
     println!(
         "{}",
         idm::to_string(&map).expect("IDM serialization failed")
