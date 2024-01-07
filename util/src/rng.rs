@@ -4,19 +4,20 @@ use std::{
 };
 
 use rand::{distributions::Standard, prelude::*};
-use rand_xorshift::XorShiftRng;
 use serde::{Deserialize, Serialize};
+
+use crate::GameRng;
 
 /// Construct a throwaway random number generator seeded by a noise value.
 ///
 /// Good for short-term use in immutable contexts given a varying source of
 /// noise like map position coordinates.
-pub fn srng(seed: &(impl Hash + ?Sized)) -> XorShiftRng {
+pub fn srng(seed: &(impl Hash + ?Sized)) -> GameRng {
     // NB. This hash function used here must work the same on all platforms.
     // Do not use fxhash hasher.
     let mut h = twox_hash::XxHash64::default();
     seed.hash(&mut h);
-    XorShiftRng::seed_from_u64(h.finish())
+    GameRng::seed_from_u64(h.finish())
 }
 
 /// Deciban log-odds type.
