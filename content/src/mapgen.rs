@@ -2,11 +2,11 @@ use anyhow::bail;
 use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec3};
 use rand::{distributions::Distribution, seq::SliceRandom, RngCore};
-use util::{v3, Cloud, IndexMap};
+use util::{v3, Cloud, IndexMap, Logos};
 
 use crate::{
-    data::GenericSector, Block, Coordinates, Cube, Data, Environs, Location,
-    SectorMap, Spawn, SpawnDist, Voxel,
+    data::GenericSector, world, Block, Coordinates, Cube, Data, Environs,
+    Level, Location, SectorMap, Spawn, SpawnDist, Voxel, Zone,
 };
 
 pub trait MapGenerator {
@@ -44,7 +44,7 @@ impl MapGenerator for GenericSector {
 }
 
 /// Bounds and topology definition for map generation.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug)]
 pub struct Lot {
     /// Volume in space in which the map should be generated.
     pub volume: Cube,
@@ -61,6 +61,23 @@ pub struct Lot {
 
     pub up: Option<Location>,
     pub down: Option<Location>,
+}
+
+impl Default for Lot {
+    fn default() -> Self {
+        let volume = Level::level_from(&Default::default());
+        let sides = 0;
+        let seed = Logos::default();
+        let up = Some(world::default_down_stairs(&seed, volume.above()));
+        let down = Some(world::default_down_stairs(&seed, volume));
+
+        Lot {
+            volume,
+            sides,
+            up,
+            down,
+        }
+    }
 }
 
 impl Lot {

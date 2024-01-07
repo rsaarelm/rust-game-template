@@ -342,7 +342,7 @@ pub type Level = Cube;
 ///
 /// The up and down stairwell positions generated using this method are
 /// guaranteed to be apart for every level.
-fn default_down_stairs(seed: &Logos, s: Level) -> Location {
+pub fn default_down_stairs(seed: &Logos, s: Level) -> Location {
     snap_stairwell_position(
         (Cube::from(s).border([0, 0, -1]) + ivec3(0, 0, -1))
             .sample(&mut util::srng(&(seed, s))),
