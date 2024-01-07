@@ -16,7 +16,7 @@ mod location;
 use glam::{ivec3, IVec3};
 pub use location::{Coordinates, Environs, Location};
 
-mod mapgen;
+pub mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};
 
 mod world;

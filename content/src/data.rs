@@ -1,12 +1,14 @@
 use std::{fmt, str::FromStr, sync::OnceLock};
 
 use anyhow::bail;
-use glam::IVec2;
+use glam::{ivec3, IVec2};
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{IncrementalOutline, IndexMap, Outline, _String, text, Cloud};
+use util::{
+    IncrementalOutline, IndexMap, Outline, _String, text, Cloud, HashMap,
+};
 
-use crate::{Block, Coordinates, Location, Voxel};
+use crate::{Block, Coordinates, Cube, Environs, Location, Voxel};
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
@@ -187,6 +189,80 @@ pub struct SectorMap {
 }
 
 impl SectorMap {
+    pub fn from_area<'a, 'b>(
+        r: &'a impl Environs,
+        volume: &Cube,
+        spawns: impl IntoIterator<Item = (&'b Location, &'b Spawn)>,
+    ) -> Self {
+        let mut map = String::new();
+        let z = volume.min()[2];
+
+        const LEGEND_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                                       abcdefghijklmnopqrstuvwxyz\
+                                       αβγδεζηθικλμξπρστφχψω\
+                                       ΓΔΛΞΠΣΦΨΩ\
+                                       БГҐДЂЃЄЖЗЙЛЉЊПЎФЦЧЏШЩЪЭЮЯ\
+                                       àèòùáêõýþâìúãíäîåæçéóëïðñôûöøüÿ\
+                                       ÀÈÒÙÁÊÕÝÞÂÌÚÃÉÓÄÍÅÆÇËÎÔÏÐÑÖØÛßÜ";
+
+        let mut extra_letters: Vec<char> =
+            LEGEND_ALPHABET.chars().rev().collect();
+
+        let mut rev_legend: HashMap<String, char> = Default::default();
+
+        let mut map_spawns = HashMap::default();
+        for (loc, spawn) in spawns {
+            let loc = ivec3(loc.x, loc.y, z);
+            let name = _String::from(spawn.clone()).0;
+
+            let c = if let Some(c) = rev_legend.get(&name) {
+                *c
+            } else {
+                let c = extra_letters.pop().expect("Out of letters for legend");
+                rev_legend.insert(name, c);
+                c
+            };
+
+            map_spawns.insert(loc, c);
+        }
+
+        for y in volume.min()[1]..volume.max()[1] {
+            for x in volume.min()[0]..volume.max()[0] {
+                use Block::*;
+
+                let p = ivec3(x, y, z);
+
+                if let Some(c) = map_spawns.get(&p) {
+                    map.push(*c);
+                    continue;
+                }
+
+                let c = match p.tile(r) {
+                    crate::Tile::Surface(loc, _) if loc == p.above() => '<',
+                    crate::Tile::Surface(loc, _) if loc == p.below() => '>',
+                    crate::Tile::Surface(_, Water) => '~',
+                    crate::Tile::Surface(_, Magma) => '&',
+                    crate::Tile::Surface(_, Grass) => ',',
+                    crate::Tile::Surface(_, SplatteredRock) => '§',
+                    crate::Tile::Surface(_, _) => '.',
+                    crate::Tile::Wall(Door) => '+',
+                    crate::Tile::Wall(Glass) => '|',
+                    crate::Tile::Wall(_) => '#',
+                    crate::Tile::Void => '_',
+                };
+                map.push(c);
+            }
+            map.push('\n');
+        }
+        // TODO Generate legend.
+
+        Self {
+            name: Default::default(),
+            map,
+            legend: rev_legend.into_iter().map(|(k, v)| (v, k)).collect(),
+        }
+    }
+
     pub fn entrances(&self) -> impl Iterator<Item = IVec2> + '_ {
         text::char_grid(&self.map).filter_map(|(p, c)| (c == '@').then_some(p))
     }
