@@ -1,0 +1,31 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>gametemplate demo</title>
+    <style>
+        html,
+        body,
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: absolute;
+            background: black;
+            z-index: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="glcanvas" tabindex='1' oncontextmenu="return false;"></canvas>
+    <script src="gl.js"></script> <!-- https://github.com/not-fl3/miniquad/blob/master/js/gl.js -->
+    <script src="audio.js"></script> <!-- https://github.com/not-fl3/quad-snd/blob/master/js/audio.js -->
+    <script src="quad-storage.js"></script>
+    <script src="sapp_jsutils.js"></script>
+    <script>load("gametemplate.wasm");</script> <!-- Main program wasm file -->
+</body>
+
+</html>
