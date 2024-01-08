@@ -194,6 +194,8 @@ impl SectorMap {
         volume: &Cube,
         spawns: impl IntoIterator<Item = (&'b Location, &'b Spawn)>,
     ) -> Self {
+        // XXX This is kinda hacky, mostly intended for visualization of
+        // generated maps, not actual gameplay use.
         let mut map = String::new();
         let z = volume.min()[2];
 
