@@ -9,7 +9,7 @@ pub use block::{Block, Terrain, Tile, Voxel};
 mod data;
 pub use data::{
     register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power, Scenario,
-    SectorMap, Spawn, SpawnDist,
+    Spawn, SpawnDist,
 };
 
 mod location;
@@ -18,6 +18,9 @@ pub use location::{Coordinates, Environs, Location};
 
 pub mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};
+
+pub mod sector_map;
+pub use sector_map::SectorMap;
 
 mod world;
 pub use world::{Level, World};
