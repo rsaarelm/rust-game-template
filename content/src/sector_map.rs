@@ -1,10 +1,11 @@
-use anyhow::bail;
-use glam::{ivec3, IVec2};
+use glam::{ivec2, ivec3, IVec2};
+use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
-use util::{HashMap, IndexMap, _String, text, Cloud};
+use util::{HashMap, IndexMap, _String, text, Cloud, Neighbors2D};
 
 use crate::{Block, Coordinates, Cube, Environs, Location, Spawn, Voxel};
 
+/// Text map for 2D world part.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SectorMap {
@@ -92,12 +93,41 @@ impl SectorMap {
         }
     }
 
+    pub fn upstairs() -> Self {
+        SectorMap {
+            map: "\
+###
+#<#
+#.#"
+            .to_owned(),
+            ..Default::default()
+        }
+    }
+
+    pub fn downstairs() -> Self {
+        SectorMap {
+            map: "\
+#.#
+#>#
+#_#
+###"
+            .to_owned(),
+            ..Default::default()
+        }
+    }
+
     pub fn entrances(&self) -> impl Iterator<Item = IVec2> + '_ {
         text::char_grid(&self.map).filter_map(|(p, c)| (c == '@').then_some(p))
     }
 
-    pub fn downstairs(&self) -> Option<IVec2> {
+    pub fn find_downstairs(&self) -> Option<IVec2> {
         text::char_grid(&self.map).find_map(|(p, c)| (c == '>').then_some(p))
+    }
+
+    pub fn dim(&self) -> IVec2 {
+        text::char_grid(&self.map)
+            .map(|(p, _)| p)
+            .fold(IVec2::ZERO, |a, x| a.max(x + ivec2(1, 1)))
     }
 
     pub fn spawns(
@@ -115,12 +145,29 @@ impl SectorMap {
         Ok(ret)
     }
 
+    pub fn border_and_inside(
+        &self,
+    ) -> (IndexMap<IVec2, char>, IndexMap<IVec2, char>) {
+        let map: IndexMap<IVec2, char> = text::char_grid(&self.map).collect();
+
+        let mut border = IndexMap::default();
+        let mut inside = IndexMap::default();
+
+        for (p, c) in map.iter().map(|(&p, &c)| (p, c)).collect::<Vec<_>>() {
+            if p.ns_8().all(|p| map.contains_key(&p)) {
+                inside.insert(p, c);
+            } else {
+                border.insert(p, c);
+            }
+        }
+
+        (border, inside)
+    }
+
     pub fn terrain(
         &self,
         origin: &Location,
     ) -> anyhow::Result<Cloud<3, Voxel>> {
-        use Block::*;
-
         let mut ret = Cloud::default();
 
         for (p, c) in text::char_grid(&self.map) {
@@ -134,47 +181,46 @@ impl SectorMap {
                 c => c,
             };
 
-            match c {
-                '#' => {
-                    ret.insert(p.above(), Some(Rock));
-                    ret.insert(p, Some(Rock));
-                    ret.insert(p.below(), Some(Rock));
-                }
-                '+' => {
-                    ret.insert(p.above(), Some(Rock));
-                    ret.insert(p, Some(Door));
-                    ret.insert(p.below(), Some(Rock));
-                }
-                '|' => {
-                    ret.insert(p.above(), Some(Rock));
-                    ret.insert(p, Some(Glass));
-                    ret.insert(p.below(), Some(Rock));
-                }
-                '.' => {
-                    ret.insert(p, None);
-                    ret.insert(p.below(), Some(Rock));
-                }
-                '~' => {
-                    ret.insert(p, None);
-                    ret.insert(p.below(), Some(Water));
-                }
-                '&' => {
-                    ret.insert(p, None);
-                    ret.insert(p.below(), Some(Magma));
-                }
-                '>' | '_' => {
-                    ret.insert(p, None);
-                    ret.insert(p.below(), None);
-                }
-                '<' => {
-                    ret.insert(p.above(), None);
-                    ret.insert(p, Some(Rock));
-                    ret.insert(p.below(), Some(Rock));
-                }
-                _ => bail!("Unknown terrain {c:?}"),
-            };
+            p.apply_char_terrain(&mut ret, c)?;
         }
 
         Ok(ret)
+    }
+}
+
+impl Distribution<SectorMap> for Standard {
+    fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> SectorMap {
+        // Generate regular empty rectangular rooms.
+
+        // Dimensions must be odd.
+        const MAX_HALF_DIM: i32 = 6;
+        let w = 2 * rng.gen_range(2..MAX_HALF_DIM) + 1;
+        let h = 2 * rng.gen_range(2..MAX_HALF_DIM) + 1;
+
+        let mut map = String::new();
+        for y in 0..h {
+            for x in 0..w {
+                let on_v_edge = x == 0 || x == w - 1;
+                let on_h_edge = y == 0 || y == h - 1;
+                if on_v_edge && on_h_edge {
+                    // Corner
+                    map.push('#');
+                } else if on_v_edge || on_h_edge {
+                    // Edge
+                    map.push('+');
+                } else {
+                    // Floor
+                    map.push('.');
+                }
+            }
+            if y < h - 1 {
+                map.push('\n');
+            }
+        }
+
+        SectorMap {
+            map,
+            ..Default::default()
+        }
     }
 }

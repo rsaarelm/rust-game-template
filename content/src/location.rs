@@ -3,6 +3,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
+use anyhow::bail;
 use glam::{ivec3, IVec2, IVec3};
 use util::{a3, s4, wallform_mask, Cloud, Neighbors2D};
 
@@ -178,9 +179,9 @@ pub trait Coordinates:
     /// Same sector plus the facing rims of adjacent sectors.
     fn has_same_screen_as(&self, other: &Self) -> bool;
 
-    // Start tracing from self towards `dir` in `dir` size steps. Starts
-    // from the point one step away from self. Panics if `dir` is a zero
-    // vector. Does not follow portals.
+    /// Start tracing from self towards `dir` in `dir` size steps. Starts
+    /// from the point one step away from self. Panics if `dir` is a zero
+    /// vector.
     fn trace(&self, dir: IVec2) -> impl Iterator<Item = Self> {
         assert!(dir != IVec2::ZERO);
 
@@ -190,6 +191,13 @@ pub trait Coordinates:
             Some(p)
         })
     }
+
+    /// Modify terrain based on 2D `SectorMap` character conventions.
+    fn apply_char_terrain(
+        &self,
+        r: &mut impl Environs,
+        c: char,
+    ) -> anyhow::Result<()>;
 }
 
 impl Coordinates for Location {
@@ -327,6 +335,55 @@ impl Coordinates for Location {
 
     fn has_same_screen_as(&self, other: &Self) -> bool {
         self.sector().fat().wide().contains(*other)
+    }
+
+    fn apply_char_terrain(
+        &self,
+        r: &mut impl Environs,
+        c: char,
+    ) -> anyhow::Result<()> {
+        use Block::*;
+        match c {
+            '#' => {
+                r.set_voxel(&self.above(), Some(Rock));
+                r.set_voxel(self, Some(Rock));
+                r.set_voxel(&self.below(), Some(Rock));
+            }
+            '+' => {
+                r.set_voxel(&self.above(), Some(Rock));
+                r.set_voxel(self, Some(Door));
+                r.set_voxel(&self.below(), Some(Rock));
+            }
+            '|' => {
+                r.set_voxel(&self.above(), Some(Rock));
+                r.set_voxel(self, Some(Glass));
+                r.set_voxel(&self.below(), Some(Rock));
+            }
+            '.' => {
+                r.set_voxel(self, None);
+                r.set_voxel(&self.below(), Some(Rock));
+            }
+            '~' => {
+                r.set_voxel(self, None);
+                r.set_voxel(&self.below(), Some(Water));
+            }
+            '&' => {
+                r.set_voxel(self, None);
+                r.set_voxel(&self.below(), Some(Magma));
+            }
+            '>' | '_' => {
+                r.set_voxel(self, None);
+                r.set_voxel(&self.below(), None);
+            }
+            '<' => {
+                r.set_voxel(&self.above(), None);
+                r.set_voxel(self, Some(Rock));
+                r.set_voxel(&self.below(), Some(Rock));
+            }
+            _ => bail!("Unknown terrain {c:?}"),
+        };
+
+        Ok(())
     }
 }
 

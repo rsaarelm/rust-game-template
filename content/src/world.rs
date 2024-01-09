@@ -164,7 +164,7 @@ fn build_skeleton(
                         connected_north: false,
                         connected_west: false,
                         connected_down: map
-                            .downstairs()
+                            .find_downstairs()
                             .map(|p| origin + p.extend(-1)),
                         generator: Box::new(Patch::from_sector_map(
                             &origin, map,

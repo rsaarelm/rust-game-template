@@ -30,15 +30,11 @@ impl CorridorsArgs {
     }
 
     fn gen(&self) -> Patch {
-        mapgen::rooms_and_corridors(
-            &mut self.rng(),
-            &Default::default(),
-            0.2,
-            0.03,
-            0.5,
-            0.0,
-        )
-        .expect("mapgen failed")
+        let mut lot = Lot::default();
+        lot.sides = 0b1111;
+
+        mapgen::rooms_and_corridors(&mut self.rng(), &lot, 0.1, 0.1, 0.8, 0.0)
+            .expect("mapgen failed")
     }
 }
 
