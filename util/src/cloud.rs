@@ -1,13 +1,13 @@
-use std::{fmt, str::FromStr};
+use std::{collections::BTreeMap, fmt, str::FromStr};
 
 use derive_more::Deref;
 
-use crate::{text, HashMap, IntegerBox};
+use crate::{text, IntegerBox};
 
 #[derive(Clone, Eq, PartialEq, Debug, Deref)]
 pub struct Cloud<const N: usize, V> {
     #[deref]
-    points: HashMap<[i32; N], V>,
+    points: BTreeMap<[i32; N], V>,
     bounds: IntegerBox<N>,
 }
 
@@ -126,7 +126,7 @@ impl<V, K: Into<[i32; N]>, const N: usize> FromIterator<(K, V)>
 impl<V, const N: usize> IntoIterator for Cloud<N, V> {
     type Item = ([i32; N], V);
 
-    type IntoIter = std::collections::hash_map::IntoIter<[i32; N], V>;
+    type IntoIter = std::collections::btree_map::IntoIter<[i32; N], V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.points.into_iter()

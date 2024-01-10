@@ -1,7 +1,10 @@
-use std::ops::{Add, AddAssign};
+use std::{
+    collections::BTreeMap,
+    ops::{Add, AddAssign},
+};
 
 use glam::{ivec3, IVec2, IVec3};
-use util::{s4, wallform_mask, Cloud, Neighbors2D};
+use util::{a3, s4, wallform_mask, Cloud, Neighbors2D};
 
 use crate::{Block, Cube, Tile, Voxel, Zone, SECTOR_HEIGHT, SECTOR_WIDTH};
 
@@ -334,9 +337,7 @@ pub trait Environs {
 
 impl Environs for Cloud<3, Voxel> {
     fn voxel(&self, loc: &Location) -> Voxel {
-        util::HashMap::get(self, &<[i32; 3]>::from(*loc))
-            .copied()
-            .unwrap_or_default()
+        BTreeMap::get(self, &a3(*loc)).copied().unwrap_or_default()
     }
 
     fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {

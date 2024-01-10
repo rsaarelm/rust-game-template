@@ -262,6 +262,11 @@ pub fn v3(a: impl Into<glam::IVec3>) -> glam::IVec3 {
     a.into()
 }
 
+/// Helper function to turn IVec3 into array.
+pub fn a3(a: impl Into<[i32; 3]>) -> [i32; 3] {
+    a.into()
+}
+
 /// When `is_wall(pos)` is true, return a bitmask of the four neighboring
 /// walls (in `s4::DIR` order of directions) that the wall at `pos` should be
 /// drawn connected to. If `pos` is not a wall or is enclosed by walls from

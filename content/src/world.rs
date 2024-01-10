@@ -5,7 +5,7 @@ use glam::{ivec2, ivec3, IVec2};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{text, v2, v3, HashMap, Logos};
+use util::{a3, text, v2, v3, HashMap, Logos};
 
 use crate::{
     data::Region, Block, Coordinates, Cube, Location, Lot, MapGenerator, Patch,
@@ -308,7 +308,7 @@ impl World {
     }
 
     pub fn get(&self, loc: &Location) -> Voxel {
-        let pt = <[i32; 3]>::from(*loc);
+        let pt = a3(*loc);
         if let Some(&mutated) = self.inner.overlay.get(&pt) {
             return mutated;
         }

@@ -14,9 +14,9 @@ pub use cloud::Cloud;
 
 mod geom;
 pub use geom::{
-    bresenham_line, reverse_dir_mask_4, s4, s8, s_hex, v2, v3, wallform_mask,
-    Neighbors2D, Neighbors3D, PlottedPoint, PolyLineIter, Sdf, VecExt,
-    AXIS_DIRS,
+    a3, bresenham_line, reverse_dir_mask_4, s4, s8, s_hex, v2, v3,
+    wallform_mask, Neighbors2D, Neighbors3D, PlottedPoint, PolyLineIter, Sdf,
+    VecExt, AXIS_DIRS,
 };
 
 mod grammar;
