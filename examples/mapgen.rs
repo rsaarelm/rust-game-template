@@ -41,9 +41,11 @@ impl CorridorsArgs {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
+    let now = std::time::Instant::now();
     let mut map = match args {
         Args::Corridors(args) => args.gen(),
     };
+    let elapsed = now.elapsed();
 
     let volume = &Lot::default().volume;
 
@@ -59,6 +61,8 @@ fn main() -> anyhow::Result<()> {
         "{}",
         idm::to_string(&map).expect("IDM serialization failed")
     );
+
+    eprintln!("Map generated in {elapsed:.2?}");
 
     Ok(())
 }
