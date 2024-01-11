@@ -40,8 +40,7 @@ impl MapGenerator for GenericSector {
             Grassland => todo!(),
             Forest => todo!(),
             Mountains => todo!(),
-            // TODO: Proper dungeon generator.
-            Dungeon => bigroom(rng, lot),
+            Dungeon => rooms_and_corridors(rng, lot, 0.2, 0.1, 0.4, 0.0),
         }
     }
 }
@@ -157,53 +156,6 @@ impl Patch {
             spawns: value.spawns(origin)?.into_iter().collect(),
         })
     }
-}
-
-pub fn bigroom(rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
-    use Block::*;
-
-    let mut ret = Patch::default();
-
-    let floor = lot.volume.floor();
-
-    for p in floor {
-        let p = v3(p);
-        ret.set_voxel(&p, None);
-        ret.set_voxel(&p.below(), Some(Rock));
-    }
-
-    // TODO: Stairwells should have enclosures around them.
-    if let Some(upstairs) = lot.up {
-        ret.set_voxel(&upstairs.below(), Some(Rock));
-    }
-
-    if let Some(downstairs) = lot.down {
-        ret.set_voxel(&downstairs, None);
-        ret.set_voxel(&(downstairs + ivec3(0, 1, 0)), None);
-    }
-
-    let depth = 0.max(-lot.volume.min()[2]) as u32;
-    let mobs = monster_spawns(depth);
-    let items = item_spawns(depth);
-
-    if !mobs.is_empty() {
-        for _ in 0..10 {
-            let pos: IVec3 = floor.sample(rng);
-            let mob = mobs.choose_weighted(rng, |a| a.spawn_weight()).unwrap();
-            ret.spawns.insert(pos, mob.clone());
-        }
-    }
-
-    if !items.is_empty() {
-        for _ in 0..10 {
-            let pos: IVec3 = floor.sample(rng);
-            let item =
-                items.choose_weighted(rng, |a| a.spawn_weight()).unwrap();
-            ret.spawns.insert(pos, item.clone());
-        }
-    }
-
-    Ok(ret)
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
