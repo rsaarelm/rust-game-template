@@ -17,14 +17,15 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 /// data encoding. Use L33T5P3AK to get around the missing characters.
 ///
 /// A Logos string corresponds to a little-endian binary number with each
-/// letter corresponding to one sequence of five bits and letter `0`
-/// corresponding to `0b00000`. Logos strings with matching prefixes and any
-/// length of `0` as suffix are numerically equal. If treated as a byte
-/// sequence, the string is considered to specify bytes as far as it encodes
-/// bytes that either has at least one bit set or all bits covered by the
-/// encoding. String `"00"` covers 10 bits so it amounts to `[0u8]` (8 bits
-/// covered, but not 16). String `"0000"` covers 20 bits, so it amounts to
-/// `[0u8, 0u8]` (16 bits covered, but not 24).
+/// letter corresponding to one sequence of five bits in the order of their
+/// ASCII encodings, with letter `0` corresponding to `0b00000`. Logos strings
+/// with matching prefixes and any length of `0` as suffix are numerically
+/// equal. If treated as a byte sequence, the string is considered to specify
+/// bytes as far as it encodes bytes that either have at least one bit set or
+/// all bits covered by the encoding. String `"00"` covers 10 bits so it
+/// amounts to `[0u8]` (8 bits fully covered, but not 16 and the partial byte
+/// is all zeros so it is discarded). String `"0000"` covers 20 bits, so it
+/// amounts to `[0u8, 0u8]` (16 bits covered, but not 24).
 ///
 /// ```
 /// # use util::{Logos, srng};
