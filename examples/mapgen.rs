@@ -6,13 +6,34 @@ use util::{GameRng, Logos};
 #[derive(Parser, Debug)]
 #[command(about = "Test map generators")]
 enum Args {
+    /// Generate a rooms and corridors map.
     Corridors(CorridorsArgs),
 }
 
 #[derive(Parser, Debug)]
 struct CorridorsArgs {
-    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)), help = "Use a fixed generator seed")]
+    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)))]
+    /// Fixed RNG seed.
     seed: Option<Logos>,
+
+    #[arg(long)]
+    /// Is the map connected horizontally to neighbors.
+    connected: bool,
+
+    #[arg(long, default_value = "0.1")]
+    /// How much of the map is rooms.
+    roominess: f32,
+    #[arg(long, default_value = "0.1")]
+    /// How many looping paths there are.
+    loopiness: f32,
+    // 0.8
+    #[arg(long, default_value = "0.8")]
+    /// How much of the map is tunnels.
+    maziness: f32,
+    // 0.0
+    #[arg(long, default_value = "0.0")]
+    /// How much of the map is carved into cave.
+    caviness: f32,
 }
 
 impl CorridorsArgs {
@@ -31,10 +52,17 @@ impl CorridorsArgs {
 
     fn gen(&self) -> Patch {
         let mut lot = Lot::default();
-        lot.sides = 0b1111;
+        lot.sides = if self.connected { 0b1111 } else { 0 };
 
-        mapgen::rooms_and_corridors(&mut self.rng(), &lot, 0.1, 0.1, 0.8, 0.0)
-            .expect("mapgen failed")
+        mapgen::rooms_and_corridors(
+            &mut self.rng(),
+            &lot,
+            self.roominess,
+            self.loopiness,
+            self.maziness,
+            self.caviness,
+        )
+        .expect("mapgen failed")
     }
 }
 
