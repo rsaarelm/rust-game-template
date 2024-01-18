@@ -566,6 +566,12 @@ pub fn rooms_and_corridors(
         })
         .collect();
 
+    // Cells that are subject to the cave-forming cellular automaton. Start
+    // from the immediate surroundings of the initial cave holes, proceed into
+    // the valid cave area as the automaton progresses.
+    let mut crumbly = IndexSet::default();
+
+    // Dug cave.
     let mut cave = IndexSet::default();
 
     // Randomly remove a bunch of cells.
@@ -575,13 +581,20 @@ pub fn rooms_and_corridors(
     let dig_amount = (caviness * holes.len() as f32) as usize;
     for i in holes.into_iter().take(dig_amount) {
         cave.insert(i);
+        crumbly.insert(i);
+        for i in i.ns_8() {
+            if cave.contains(&i) {
+                crumbly.insert(i);
+            }
+        }
     }
 
     if caviness > 0.0 {
         // Smoothen cave with a 4-5 cellular automaton cycle.
         for _ in 0..CAVE_CYCLES {
             let mut cave_2 = cave.clone();
-            for p in &cave_area {
+            let mut crumbly_2 = crumbly.clone();
+            for p in &crumbly {
                 let filled_neighbors = p
                     .ns_8()
                     .filter(|p| {
@@ -592,14 +605,25 @@ pub fn rooms_and_corridors(
 
                 // 4-5 rule
                 if !cave.contains(p) && filled_neighbors >= 5 {
+                    for p in p.ns_8() {
+                        if cave.contains(&p) {
+                            crumbly_2.insert(p);
+                        }
+                    }
                     cave_2.insert(*p);
                 }
 
                 if cave.contains(p) && filled_neighbors < 4 {
+                    for p in p.ns_8() {
+                        if cave.contains(&p) {
+                            crumbly_2.insert(p);
+                        }
+                    }
                     cave_2.remove(p);
                 }
             }
             cave = cave_2;
+            crumbly = crumbly_2;
         }
 
         // Remove bubbles.
