@@ -30,15 +30,14 @@ pub struct Data {
 }
 
 // Custom loader that initializes the global static gamedata from the data
-// files. The data.idm.z file is constructed from project data files by engine
+// files. The data.idm.sz file is constructed from project data files by engine
 // crate's build.rs script.
 impl Default for &'static Data {
     fn default() -> Self {
         DATA.get_or_init(|| {
-            let data = fdeflate::decompress_to_vec(include_bytes!(
-                "../../target/data.idm.z"
-            ))
-            .unwrap();
+            let data = snap::raw::Decoder::new()
+                .decompress_vec(include_bytes!("../../target/data.idm.sz"))
+                .unwrap();
             let data = std::str::from_utf8(&data).unwrap();
             let mut data: Outline = idm::from_str(data).unwrap();
 

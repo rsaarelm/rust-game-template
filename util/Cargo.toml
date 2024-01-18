@@ -26,6 +26,6 @@ twox-hash = "1"
 winapi = "0.3"
 
 [dev-dependencies]
-fraction = "0.14"
+fraction = "0.15"
 quickcheck = "1"
 quickcheck_macros = "1"

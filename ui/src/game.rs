@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use content::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
@@ -570,20 +570,24 @@ impl Game {
     pub fn save(&mut self, game_name: &str) {
         let saved =
             idm::to_string(&self.r).expect("runtime serialization failed");
+
+        let saved = snap::raw::Encoder::new()
+            .compress_vec(saved.as_bytes())
+            .expect("Save compression failed");
         navni::Directory::data(game_name)
             .expect("data dir not found")
-            .write("saved.idm", &saved)
+            .write_bytes("saved.idm.sz", &saved)
             .expect("writing save failed");
     }
 
     pub fn delete_save(&self, game_name: &str) {
         if navni::Directory::data(game_name)
             .expect("data dir not found")
-            .exists("saved.idm")
+            .exists("saved.idm.sz")
         {
             navni::Directory::data(game_name)
                 .expect("data dir not found")
-                .delete("saved.idm")
+                .delete("saved.idm.sz")
                 .expect("deleting save failed");
         }
     }
@@ -594,10 +598,15 @@ impl Game {
     pub fn load(&mut self, game_name: &str) -> Result<Option<Runtime>> {
         if let Ok(save) = navni::Directory::data(game_name)
             .expect("data dir not found")
-            .read("saved.idm")
+            .read_bytes("saved.idm.sz")
         {
             // Return an error if deserialization fails.
+            let save = snap::raw::Decoder::new()
+                .decompress_vec(&save)
+                .map_err(|_| anyhow!("Failed to decompress save"))?;
+            let save = std::str::from_utf8(&save)?;
             let mut ret: Runtime = idm::from_str(&save)?;
+
             ret.bump_cache();
             Ok(Some(ret))
         } else {
