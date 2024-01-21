@@ -1,9 +1,10 @@
 use std::{fmt, str::FromStr, sync::OnceLock};
 
 use anyhow::bail;
+use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{IncrementalOutline, IndexMap, Outline, _String};
+use util::{text, IncrementalOutline, IndexMap, Outline, _String};
 
 use crate::SectorMap;
 
@@ -143,6 +144,12 @@ pub struct Scenario {
     pub legend: IndexMap<char, Vec<Region>>,
 }
 
+impl Scenario {
+    pub fn regions(&self) -> impl Iterator<Item = (IVec2, &[Region])> + '_ {
+        text::char_grid(&self.map).map(|(p, c)| (p, self.legend[&c].as_ref()))
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Region {
@@ -159,8 +166,20 @@ pub enum Region {
 }
 
 impl Region {
-    pub fn is_above_ground(&self) -> bool {
+    /// Sites are always above ground, though some generated regions may be
+    /// above ground too.
+    pub fn is_site(&self) -> bool {
         matches!(self, Region::Site(_))
+    }
+
+    /// If the region specifies a concrete prefab map, return the map.
+    pub fn as_map(&self) -> Option<&SectorMap> {
+        match self {
+            Region::Site(map) => Some(map),
+            Region::Hall(map) => Some(map),
+            Region::Repeat(_, n) => n.as_map(),
+            _ => None,
+        }
     }
 }
 

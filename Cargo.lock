@@ -515,6 +515,9 @@ dependencies = [
  "log",
  "navni",
  "rand",
+ "regex",
+ "serde",
+ "serde_json",
  "ui",
  "util",
 ]

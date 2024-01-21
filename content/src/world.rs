@@ -131,8 +131,7 @@ fn build_skeleton(
         let Some(stack) = scenario.legend.get(&c) else {
             bail!("Unknown overworld char {c:?}");
         };
-        let z = -1
-            + stack.iter().take_while(|a| a.is_above_ground()).count() as i32;
+        let z = -1 + stack.iter().take_while(|a| a.is_site()).count() as i32;
 
         for (depth, region) in stack.iter().enumerate() {
             let s = Level::level_at([p.x, p.y, z - (depth as i32)]);
