@@ -159,7 +159,9 @@ pub enum Region {
 }
 
 impl Region {
-    pub fn is_above_ground(&self) -> bool {
+    /// Sites are always above ground, though some generated regions may be
+    /// above ground too.
+    pub fn is_site(&self) -> bool {
         matches!(self, Region::Site(_))
     }
 }

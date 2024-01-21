@@ -9,11 +9,11 @@ use crate::{Block, Coordinates, Cube, Environs, Location, Spawn, Voxel};
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SectorMap {
-    name: String,
-    map: String,
+    pub name: String,
+    pub map: String,
     // Values are spawns, but store them as strings here since they can't be
     // validated until gamedata has been completely loaded.
-    legend: IndexMap<char, String>,
+    pub legend: IndexMap<char, String>,
 }
 
 impl SectorMap {

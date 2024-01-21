@@ -8,8 +8,8 @@ pub use block::{Block, Terrain, Tile, Voxel};
 
 mod data;
 pub use data::{
-    register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power, Scenario,
-    Spawn, SpawnDist,
+    register_mods, Data, EquippedAt, Item, ItemKind, Monster, Power, Region,
+    Scenario, Spawn, SpawnDist,
 };
 
 mod location;
