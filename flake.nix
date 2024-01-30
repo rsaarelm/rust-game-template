@@ -1,10 +1,10 @@
 # Based on https://github.com/nix-community/naersk/blob/master/examples/multi-target/flake.nix
 {
   inputs = {
-    fenix.url = "github:nix-community/fenix";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    fenix.url = "github:nix-community/fenix";
     naersk.url = "github:nix-community/naersk";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs = { self, fenix, flake-utils, naersk, nixpkgs }:

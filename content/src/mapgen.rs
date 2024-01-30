@@ -619,7 +619,7 @@ pub fn rooms_and_corridors(
                             crumbly_2.insert(p);
                         }
                     }
-                    cave_2.remove(p);
+                    cave_2.swap_remove(p);
                 }
             }
             cave = cave_2;
