@@ -1,14 +1,16 @@
-/target
-
-# Flake stuff
-.direnv/
+# Flake
 result
+
+# Envrc
+.direnv/
+.envrc
+
+# Compilation artifacts
+/target
+web/*.wasm
 
 # Generated source
 src/version.rs
-
-# Generated WASM files
-web/*.wasm
 
 # Profiling data
 perf.data

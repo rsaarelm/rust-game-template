@@ -45,6 +45,15 @@ update-flake:
 update-cargo:
     cargo update
 
+# Create an .envrc file that uses the Nix flake as direnv.
+setup-envrc:
+    #!/bin/sh
+    if [ ! -f .envrc ]; then
+        echo "use flake" > .envrc
+    else
+        echo ".envrc exists" >&2
+    fi
+
 # Make git do automated tests before commit and push
 register-githooks:
     git config --local core.hooksPath githooks/
