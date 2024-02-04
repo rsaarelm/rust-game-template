@@ -1,15 +1,12 @@
-#![feature(lazy_cell)]
 #![feature(int_roundings)]
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::LazyLock,
 };
 
 use anyhow::Result;
 use clap::Parser;
-use glam::ivec2;
-use regex::{Regex, RegexBuilder};
+use glam::{ivec2, IVec3};
 use serde::{Deserialize, Serialize};
 
 use content::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
@@ -180,44 +177,6 @@ impl<P: Into<[i32; 3]>> FromIterator<(P, u32)> for Map {
 }
 
 impl Map {
-    pub fn get_layer(&mut self, z: i32) -> &mut Layer {
-        todo!()
-        /*
-        assert!(z >= 0);
-        let id = z as u32;
-        let name = format!("{z:03}");
-
-        if let Some(p) = self.layers.iter().position(|a| a.name == name) {
-            &mut self.layers[p]
-        } else {
-            let fill = Into::<char>::into(engine::Tile::default()) as u32 + 1;
-            let new_layer = Layer {
-                name: format!("{z:03}"),
-                id,
-                visible: true,
-                opacity: 1.0,
-
-                x: 0,
-                y: 0,
-
-                variant: LayerVariant::TileLayer {
-                    width: SECTOR_WIDTH as u32,
-                    height: SECTOR_HEIGHT as u32,
-                    chunks: None,
-                    data: Some(vec![
-                        fill;
-                        (SECTOR_WIDTH * SECTOR_HEIGHT) as usize
-                    ]),
-                },
-            };
-            self.layers.push(new_layer);
-            self.layers.sort_by_key(|a| a.name.to_owned());
-            let p = self.layers.iter().position(|a| a.name == name).unwrap();
-            &mut self.layers[p]
-        }
-        */
-    }
-
     pub fn iter(&self) -> impl Iterator<Item = ([i32; 3], u32)> + '_ {
         // If no layer is clearly marked ground, assume we're looking at a
         // flat overland plus dungeons map and the ground layer is the topmost
@@ -282,23 +241,7 @@ impl Layer {
     /// of the word "ground" somewhere in the layer name or the layer being
     /// named "Tile Layer 1", Tiled's default name for the first layer.
     pub fn is_ground(&self) -> bool {
-        static GROUND_RE: LazyLock<Regex> = LazyLock::new(|| {
-            RegexBuilder::new(r"\bground\b")
-                .case_insensitive(true)
-                .build()
-                .unwrap()
-        });
-
-        // Hacky determination from name.
-        if self.name == "Tile Layer 1" {
-            // The starter name from Tiled verbatim.
-            true
-        } else if GROUND_RE.is_match(&self.name) {
-            // There's "ground" anywhere in the name, like "ground level"
-            true
-        } else {
-            false
-        }
+        self.name == ":z 0"
     }
 
     pub fn iter(&self) -> impl Iterator<Item = ([i32; 2], u32)> + '_ {
