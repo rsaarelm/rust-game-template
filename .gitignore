@@ -9,6 +9,9 @@ result
 /target
 web/*.wasm
 
+# Extracted Tiled maps
+data/*.json
+
 # Generated source
 src/version.rs
 
