@@ -144,12 +144,6 @@ pub struct Scenario {
     pub legend: IndexMap<char, Vec<Region>>,
 }
 
-impl Scenario {
-    pub fn regions(&self) -> impl Iterator<Item = (IVec2, &[Region])> + '_ {
-        text::char_grid(&self.map).map(|(p, c)| (p, self.legend[&c].as_ref()))
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Region {

@@ -42,9 +42,20 @@ fn extract(path: &Path) -> Result<()> {
     let scenario: Scenario = idm::from_str(&fs::read_to_string(path)?)?;
 
     let mut cells = Vec::new();
-    for (p, regions) in scenario.regions() {
+
+    // In case the scenario overworld reuses a letter with maps attached to it,
+    // only extract the first instance of it. This makes it unambiguous which
+    // part of the Tiled file must be edited to propagate the changes back.
+    let mut seen_regions = HashSet::default();
+
+    for (p, c) in text::char_grid(&scenario.map) {
+        if seen_regions.contains(&c) {
+            continue;
+        }
+        seen_regions.insert(c);
+
         let p = p * ivec2(SECTOR_WIDTH, SECTOR_HEIGHT);
-        for (z, map) in map_stack(regions) {
+        for (z, map) in map_stack(scenario.legend[&c].as_ref()) {
             let p = p.extend(z);
             for (q, c) in text::char_grid(&map.map) {
                 // XXX: Special case, '_' is used to represent holes in maps,
