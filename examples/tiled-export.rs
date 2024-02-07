@@ -85,6 +85,58 @@ fn inject(path: &Path) -> Result<()> {
     todo!()
 }
 
+/// Extract maps into compacted overground and underground stacks.
+fn extract_maps(regions: &[Region]) -> (Vec<SectorMap>, Vec<SectorMap>) {
+    let mut overground = Vec::new();
+    let mut underground = Vec::new();
+
+    // Fill overground.
+    for r in regions {
+        if let Region::Site(map) = r {
+            overground.push(map.clone());
+        } else {
+            break;
+        }
+    }
+
+    fn push_to_underground(underground: &mut Vec<SectorMap>, rs: &[Region]) {
+        for r in rs {
+            // This was already handled.
+            if r.is_site() {
+                continue;
+            }
+
+            match r {
+                Region::Hall(map) => underground.push(map.clone()),
+                Region::Repeat(_, b) => {
+                    if let Region::Hall(map) = &**b {
+                        underground.push(map.clone());
+                    }
+                }
+                Region::Branch(rs) =>  {
+                    push_to_underground(underground, rs);
+                }
+                _ => {}
+            }
+        }
+    };
+
+    push_to_underground(&mut underground, regions);
+
+    overground.reverse();
+    underground.reverse();
+
+    (overground, underground)
+}
+
+/// Inject map stacks back into region list.
+///
+/// Will panic unless region's overground and underground map counts match the
+/// input lengths.
+fn inject_maps(regions: &mut [Region], overground: &[SectorMap], underground: &[SectorMap]) {
+    todo!()
+}
+
 /// Return a compacted stack of maps.
 ///
 /// The z-values in the iterator do not correspond to in-game z-values. They
