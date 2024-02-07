@@ -99,7 +99,7 @@ fn extract_maps(regions: &[Region]) -> (Vec<SectorMap>, Vec<SectorMap>) {
         }
     }
 
-    fn push_to_underground(underground: &mut Vec<SectorMap>, rs: &[Region]) {
+    fn push_underground(underground: &mut Vec<SectorMap>, rs: &[Region]) {
         for r in rs {
             // This was already handled.
             if r.is_site() {
@@ -113,18 +113,15 @@ fn extract_maps(regions: &[Region]) -> (Vec<SectorMap>, Vec<SectorMap>) {
                         underground.push(map.clone());
                     }
                 }
-                Region::Branch(rs) =>  {
-                    push_to_underground(underground, rs);
+                Region::Branch(rs) => {
+                    push_underground(underground, rs);
                 }
                 _ => {}
             }
         }
     };
 
-    push_to_underground(&mut underground, regions);
-
-    overground.reverse();
-    underground.reverse();
+    push_underground(&mut underground, regions);
 
     (overground, underground)
 }
@@ -133,8 +130,50 @@ fn extract_maps(regions: &[Region]) -> (Vec<SectorMap>, Vec<SectorMap>) {
 ///
 /// Will panic unless region's overground and underground map counts match the
 /// input lengths.
-fn inject_maps(regions: &mut [Region], overground: &[SectorMap], underground: &[SectorMap]) {
-    todo!()
+fn inject_maps(
+    regions: &mut [Region],
+    overground: Vec<SectorMap>,
+    mut underground: Vec<SectorMap>,
+) {
+    let mut i = 0;
+    for r in regions.iter_mut() {
+        if matches!(r, Region::Site(_)) {
+            *r = Region::Site(overground[i].clone());
+            i += 1;
+        }
+    }
+
+    fn write_underground(
+        regions: &mut [Region],
+        underground: &mut Vec<SectorMap>,
+    ) {
+        if regions.is_empty() {
+            assert!(underground.is_empty());
+            return;
+        }
+
+        for r in regions.iter_mut() {
+            match r {
+                Region::Hall(map) => {
+                    *r = Region::Hall(underground.pop().unwrap());
+                }
+                Region::Repeat(n, b) => {
+                    if let Region::Hall(map) = &**b {
+                        *r = Region::Repeat(
+                            *n,
+                            Box::new(Region::Hall(underground.pop().unwrap())),
+                        );
+                    }
+                }
+                Region::Branch(rs) => {
+                    write_underground(rs, underground);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    write_underground(regions, &mut underground);
 }
 
 /// Return a compacted stack of maps.
