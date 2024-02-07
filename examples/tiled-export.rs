@@ -10,7 +10,7 @@ use glam::{ivec2, IVec3};
 use serde::{Deserialize, Serialize};
 
 use content::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
-use util::{text, HashMap};
+use util::{text, HashMap, HashSet};
 
 const TILE_W: u32 = 8;
 const TILE_H: u32 = 8;
@@ -76,6 +76,12 @@ fn extract(path: &Path) -> Result<()> {
 }
 
 fn inject(path: &Path) -> Result<()> {
+    let mut scenario: Scenario =
+        idm::from_str(&fs::read_to_string(path.with_extension("idm"))?)?;
+    let tiled: Map = serde_json::from_str(&fs::read_to_string(path)?)?;
+    let cells: HashMap<IVec3, u32> =
+        tiled.iter().map(|(p, c)| (p.into(), c)).collect();
+
     todo!()
 }
 
