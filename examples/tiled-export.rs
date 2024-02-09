@@ -99,8 +99,8 @@ fn extract(path: &Path) -> Result<()> {
 
 fn inject(path: &Path) -> Result<()> {
     let scenario_path = path.with_extension("idm");
-    let mut scenario: Scenario =
-        idm::from_str(&fs::read_to_string(&scenario_path)?)?;
+    let scenario_text = fs::read_to_string(&scenario_path)?;
+    let mut scenario: Scenario = idm::from_str(&scenario_text)?;
     let tiled: Map = serde_json::from_str(&fs::read_to_string(path)?)?;
     let cells: HashMap<IVec3, u32> =
         tiled.iter().map(|(p, c)| (p.into(), c)).collect();
@@ -179,7 +179,10 @@ fn inject(path: &Path) -> Result<()> {
         );
     }
 
-    fs::write(scenario_path, idm::to_string(&scenario)?)?;
+    fs::write(
+        scenario_path,
+        idm::to_string_styled_like(&scenario_text, &scenario)?,
+    )?;
     Ok(())
 }
 
