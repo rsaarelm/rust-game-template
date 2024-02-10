@@ -1,4 +1,3 @@
-use anyhow::bail;
 use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec2, IVec3};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, RngCore};
@@ -103,13 +102,13 @@ impl Lot {
         if let Some(up) = up {
             let expected = snap_stairwell_position(up);
             if up != expected {
-                bail!("Bad upstairs spot in Lot: {up}, closest match is {expected}");
+                log::warn!("Bad upstairs spot in Lot: {up}, closest match is {expected}");
             }
         }
         if let Some(down) = down {
             let expected = snap_stairwell_position(down);
             if down != expected {
-                bail!("Bad downstairs spot in Lot: {down}, closest match is {expected}");
+                log::warn!("Bad downstairs spot in Lot: {down}, closest match is {expected}");
             }
         }
 
