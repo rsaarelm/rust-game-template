@@ -16,6 +16,15 @@ use util::{text, HashMap, HashSet};
 // prefab maps aren't stable with the presence of procgen segments and
 // branchings, so regions are compressed into dense stacks of only the prefab
 // maps.
+//
+// The IDM scenario file is the ultimate source of truth. The existing prefab
+// layers must be specified manually in the IDM, drawing outside the bounds in
+// the Tiled file will not add anything. So if you need 5 over-the-ground site
+// layers on one region, you must add dummy layers (that should have some
+// non-void terrain or the tool will ignore them) to the IDM first and then
+// draw the proper terrain in Tiled. Legend data also lives in IDM scenario
+// and can't be specified in Tiled, you just paint the ASCII letters with
+// Tiled and then specify per-sector meanings by editing the IDM.
 
 const TILE_W: u32 = 8;
 const TILE_H: u32 = 8;
