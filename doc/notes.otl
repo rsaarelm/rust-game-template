@@ -23,6 +23,7 @@ Semantic commit tags
 		Formatting, missing semi colons, etc; no production code change
 	chore
 		Updating grunt tasks etc; no production code change
+
 Async runner functions and display frames
 	Runner functions like run::explore, run::aim should do a draw().await early on to start a new frame
 	If they are triggered by an earlier runner and don't switch frame, they will be seeing the same keypress the previous frame saw
@@ -75,12 +76,14 @@ IDM things
 	People reading the code can't tell the difference between a literal NBSP and ASCII space on sight, so the code can be very confusing if they don't know about the NBSP trick
 	IDM style is to use kebab-case with field naming, use `#[serde(rename_all = "kebab-case")]` on struct and enum declarations
 	Serialized structs are expected to omit fields that have a default value, use `#[serde(default)]` on struct declarations
+
 Interned string
 	Interned strings (util::InString) are reduced to machine word sized values and have their text stored in an internal cache
 	They implement copy and are very fast to compare for equality or hash
 	Fetching the actual contents of the string requires accessing the internal cache and is slower than that of a regular `String`
 		Because of this interned strings are *not* fast to sort in lexical order and are not a good fit for Ord based containers
 	Consider using interned strings for internal identifier values that are copied in many places and compared for equality more often than they are examined for their actual string contents
+
 Gamedata notes
 	Gamedata contents are files under data/ directory
 	The corresponding data structure is content::Data
@@ -90,11 +93,13 @@ Gamedata notes
 		This introduces a potential deadlock, as gamedata itself cannot involve types which require gamedata to be available when they're deserialized
 		Use util::LazyRes type to break this deadlock
 		LazyRes allows serializing data as (usually) string, and will fetch the actual data the first time the value is accessed
+
 Optimistic Search Assumption
 	Pathfinding assumes that all unexplored terrain is perfectly traversable open ground
 	It adjusts as terrain gets revealed and shown to be blocked
 	This creates consistent logic for pathing into unexplored areas where units start with a naive path and readjust as they explore more during the path
 	A somewhat similar assumption is used when drawing walls, rendered wall tiles do not glom to adjacent walls if the adjacent walls are on unexplored tiles
+
 Voxel space guidelines
 	Simplest possible space
 		No flat floor tiles, full voxel cube is needed for floor
@@ -105,3 +110,7 @@ Voxel space guidelines
 		Show an arrow glyph if the slope continues further out from +/-1z
 		Only draw floors at -1, 0 and 1 z
 	A voxel world should look and play like a traditional roguelike space with the correct architecture
+
+Snappy compression
+	Save file data is very redundant as of 2024-02 so it pays to use lossless compression
+	View compressed saves with `snunzip -ct raw saved.idm.sz`
