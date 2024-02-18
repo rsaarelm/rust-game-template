@@ -34,7 +34,7 @@ use MapAction::*;
 // NB. Even though map_view accesses the game singleton (because I'm too lazy
 // to set it up as a widget that would take references to all the subsystems
 // it needs to run), it must NOT effect any mutable change on its own. All
-// changes are communicated via the renturn value.
+// changes are communicated via the return value.
 
 pub fn view_map(win: &Window) -> Option<MapAction> {
     const SCROLL_STEP: i32 = 4;
