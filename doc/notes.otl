@@ -24,6 +24,12 @@ Semantic commit tags
 	chore
 		Updating grunt tasks etc; no production code change
 
+Releases
+	Begin the message of a release commit with "Release "
+	Do not use this prefix on any other git commit message
+	A release commit must increment the release string in Cargo.toml
+	The game built from the release commit will report it's release string without an appended git hash
+
 Async runner functions and display frames
 	Runner functions like run::explore, run::aim should do a draw().await early on to start a new frame
 	If they are triggered by an earlier runner and don't switch frame, they will be seeing the same keypress the previous frame saw

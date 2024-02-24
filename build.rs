@@ -1,6 +1,7 @@
 use std::process::Command;
 
 fn main() -> anyhow::Result<()> {
+    println!("cargo:rerun-if-changed=src/version.rs");
     std::fs::write(
         "src/version.rs",
         format!(
@@ -14,25 +15,23 @@ fn main() -> anyhow::Result<()> {
 fn get_git_hash() -> anyhow::Result<String> {
     let version = env!("CARGO_PKG_VERSION");
 
-    let short = String::from_utf8(
+    let hash = String::from_utf8(
         Command::new("git")
             .args(["rev-parse", "--short", "HEAD"])
             .output()?
             .stdout,
     )?;
 
-    let long = String::from_utf8(
+    let message = String::from_utf8(
         Command::new("git")
-            .args(["rev-parse", "--short", "HEAD"])
+            .args(["show", "-s", "--format=%s"])
             .output()?
             .stdout,
     )?;
 
-    let is_release_commit = long.starts_with("7e1ea5e");
-
-    if is_release_commit {
+    if message.starts_with("Release ") {
         Ok(version.into())
     } else {
-        Ok(format!("{version}-{short}"))
+        Ok(format!("{version}-{}", hash.trim()))
     }
 }

@@ -37,10 +37,6 @@ profile-release *ARGS:
     perf record -- ./target/x86_64-unknown-linux-gnu/release/gametemplate {{ARGS}}
     hotspot ./perf.data
 
-# Force release git commit to have specific prefix
-force-ref:
-    go run github.com/bradfitz/gitbrute@54f9ed31374ed1b70f48c7bfc4fe83deea59c7c6 --prefix 7e1ea5e
-
 # Update pinned nix flake programs.
 update-flake:
     nix flake update
