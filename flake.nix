@@ -161,6 +161,9 @@
             tiled
             grafx2
             neovim-qt
+
+            # For gitbrute job
+            go
           ];
 
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
