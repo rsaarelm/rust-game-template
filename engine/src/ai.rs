@@ -410,6 +410,11 @@ impl Entity {
 
     pub(crate) fn scan_fov(&self, r: &mut impl AsMut<Runtime>) {
         let r = r.as_mut();
+
+        if !self.is_mob(r) {
+            return;
+        }
+
         let Some(loc) = self.loc(r) else { return };
 
         let cells: Vec<Location> =
