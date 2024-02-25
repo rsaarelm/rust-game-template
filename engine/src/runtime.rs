@@ -112,7 +112,7 @@ impl Runtime {
         }
 
         let player = Entity(self.ecs.spawn((
-            Name("Fighter".into()),
+            Name("Player".into()),
             Icon('1'),
             Speed(4),
             Level(5),
@@ -127,50 +127,6 @@ impl Runtime {
 
         self.player = Some(player);
         player.place(self, *loc);
-
-        let party_spawns: Vec<(_, _)> = ["Ranger", "Monk", "Wizard"]
-            .iter()
-            .zip(self.perturbed_fill_positions(loc).skip(1))
-            .collect();
-
-        for (i, (name, loc)) in party_spawns.into_iter().enumerate() {
-            let npc = Entity(self.ecs.spawn((
-                Name((*name).into()),
-                Icon(format!("{}", i + 2).chars().next().unwrap()),
-                Speed(4),
-                Level(5),
-                IsMob(true),
-                IsFriendly(true),
-                Stats {
-                    hit: 4,
-                    ev: 2,
-                    dmg: 4,
-                },
-            )));
-            npc.place(self, loc);
-            if *name == "Ranger" {
-                self.wish(npc, "dagger").unwrap();
-                self.wish(npc, "sword").unwrap();
-                self.wish(npc, "magic map").unwrap();
-            }
-            if *name == "Monk" {
-                for _ in 0..5 {
-                    self.wish(npc, "potion of healing").unwrap();
-                }
-            }
-            if *name == "Wizard" {
-                for _ in 0..5 {
-                    self.wish(npc, "scroll of fireball").unwrap();
-                }
-                for _ in 0..5 {
-                    self.wish(npc, "scroll of lightning").unwrap();
-                }
-                for _ in 0..5 {
-                    self.wish(npc, "scroll of confusion").unwrap();
-                }
-            }
-            npc.set_goal(self, Goal::FollowPlayer);
-        }
     }
 
     pub fn player(&self) -> Option<Entity> {
