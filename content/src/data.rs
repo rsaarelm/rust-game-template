@@ -164,6 +164,16 @@ impl Region {
     pub fn is_site(&self) -> bool {
         matches!(self, Region::Site(_))
     }
+
+    /// How many vertical floors this region represents.
+    pub fn count(&self) -> u32 {
+        match self {
+            Region::Repeat(n, inner) => n * inner.count(),
+            // Branches go off to the side so they don't add to count.
+            Region::Branch(_) => 0,
+            _ => 1,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
