@@ -127,6 +127,8 @@ impl Runtime {
 
         self.player = Some(player);
         player.place(self, *loc);
+        let sword = self.wish(player, "sword").unwrap();
+        player.make_equipped(self, &sword);
     }
 
     pub fn player(&self) -> Option<Entity> {

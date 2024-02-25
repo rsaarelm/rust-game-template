@@ -78,12 +78,18 @@ impl Entity {
         self.get::<ItemKind>(r).fits(slot)
     }
 
-    pub fn equip(&self, r: &mut impl AsMut<Runtime>, item: &Entity) {
+    /// Internal equip method, does not give message feedback or pass turn.
+    ///
+    /// Return true when item wasn't equipped before and is equipped now.
+    pub fn make_equipped(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        item: &Entity,
+    ) -> bool {
         let r = r.as_mut();
 
         if item.is_equipped(r) {
-            msg!("That is already equipped.");
-            return;
+            return false;
         }
 
         let slot = match item.find_slot_in(r, self) {
@@ -96,13 +102,27 @@ impl Entity {
         };
 
         if slot.is_none() {
-            msg!("[One] can't equip that."; self.noun(r));
+            return false;
+        }
+
+        item.set(r, slot);
+        true
+    }
+
+    pub fn equip(&self, r: &mut impl AsMut<Runtime>, item: &Entity) {
+        let r = r.as_mut();
+
+        if item.is_equipped(r) {
+            msg!("That is already equipped.");
             return;
         }
 
-        msg!("[One] equip[s] [another]."; self.noun(r), item.noun(r));
-        item.set(r, slot);
-        self.complete_turn(r);
+        if self.make_equipped(r, item) {
+            msg!("[One] equip[s] [another]."; self.noun(r), item.noun(r));
+            self.complete_turn(r);
+        } else {
+            msg!("[One] can't equip that."; self.noun(r));
+        }
     }
 
     pub fn is_ranged_weapon(&self, r: &impl AsRef<Runtime>) -> bool {
