@@ -53,7 +53,7 @@ impl From<Entity> for Anchor {
 
 impl Anchor {
     fn project(self, r: &Runtime, view: SectorView) -> Option<IVec2> {
-        let Some(loc) = self.loc(r) else { return None };
+        let loc = self.loc(r)?;
         if (loc.snap_above_floor(r).z - view.z).abs() <= 1 {
             Some(view.project(loc))
         } else {

@@ -23,9 +23,7 @@ impl Entity {
         match goal {
             Goal::None => return Some(Action::Pass),
             Goal::FollowPlayer => {
-                let Some(player) = r.player() else {
-                    return None;
-                };
+                let player = r.player()?;
 
                 if self.is_player(r) {
                     log::warn!(

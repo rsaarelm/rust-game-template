@@ -71,14 +71,14 @@ impl Widget for StatusPanel {
                 let k = k.to_string();
                 match k.as_ref() {
                     k if k.len() == 1 => format!("[{k}]"),
-                    "Up" => "[↑]".to_owned(),
-                    "Right" => "[→]".to_owned(),
-                    "Down" => "[↓]".to_owned(),
-                    "Left" => "[←]".to_owned(),
-                    _ => format!("[?]"),
+                    "Up" => "[↑]".into(),
+                    "Right" => "[→]".into(),
+                    "Down" => "[↓]".into(),
+                    "Left" => "[←]".into(),
+                    _ => "[?]".into(),
                 }
             } else {
-                format!("[ ]")
+                "[ ]".into()
             };
             if cur.print_button(&s) {
                 actions.push(action);

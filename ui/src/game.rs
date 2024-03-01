@@ -605,7 +605,7 @@ impl Game {
                 .decompress_vec(&save)
                 .map_err(|_| anyhow!("Failed to decompress save"))?;
             let save = std::str::from_utf8(&save)?;
-            let mut ret: Runtime = idm::from_str(&save)?;
+            let mut ret: Runtime = idm::from_str(save)?;
 
             ret.bump_cache();
             Ok(Some(ret))

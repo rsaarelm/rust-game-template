@@ -71,9 +71,7 @@ impl FromStr for SubImage<Rgba> {
                 Regex::new(r"^(.+-(\d+)x(\d+))#(\d+)$").unwrap()
             });
 
-            let Some(cap) = RE.captures(path) else {
-                return None;
-            };
+            let cap = RE.captures(path)?;
 
             let name = cap.get(1).unwrap().as_str().parse().unwrap();
 

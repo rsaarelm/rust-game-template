@@ -15,7 +15,7 @@ use serde::{
 };
 use util::InString;
 
-use crate::{power::PowerState, prelude::*, Buff, Goal};
+use crate::{power::PowerState, prelude::*, Buff};
 
 macro_rules! components {
     {

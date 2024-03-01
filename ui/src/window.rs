@@ -158,7 +158,7 @@ impl Window {
         let pos = pos.into();
         for p in img.area() {
             let a = img.get(p);
-            if !a.c == 0 {
+            if a.c != 0 {
                 self.put(pos + v2(p), a);
             }
         }

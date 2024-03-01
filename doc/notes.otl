@@ -20,7 +20,7 @@ Semantic commit tags
 	refactor
 		Refactoring production code, eg. renaming a variable
 	style
-		Formatting, missing semi colons, etc; no production code change
+		Formatting, missing semicolons, etc; no production code change
 	chore
 		Updating grunt tasks etc; no production code change
 

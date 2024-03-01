@@ -19,7 +19,7 @@ impl TryFrom<BitAtlas> for Fov {
         let mut ret = Fov::default();
 
         for loc in value.iter() {
-            ret.insert(loc.into());
+            ret.insert(loc);
         }
         Ok(ret)
     }

@@ -73,11 +73,10 @@ pub async fn main_gameplay() {
 
         // Hack: Explicitly save the game when esc is pressed.
         // Allows
-        if navni::keypress() == "Esc".parse().unwrap() {
-            if !game().is_game_over() {
-                game().save(crate::GAME_NAME);
-                msg!("Game saved.");
-            }
+        if navni::keypress() == "Esc".parse().unwrap() && !game().is_game_over()
+        {
+            game().save(crate::GAME_NAME);
+            msg!("Game saved.");
         }
 
         match input_press().or(side_action) {

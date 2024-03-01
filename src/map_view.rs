@@ -119,7 +119,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     // Ground animations are hidden under fog of war.
-    game().draw_ground_anims(&win, view);
+    game().draw_ground_anims(win, view);
 
     for (p, loc) in view.iter(win.dim()) {
         render_fog(game(), win, p, loc);
@@ -133,7 +133,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     // Sky animations are shown above fog of war.
-    game().draw_sky_anims(&win, view);
+    game().draw_sky_anims(win, view);
 
     // Project locations of planned path and use polyline to fill in the gaps
     // to make a continuous line.
@@ -223,7 +223,6 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                     if sector_area.contains(p) && sector_area.contains(q) {
                         ret = Some(SelectActive(
                             view.view_rect_locations(p, q)
-                                .into_iter()
                                 .filter_map(|loc| loc.mob_at(game()))
                                 .filter(|e| e.is_player_aligned(game()))
                                 .collect(),

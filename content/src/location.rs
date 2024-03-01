@@ -290,12 +290,11 @@ impl Coordinates for Location {
         }
 
         if is_cliff(*self, r) {
-            let Some(mask) = wallform_mask(
+            let mask = wallform_mask(
                 |loc| is_mesa(loc, r) || matches!(loc.tile(r), Tile::Wall(_)),
                 *self,
-            ) else {
-                return None;
-            };
+            )?;
+
             // Ignore cliff bits that aren't connected to any other cliff.
             // They seem to mostly end up being display noise.
             if mask != 0 {

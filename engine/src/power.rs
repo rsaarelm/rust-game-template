@@ -179,7 +179,7 @@ impl Runtime {
             })
             .filter(|(loc, _)| {
                 !loc.is_explored(self)
-                    && revealed.iter().find(|(loc_2, _)| loc == loc_2).is_none()
+                    && !revealed.iter().any(|(loc_2, _)| loc == loc_2)
             })
             .collect();
 

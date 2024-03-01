@@ -225,7 +225,7 @@ impl Entity {
         // If no open position is found, just squeeze the thing right where it
         // was asked to go.
         let mut place_loc = *loc;
-        for loc in r.perturbed_fill_positions(&loc) {
+        for loc in r.perturbed_fill_positions(loc) {
             if self.can_enter(r, loc) {
                 place_loc = loc;
                 break;

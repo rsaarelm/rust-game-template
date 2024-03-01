@@ -1,4 +1,4 @@
-use content::{Block, Coordinates, Cube, Environs, Tile};
+use content::{Block, Cube, Environs, Tile};
 use glam::ivec3;
 use util::{s4, s8, Neighbors2D};
 
@@ -92,7 +92,7 @@ pub trait RuntimeCoordinates: Coordinates {
         if depth > 0 {
             format!("Mazes of Menace: {depth}")
         } else {
-            format!("Surface world")
+            "Surface world".into()
         }
     }
 
