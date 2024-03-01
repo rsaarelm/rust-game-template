@@ -1,16 +1,16 @@
 use std::collections::hash_map::Entry;
 
-use anyhow::bail;
-use glam::{ivec2, ivec3, IVec2};
+use anyhow::{bail, Context};
+use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{a3, text, v2, v3, HashMap, Logos};
+use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Logos, Neighbors2D};
 
 use crate::{
     data::Region, Block, Coordinates, Cube, Location, Lot, MapGenerator, Patch,
-    Rect, Scenario, Spawn, Terrain, Voxel, Zone, LEVEL_DEPTH, SECTOR_HEIGHT,
-    SECTOR_WIDTH,
+    Rect, Scenario, Spawn, Terrain, Voxel, Zone, DOWN, LEVEL_DEPTH, NORTH,
+    SECTOR_HEIGHT, SECTOR_WIDTH, UP, WEST,
 };
 
 /// Non-cached world data that goes in a save file.
@@ -118,6 +118,87 @@ impl TryFrom<SerWorld> for World {
     }
 }
 
+/// Unfold the structural region variants into primitive regions.
+fn unfold(
+    seed: &Logos,
+    mut origin: IVec3,
+    out: &mut IndexMap<IVec3, Region>,
+    existing_shafts: &mut HashSet<IVec2>,
+    slice: &[Region],
+) -> anyhow::Result<()> {
+    use Region::*;
+
+    fn insert(
+        mut pos: IVec3,
+        reg: &Region,
+        out: &mut IndexMap<IVec3, Region>,
+    ) -> IVec3 {
+        match reg {
+            Branch(_) => panic!(
+                "unfold passed branch to insert instead of processing it"
+            ),
+            Repeat(n, reg) => {
+                for _ in 0..*n {
+                    pos += insert(pos, reg, out);
+                }
+
+                pos
+            }
+            primitive => {
+                out.insert(pos, primitive.clone());
+                pos + ivec3(0, 0, -1)
+            }
+        }
+    }
+
+    if slice.is_empty() {
+        return Ok(());
+    }
+
+    existing_shafts.insert(origin.truncate());
+
+    // Adjust height for topside elements.
+    let site_count: i32 = slice
+        .iter()
+        .take_while(|a| a.is_site())
+        .map(|a| a.height())
+        .sum();
+
+    if site_count > 0 && origin.z < 0 {
+        bail!("Surface sites present at underground branch");
+    }
+
+    if site_count > 1 {
+        origin.z = site_count - 1;
+    }
+
+    let mut pos = origin;
+    for r in slice {
+        match r {
+            Branch(slice) => {
+                // Find a shaft position that has not been covered by mapgen
+                // so far.
+                let dir_options: Vec<IVec2> = pos
+                    .ns_4()
+                    .map(|p| p.truncate())
+                    .filter(|p| !existing_shafts.contains(p))
+                    .collect();
+                let dir = dir_options
+                    .choose(&mut util::srng(&(seed, pos)))
+                    .context("No room left for branch shaft")?;
+
+                // Build branch.
+                unfold(seed, pos + dir.extend(0), out, existing_shafts, slice)?;
+            }
+            repeat_or_primitive => {
+                pos = insert(pos, repeat_or_primitive, out);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn build_skeleton(
     seed: &Logos,
     scenario: &Scenario,
@@ -127,32 +208,46 @@ fn build_skeleton(
     let mut start_pos = None;
     let mut skeleton = HashMap::default();
 
+    // Keep track of dungeon shafts across entire scenario world.
+    let mut existing_shafts = HashSet::default();
+    // NB. If you ever want to block underground branch shafts from ever being
+    // dug outside scenario boundaries (dungeon right on the edge of scenario
+    // map with branch can have the branch extend away from the map area),
+    // just insert a border rectangle of points in `existing_shafts`
+    // surrounding the valid sector area at this point. Probably simpler to
+    // just leave a dungeon-less rim of regions on the map though.
+
     for (p, c) in text::char_grid(&scenario.map) {
-        let Some(stack) = scenario.legend.get(&c) else {
+        let Some(slice) = scenario.legend.get(&c) else {
             bail!("Unknown overworld char {c:?}");
         };
-        let z = -1
-            + stack
-                .iter()
-                .take_while(|a| a.is_site())
-                .map(|a| a.count())
-                .sum::<u32>() as i32;
 
-        for (depth, region) in stack.iter().enumerate() {
-            let s = Level::level_at([p.x, p.y, z - (depth as i32)]);
+        let mut branch = IndexMap::default();
+        unfold(seed, p.extend(0), &mut branch, &mut existing_shafts, slice)?;
+
+        for (&p, r) in &branch {
+            let s = Level::level_at(p);
             let origin = Location::from(s.min());
 
-            let at_bottom = depth == stack.len() - 1;
+            let is_top = !branch.contains_key(&(p + UP));
 
-            let segment = match region {
+            // Only connect sideways to the top of the branch, either this or
+            // the other region must be on top of its shaft.
+            let connected_north = branch.contains_key(&(p + NORTH))
+                && (is_top || !branch.contains_key(&(p + NORTH + UP)));
+            let connected_west = branch.contains_key(&(p + WEST))
+                && (is_top || !branch.contains_key(&(p + WEST + UP)));
+            let connected_down = if branch.contains_key(&(p + DOWN)) {
+                Some(default_down_stairs(seed, s))
+            } else {
+                None
+            };
+
+            let segment = match r {
                 Generate(gen) => Segment {
-                    connected_north: false,
-                    connected_west: false,
-                    connected_down: if !at_bottom {
-                        Some(default_down_stairs(seed, s))
-                    } else {
-                        None
-                    },
+                    connected_north,
+                    connected_west,
+                    connected_down,
                     generator: Box::new(*gen),
                 },
                 Site(map) | Hall(map) => {
@@ -163,7 +258,6 @@ fn build_skeleton(
                             bail!("Scenario defines more than one start location.");
                         }
                     }
-
                     Segment {
                         connected_north: false,
                         connected_west: false,
@@ -175,8 +269,10 @@ fn build_skeleton(
                         )?),
                     }
                 }
-                Branch(_stack) => todo!(),
-                Repeat(_n, _gen) => todo!(),
+
+                Branch(_) | Repeat(_, _) => {
+                    panic!("unfold left structural regions in output")
+                }
             };
 
             skeleton.insert(s, segment);

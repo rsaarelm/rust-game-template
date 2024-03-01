@@ -162,7 +162,19 @@ impl Region {
     /// Sites are always above ground, though some generated regions may be
     /// above ground too.
     pub fn is_site(&self) -> bool {
-        matches!(self, Region::Site(_))
+        match self {
+            Region::Site(_) => true,
+            Region::Repeat(_, r) => r.is_site(),
+            _ => false,
+        }
+    }
+
+    pub fn height(&self) -> i32 {
+        match self {
+            Region::Repeat(n, a) => *n as i32 * a.height(),
+            Region::Branch(_) => 0,
+            _ => 1,
+        }
     }
 
     /// How many vertical floors this region represents.
