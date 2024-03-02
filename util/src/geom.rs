@@ -69,7 +69,6 @@ pub mod s4 {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::ivec2;
 
         #[test]
         fn dirs() {
@@ -166,7 +165,6 @@ pub mod s_hex {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::ivec2;
 
         #[test]
         fn dirs() {
@@ -228,7 +226,6 @@ pub mod s8 {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use glam::ivec2;
 
         #[test]
         fn dirs() {
@@ -866,10 +863,7 @@ impl std::ops::Sub<Angle> for Angle {
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::PI;
-
     use super::*;
-    use glam::vec2;
 
     #[test]
     fn angles() {
