@@ -25,6 +25,9 @@ use util::{text, HashMap, HashSet};
 // draw the proper terrain in Tiled. Legend data also lives in IDM scenario
 // and can't be specified in Tiled, you just paint the ASCII letters with
 // Tiled and then specify per-sector meanings by editing the IDM.
+//
+// XXX: Above-ground must have at least one initial non-'_' tile to show up in
+// Tiled export.
 
 const TILE_W: u32 = 8;
 const TILE_H: u32 = 8;
