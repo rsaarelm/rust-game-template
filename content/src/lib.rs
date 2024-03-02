@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 
 mod atlas;
-pub use atlas::{Atlas, BitAtlas};
+pub use atlas::{Atlas, AtlasKey, BitAtlas};
 
 mod block;
 pub use block::{Block, Terrain, Tile, Voxel};

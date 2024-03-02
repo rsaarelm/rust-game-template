@@ -8,9 +8,9 @@ use static_assertions::const_assert;
 use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Logos, Neighbors2D};
 
 use crate::{
-    data::Region, Block, Coordinates, Cube, Location, Lot, MapGenerator, Patch,
-    Rect, Scenario, Spawn, Terrain, Voxel, Zone, DOWN, LEVEL_DEPTH, NORTH,
-    SECTOR_HEIGHT, SECTOR_WIDTH, UP, WEST,
+    data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
+    MapGenerator, Patch, Rect, Scenario, Spawn, Terrain, Voxel, Zone, DOWN,
+    LEVEL_DEPTH, NORTH, SECTOR_HEIGHT, SECTOR_WIDTH, UP, WEST,
 };
 
 /// Non-cached world data that goes in a save file.
@@ -71,6 +71,16 @@ impl Serialize for World {
         S: Serializer,
     {
         self.inner.serialize(serializer)
+    }
+}
+
+impl Environs for World {
+    fn voxel(&self, loc: &Location) -> Voxel {
+        self.get(loc)
+    }
+
+    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+        self.set(loc, voxel);
     }
 }
 
@@ -328,6 +338,14 @@ impl World {
         self.gen_status.insert(s, GenStatus::Core);
 
         spawns
+    }
+
+    pub fn levels(&self) -> impl Iterator<Item = &Level> + '_ {
+        self.skeleton.keys()
+    }
+
+    pub fn terrain_cache(&self) -> &Terrain {
+        &self.terrain_cache
     }
 
     fn generate_sector(

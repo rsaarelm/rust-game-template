@@ -14,7 +14,7 @@ use crate::{Coordinates, Location, Rect};
 #[derive(
     Clone, Default, Debug, Eq, PartialEq, Hash, Deref, Serialize, Deserialize,
 )]
-struct AtlasKey(pub Location);
+pub struct AtlasKey(pub Location);
 
 impl Ord for AtlasKey {
     fn cmp(&self, other: &Self) -> Ordering {
