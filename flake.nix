@@ -161,6 +161,7 @@
             tiled
             grafx2
             neovim-qt
+            snzip
           ];
 
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
