@@ -42,7 +42,12 @@ impl SectorMap {
 
         let mut map_spawns = HashMap::default();
         for (loc, spawn) in spawns {
+            if !volume.contains(*loc) {
+                continue;
+            }
+
             let loc = ivec3(loc.x, loc.y, z);
+
             let name = _String::from(spawn.clone()).0;
 
             let c = if let Some(c) = rev_legend.get(&name) {
