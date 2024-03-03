@@ -116,6 +116,11 @@ Voxel space guidelines
 		Show an arrow glyph if the slope continues further out from +/-1z
 		Only draw floors at -1, 0 and 1 z
 	A voxel world should look and play like a traditional roguelike space with the correct architecture
+	Doors are weird
+		There isn't really a sensible story for how a door should work from above
+		Or how multiple doors stacked right on top of each other should work
+		So door voxels should always have a wall voxel above (lintel) and below (threshold) them
+			If either the lintel or the threshold is removed by dynamic terrain change, the door should be removed as well
 
 Snappy compression
 	Save file data is very redundant as of 2024-02 so it pays to use lossless compression

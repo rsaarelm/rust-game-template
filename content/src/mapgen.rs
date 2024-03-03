@@ -443,7 +443,11 @@ pub fn rooms_and_corridors(
     // Dig edges until map is connected.
     while let Some((p, [a, b])) = edges.pop() {
         // Open this one.
-        if plan.get(&p) == Some(&Doorway) {
+        if plan.get(&p) == Some(&Doorway)
+            && ret.voxel(&p.above()).is_some()
+            && ret.voxel(&p.below()).is_some()
+        {
+            // Don't place doors unless lintel and threshold are present.
             ret.set_voxel(&p, Some(Block::Door));
         } else {
             ret.set_voxel(&p, None);
