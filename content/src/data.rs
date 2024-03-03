@@ -1,6 +1,7 @@
 use std::{fmt, str::FromStr, sync::OnceLock};
 
 use anyhow::bail;
+use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 use util::{IncrementalOutline, IndexMap, Outline, _String};
@@ -169,6 +170,14 @@ impl Region {
         }
     }
 
+    pub fn is_prefab(&self) -> bool {
+        match self {
+            Region::Site(_) | Region::Hall(_) => true,
+            Region::Repeat(_, a) => a.is_prefab(),
+            _ => false,
+        }
+    }
+
     pub fn height(&self) -> i32 {
         match self {
             Region::Repeat(n, a) => *n as i32 * a.height(),
@@ -184,6 +193,13 @@ impl Region {
             // Branches go off to the side so they don't add to count.
             Region::Branch(_) => 0,
             _ => 1,
+        }
+    }
+
+    pub fn fixed_upstairs(&self) -> Option<IVec2> {
+        match self {
+            Region::Site(a) | Region::Hall(a) => a.find_upstairs(),
+            _ => None,
         }
     }
 }

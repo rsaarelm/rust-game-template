@@ -129,6 +129,10 @@ impl SectorMap {
         text::char_grid(&self.map).find_map(|(p, c)| (c == '>').then_some(p))
     }
 
+    pub fn find_upstairs(&self) -> Option<IVec2> {
+        text::char_grid(&self.map).find_map(|(p, c)| (c == '<').then_some(p))
+    }
+
     pub fn dim(&self) -> IVec2 {
         text::char_grid(&self.map)
             .map(|(p, _)| p)

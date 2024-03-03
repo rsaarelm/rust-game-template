@@ -247,8 +247,23 @@ fn build_skeleton(
                 && (is_top || !branch.contains_key(&(p + NORTH + UP)));
             let connected_west = branch.contains_key(&(p + WEST))
                 && (is_top || !branch.contains_key(&(p + WEST + UP)));
-            let connected_down = if branch.contains_key(&(p + DOWN)) {
-                Some(default_down_stairs(seed, s))
+            let connected_down = if let Some(a) = branch.get(&(p + DOWN)) {
+                if r.is_prefab() {
+                    // Don't bother speccing connectivity with prefab maps,
+                    // they already connect however they want.
+                    None
+                } else if let Some(pos) = a.fixed_upstairs() {
+                    // Prefab level with fixed upstairs.
+                    let loc = Location::from(s.min()) + pos.extend(-1);
+                    let aligned = snap_stairwell_position(loc);
+                    if loc != aligned {
+                        bail!("Upstairs at {:?} misaligned at {loc}, closest matching is {aligned}", p + DOWN);
+                    }
+                    Some(loc)
+                } else {
+                    // Use the standard pattern.
+                    Some(default_down_stairs(seed, s))
+                }
             } else {
                 None
             };

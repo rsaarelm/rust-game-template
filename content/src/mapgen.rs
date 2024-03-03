@@ -333,7 +333,7 @@ pub fn rooms_and_corridors(
             &border,
             &inside,
         )
-        .expect("Failed to place stairwell");
+        .expect("Failed to place up stairwell");
     }
 
     if let Some(down) = lot.down {
@@ -349,7 +349,7 @@ pub fn rooms_and_corridors(
             &border,
             &inside,
         )
-        .expect("Failed to place stairwell");
+        .expect("Failed to place down stairwell");
     }
 
     // Generate rooms.
