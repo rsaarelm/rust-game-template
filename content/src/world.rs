@@ -149,7 +149,7 @@ fn unfold(
             ),
             Repeat(n, reg) => {
                 for _ in 0..*n {
-                    pos += insert(pos, reg, out);
+                    pos = insert(pos, reg, out);
                 }
 
                 pos
