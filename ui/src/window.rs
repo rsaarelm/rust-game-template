@@ -341,6 +341,12 @@ impl Window {
         ret
     }
 
+    pub fn grow(&self) -> Self {
+        let mut ret = *self;
+        ret.bounds = ret.bounds.grow([1, 1], [1, 1]);
+        ret
+    }
+
     pub fn unbound_sub(&self, area: Rect) -> Self {
         let mut ret = *self;
         ret.bounds = area + self.bounds.min();
@@ -387,6 +393,27 @@ impl Window {
         }
 
         button.clicked()
+    }
+
+    /// Button that grabs mouse events from the surrounding border as well.
+    pub fn wide_button(&self, text: &str) -> bool {
+        let mut button = *self;
+        let area = self.grow();
+
+        button.clear();
+        if area.hovering() {
+            // Emphasize when hovering
+            button.foreground_col = brighten(button.foreground_col);
+        }
+
+        button.center([button.width(), 1]).write_center(text);
+
+        // Invert when pressed
+        if area.pressed() {
+            button.invert();
+        }
+
+        area.clicked()
     }
 
     fn hovering(&self) -> bool {

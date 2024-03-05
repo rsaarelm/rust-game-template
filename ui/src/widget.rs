@@ -81,12 +81,12 @@ impl<'a> Widget for ConfirmationDialog<'a> {
         Widget::render(&*self.text, &message);
 
         let (ok, buttons) = buttons.box_split_right(8);
-        if ok.button("yes") {
+        if ok.wide_button("yes") {
             ret = Some(true);
         }
 
         let (cancel, _) = buttons.box_split_right(8);
-        if cancel.button("no") {
+        if cancel.wide_button("no") {
             ret = Some(false);
         }
 
