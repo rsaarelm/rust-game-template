@@ -12,6 +12,22 @@ use crate::{
 };
 
 impl Entity {
+    /// Execute action commanded by goal AI.
+    pub fn execute_indirect(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        action: Action,
+    ) {
+        self.execute(r, action, false);
+    }
+
+    /// Execute action using a direct command.
+    ///
+    /// Can do things like pick up items automatically.
+    pub fn execute_direct(&self, r: &mut impl AsMut<Runtime>, action: Action) {
+        self.execute(r, action, true);
+    }
+
     fn execute(
         &self,
         r: &mut impl AsMut<Runtime>,
@@ -51,22 +67,6 @@ impl Entity {
             Equip(item) => self.equip(r, &item),
             Unequip(item) => self.unequip(r, &item),
         }
-    }
-
-    /// Execute action commanded by goal AI.
-    pub fn execute_indirect(
-        &self,
-        r: &mut impl AsMut<Runtime>,
-        action: Action,
-    ) {
-        self.execute(r, action, false);
-    }
-
-    /// Execute action using a direct command.
-    ///
-    /// Can do things like pick up items automatically.
-    pub fn execute_direct(&self, r: &mut impl AsMut<Runtime>, action: Action) {
-        self.execute(r, action, true);
     }
 
     fn step(
