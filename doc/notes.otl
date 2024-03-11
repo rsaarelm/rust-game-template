@@ -125,3 +125,10 @@ Voxel space guidelines
 Snappy compression
 	Save file data is very low entropy as of 2024-02 so it pays to use lossless compression
 	View compressed saves with `snunzip -ct raw saved.idm.sz`
+
+Sources for the JS shim files
+	(as of 2024-03)
+	audio.js         https://raw.githubusercontent.com/not-fl3/quad-snd/master/js/audio.js
+	gl.js            https://raw.githubusercontent.com/not-fl3/miniquad/master/js/gl.js
+	quad-storage.js  https://raw.githubusercontent.com/optozorax/quad-storage/master/js/quad-storage.js
+	sapp_jsutils.js  https://raw.githubusercontent.com/not-fl3/sapp-jsutils/master/js/sapp_jsutils.js
