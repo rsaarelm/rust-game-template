@@ -10,7 +10,7 @@ util = { path = "../util" }
 
 derive_more = "0.99"
 glam = { version = "0.25", features = ["serde"] }
-image = { version = "0.24", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
 itertools = "0.12"
 navni = { git = "https://github.com/rsaarelm/navni" }
 regex = "1"

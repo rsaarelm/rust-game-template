@@ -73,12 +73,12 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(seed).unwrap();
 
-                    msg!("Welcome to {}!", GAME_NAME);
+                    msg!("Welcome to {}, {}!", GAME_NAME, util::user_name());
                 }
                 Ok(Some(save)) => {
                     // Load the save.
                     game().replace_runtime(save);
-                    msg!("Welcome back!");
+                    msg!("Welcome back, {}!", util::user_name());
                 }
                 Err(_) => {
                     game().draw().await;

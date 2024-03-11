@@ -138,6 +138,11 @@ pub fn panic_handler() {
 #[cfg(not(target_os = "windows"))]
 pub fn panic_handler() {}
 
+/// Return name of the logged-in user for high score tables, profile names etc.
+pub fn user_name() -> String {
+    whoami::username()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

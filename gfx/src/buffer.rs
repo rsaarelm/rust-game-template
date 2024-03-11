@@ -117,7 +117,7 @@ impl Buffer<Rgba> {
                 &img.into_raw(),
                 self.width,
                 self.height,
-                image::ColorType::Rgb8,
+                image::ExtendedColorType::Rgb8,
             )
             .unwrap();
 

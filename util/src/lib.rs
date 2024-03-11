@@ -50,7 +50,7 @@ mod sync;
 pub use sync::SameThread;
 
 mod sys;
-pub use sys::{panic_handler, KeyboardLayout};
+pub use sys::{panic_handler, user_name, KeyboardLayout};
 
 pub mod text;
 
