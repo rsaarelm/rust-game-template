@@ -139,8 +139,14 @@ pub fn panic_handler() {
 pub fn panic_handler() {}
 
 /// Return name of the logged-in user for high score tables, profile names etc.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn user_name() -> String {
     whoami::username()
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn user_name() -> String {
+    "Unknown".into()
 }
 
 #[cfg(test)]
