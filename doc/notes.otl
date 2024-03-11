@@ -123,5 +123,5 @@ Voxel space guidelines
 			If either the lintel or the threshold is removed by dynamic terrain change, the door should be removed as well
 
 Snappy compression
-	Save file data is very redundant as of 2024-02 so it pays to use lossless compression
+	Save file data is very low entropy as of 2024-02 so it pays to use lossless compression
 	View compressed saves with `snunzip -ct raw saved.idm.sz`
