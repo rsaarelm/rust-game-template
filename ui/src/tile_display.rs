@@ -182,8 +182,8 @@ impl DisplayTile {
                 let mut rng = util::srng(&loc);
                 c1 = floor_cell(&mut rng, Water, false);
             }
-            // Chasms are sticky.
-            (Void, _) | (_, Void) => {
+            // Chasms stick to walls.
+            (Void, Wall(_)) | (Wall(_), Void) | (Void, Void) => {
                 c1 = CharCell::c('▒');
             }
             _ => {}
