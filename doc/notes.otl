@@ -132,3 +132,26 @@ Sources for the JS shim files
 	gl.js            https://raw.githubusercontent.com/not-fl3/miniquad/master/js/gl.js
 	quad-storage.js  https://raw.githubusercontent.com/optozorax/quad-storage/master/js/quad-storage.js
 	sapp_jsutils.js  https://raw.githubusercontent.com/not-fl3/sapp-jsutils/master/js/sapp_jsutils.js
+
+The modal monster is a pig, express intrinsic flags as "how it differs from a pig"
+	A monster with zero defined features is more or less equivalent to an average pig
+	Motivation, same size and rough biology as a human, but minus intelligence and hands which are unusual
+	Eg. a pig is
+		alive
+		needs to breathe
+		has a skeleton made of bone
+		bleeds red blood
+		is warm-blooded
+		is an omnivore that's not particularly predatory
+		weights around 100 kg
+	So you'd have specifically defined properties like
+		is undead
+		does not breathe
+		is invertebrate
+		has a stone skeleton
+		is cold-blooded
+		is a predator
+		weights more than 500 kg
+		is sapient
+		has hands
+		has no head
