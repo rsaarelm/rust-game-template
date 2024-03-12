@@ -143,10 +143,20 @@ pub fn panic_handler() {}
 pub fn user_name() -> String {
     whoami::username()
 }
-
 #[cfg(target_arch = "wasm32")]
 pub fn user_name() -> String {
     "Unknown".into()
+}
+
+/// Return true on a platform where "Quit to OS" is a meaningful action.
+///
+/// This is true on graphical desktops, terminal applications and video game
+/// consoles from the seventh generation onward. It is false for WASM programs
+/// and mobile programs on Android or iOS.
+pub fn can_quit_program() -> bool {
+    !(cfg!(target_arch = "wasm32")
+        || cfg!(target_os = "android")
+        || cfg!(target_os = "ios"))
 }
 
 #[cfg(test)]
