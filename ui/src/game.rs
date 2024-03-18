@@ -592,6 +592,12 @@ impl Game {
         }
     }
 
+    pub fn savefile_exists(&self, game_name: &str) -> bool {
+        navni::Directory::data(game_name)
+            .expect("data dir not found")
+            .exists("saved.idm.sz")
+    }
+
     /// Return Ok(Some(save)) if save file is found and parsed successfully.
     /// Return Ok(None) if there is no save file. Return an error if save file
     /// is present but could not be parsed.
