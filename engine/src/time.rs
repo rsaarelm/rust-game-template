@@ -28,7 +28,7 @@ impl Instant {
 
     /// Return whether mobs with the given speed get to act on this time
     /// point.
-    pub const fn is_action_frame(self, speed: u8) -> bool {
+    pub const fn is_action_frame(self, speed: i8) -> bool {
         let speed = speed as i64;
         if speed == 0 {
             false

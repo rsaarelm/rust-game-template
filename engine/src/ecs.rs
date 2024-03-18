@@ -144,7 +144,7 @@ pub struct Buffs(BTreeMap<Buff, Instant>);
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
-pub struct Count(pub usize);
+pub struct Count(pub i32);
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
@@ -190,7 +190,7 @@ pub struct Powers(pub BTreeMap<Power, PowerState>);
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
-pub struct Speed(pub u8);
+pub struct Speed(pub i8);
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
