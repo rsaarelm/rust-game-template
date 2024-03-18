@@ -38,12 +38,6 @@ Async runner functions and display frames
 Upstairs go north, downstairs go south on maps
 	Because north = up, south = down, visually
 
-ECS components for entities should have default values that make sense for "not defined for this entity"
-	Eg. if it's just a number, zero should be same as "not defined"
-	Wrap the type in Option if a missing value isn't clearly expressed otherwise
-	Enum-type components have a `None` value in the main enum just to avoid the extra layering of an Option around it
-		This might be bad design and need to be changed
-
 The widget idiom
 	Widgets are basically fancier IMGUI buttons, up to full game map view
 	The idea is to have complex UI logic inside them, but never do mutable actions directly when the widget is being rendered
@@ -100,6 +94,18 @@ Gamedata notes
 		Use util::LazyRes type to break this deadlock
 		LazyRes allows serializing data as (usually) string, and will fetch the actual data the first time the value is accessed
 
+	ECS components for entities should have default values that make sense for "not defined for this entity"
+		Eg. if it's just a number, zero should be same as "not defined"
+		Wrap the type in Option if a missing value isn't clearly expressed otherwise
+		Enum-type components have a `None` value in the main enum just to avoid the extra layering of an Option around it
+			This might be bad design and need to be changed
+
+	Prefer signed integer types for components
+		There isn't good reason to use unsigned and it opens you up to bugs if you ever subtract below 0 for any reason
+		Also avoid float types, a fixed-point integer should work for most cases
+			One exception are games that have continuous-space physics, float vectors are probably okay there
+			Turn-based games usually have a discrete space though
+
 Optimistic Search Assumption
 	Pathfinding assumes that all unexplored terrain is perfectly traversable open ground
 	It adjusts as terrain gets revealed and shown to be blocked
@@ -155,3 +161,4 @@ The modal monster is a pig, express intrinsic flags as "how it differs from a pi
 		is sapient
 		has hands
 		has no head
+	A "generic creature spawn" could be a literal pig
