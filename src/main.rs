@@ -6,6 +6,7 @@ use clap::Parser;
 use engine::prelude::*;
 use ui::game;
 use util::{IncrementalOutline, Logos};
+use version::VERSION;
 
 mod map_view;
 mod run;
@@ -20,8 +21,8 @@ struct Args {
         long,
         value_name = "SEED",
         value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)),
-        help = "Start a new game, optionally with specific seed"
     )]
+    /// Start a new game, optionally with specific seed
     new_game: Option<Option<Logos>>,
 
     #[arg(
@@ -29,7 +30,12 @@ struct Args {
         value_delimiter = ',',
         help = "Comma-separarted list of mod files to apply"
     )]
+    /// Comma-separarted list of mod files to apply
     mods: Vec<PathBuf>,
+
+    #[arg(short = 'v', long)]
+    /// Display game version
+    version: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -37,6 +43,11 @@ fn main() -> anyhow::Result<()> {
     navni::logger::start(GAME_NAME);
 
     let args = Args::parse();
+
+    if args.version {
+        println!("{GAME_NAME} version {VERSION}");
+        return Ok(());
+    }
 
     let mut mods: Vec<IncrementalOutline> = Default::default();
     for path in args.mods {
@@ -96,7 +107,7 @@ fn main() -> anyhow::Result<()> {
             }
             break;
         }
-        msg!("Build version {}", version::GIT_HEAD);
+        msg!("Build version {}", VERSION);
 
         game().viewpoint = game()
             .r

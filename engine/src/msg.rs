@@ -84,6 +84,8 @@ impl Grammatize for (Noun, Noun) {
     }
 }
 
+// TODO: Figure out how to make msg!("{variable}") formatting work
+
 #[macro_export]
 macro_rules! msg {
     ($fmt:expr) => {
