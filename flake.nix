@@ -152,6 +152,9 @@
             xorg.libXi
             alsa-lib
 
+            # JS minifier
+            minify
+
             # Profiling
             linuxPackages.perf
             hotspot

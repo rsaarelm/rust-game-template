@@ -54,6 +54,22 @@ setup-envrc:
         echo ".envrc exists" >&2
     fi
 
+generate-minified-js:
+    #!/bin/sh
+    OUT=$(pwd)/web
+    TMPDIR=$(mktemp -d)
+    cd $TMPDIR
+
+    wget https://raw.githubusercontent.com/not-fl3/quad-snd/master/js/audio.js
+    wget https://raw.githubusercontent.com/not-fl3/miniquad/master/js/gl.js
+    wget https://raw.githubusercontent.com/optozorax/quad-storage/master/js/quad-storage.js
+    wget https://raw.githubusercontent.com/not-fl3/sapp-jsutils/master/js/sapp_jsutils.js
+
+    minify audio.js > $OUT/audio.js
+    minify gl.js > $OUT/gl.js
+    minify quad-storage.js > $OUT/quad-storage.js
+    minify sapp_jsutils.js > $OUT/sapp_jsutils.js
+
 # Make git do automated tests before commit and push
 register-githooks:
     git config --local core.hooksPath githooks/
