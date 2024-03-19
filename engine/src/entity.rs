@@ -235,6 +235,7 @@ impl Entity {
     }
 
     pub fn die(&self, r: &mut impl AsMut<Runtime>, perp: Option<Entity>) {
+        // TODO (A) When player is dying, trigger respawn instead
         let r = r.as_mut();
         if let Some(loc) = self.loc(r) {
             // Effects.

@@ -411,7 +411,7 @@ impl Game {
                     self.select_next_commandable(true);
                 } else {
                     debug_assert!(p.is_player(&self.r));
-                    // TODO 2023-12-23 adjacent sector search is retired, can this be simplified?
+                    // TODO: Adjacent sector search is retired, can this be simplified?
                     // Player can do the adjacent sector search with
                     // StartAutoexplore, NPCs just get regular autoexplore.
                     p.set_goal(&mut self.r, Goal::StartAutoexplore(zone));
@@ -427,7 +427,8 @@ impl Game {
                 }
             }
             (Command::Indirect(goal), Some(_)) => {
-                // TODO: Do other indirect commands need a mode for when the player character is also doing it?
+                // TODO: Do other indirect commands need a mode for when the
+                // player character is also doing it?
                 if !self.player_is_selected() {
                     for p in self.selected().collect::<Vec<_>>() {
                         p.set_goal(&mut self.r, goal);
