@@ -235,7 +235,6 @@ impl Entity {
     }
 
     pub fn die(&self, r: &mut impl AsMut<Runtime>, perp: Option<Entity>) {
-        // TODO (A) When player is dying, trigger respawn instead
         let r = r.as_mut();
         if let Some(loc) = self.loc(r) {
             // Effects.
@@ -255,12 +254,28 @@ impl Entity {
                     loc.decorate_block(r, Block::SplatteredRock);
                 }
             }
+        }
 
-            // Drop stuff.
+        // TODO: Resolve respawning the whole party on TPK, otherwise zapping
+        // the dead character into limbo and switching to a surviving party
+        // member. The current simpler implementation just respawns the main
+        // player when they die and ignores the followers
+
+        // TODO: Support some sort of delayed animation that shows the player
+        // "dead" over multiple frames before respawning back at the save
+        // point to give proper feedback that the player just died.
+        if r.player == Some(*self) {
+            self.respawn(r);
+            return;
+        }
+
+        if let Some(loc) = self.loc(r) {
+            // Drop stuff on floor.
             for e in self.contents(r).collect::<Vec<_>>() {
                 e.place_on_open_spot(r, &loc);
             }
         }
+
         self.destroy(r);
 
         if r.player == Some(*self) {

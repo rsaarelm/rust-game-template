@@ -177,8 +177,8 @@ impl Widget for StatusPanel {
 
         cur.pos.y = win.height() - 1;
         cur.pos.x = 0;
-        if cur.print_button("forfeit run") {
-            actions2.push(ForfeitRun);
+        if cur.print_button("retire") {
+            actions2.push(Retire);
         }
 
         // There should be at most one input action caught up in these, return

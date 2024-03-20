@@ -39,6 +39,8 @@ pub struct Game {
     sky_anims: Vec<Box<dyn Anim>>,
 
     pub input_map: InputMap,
+
+    retired: bool,
 }
 
 static mut GAME: Option<Game> = None;
@@ -98,6 +100,7 @@ impl Default for Game {
             ground_anims: Default::default(),
             sky_anims: Default::default(),
             input_map,
+            retired: Default::default(),
         }
     }
 }
@@ -503,7 +506,7 @@ impl Game {
             Throw => {}
             Use => {}
             QuitGame => {}
-            ForfeitRun => {}
+            Retire => {}
             Cancel => {
                 if let Some(p) = self.current_active() {
                     if p.is_player(self) {
@@ -642,14 +645,12 @@ impl Game {
         }
     }
 
-    pub fn forfeit(&mut self) {
-        while let Some(c) = self.current_active() {
-            c.die(self, None);
-        }
+    pub fn retire(&mut self) {
+        self.retired = true;
     }
 
     pub fn is_game_over(&self) -> bool {
-        self.current_active().is_none()
+        self.retired
     }
 }
 

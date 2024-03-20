@@ -152,9 +152,9 @@ pub async fn main_gameplay() {
             Some(InputAction::QuitGame) => {
                 break;
             }
-            Some(InputAction::ForfeitRun) => {
-                if ask("Really forfeit your game?").await {
-                    game().forfeit();
+            Some(InputAction::Retire) => {
+                if ask("Really retire your character?").await {
+                    game().retire();
                     break;
                 }
             }

@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ecs::{ActsNext, Buffs, IsMob, Momentum, Speed, Stats},
+    ecs::{ActsNext, Buffs, IsMob, Momentum, NumDeaths, Speed, Stats, Wounds},
     prelude::*,
     PHASES_IN_TURN,
 };
@@ -255,6 +255,25 @@ impl Entity {
 
     pub fn is_confused(&self, r: &impl AsRef<Runtime>) -> bool {
         self.has_buff(r, Buff::Confusion)
+    }
+
+    pub fn fully_heal(&self, r: &mut impl AsMut<Runtime>) {
+        self.set(r, Wounds(0));
+    }
+
+    pub fn respawn(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
+        let num_deaths = self.get::<NumDeaths>(r).0;
+        if num_deaths == 0 {
+            msg!("[One] [is] no longer mortal."; self.noun(r));
+        }
+        self.set(r, NumDeaths(num_deaths + 1));
+
+        self.fully_heal(r);
+
+        msg!("[One] awaken[s] in a familiar place."; self.noun(r));
+        self.place(r, r.world.player_entrance());
     }
 }
 

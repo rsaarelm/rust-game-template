@@ -112,6 +112,7 @@ components! {
     Buffs,
     Speed,
     Wounds,
+    NumDeaths,
     IsMob,
     Voice,
     IsFriendly,
@@ -183,6 +184,10 @@ pub struct Name(pub InString);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct Nickname(pub String);
+
+/// How many times has the player died.
+#[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
+pub struct NumDeaths(pub i32);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct Powers(pub BTreeMap<Power, PowerState>);
