@@ -13,7 +13,11 @@ mod run;
 mod version;
 mod view;
 
-pub const GAME_NAME: &str = "gametemplate";
+/// Human-readable game title.
+pub const GAME_NAME: &str = "Template Game";
+
+/// System identifier for game.
+pub const GAME_ID: &str = "gametemplate";
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -40,7 +44,7 @@ struct Args {
 
 fn main() -> anyhow::Result<()> {
     util::panic_handler();
-    navni::logger::start(GAME_NAME);
+    navni::logger::start(GAME_ID);
 
     let args = Args::parse();
 
@@ -56,17 +60,17 @@ fn main() -> anyhow::Result<()> {
     }
     content::register_mods(mods);
 
-    navni::run(GAME_NAME, async move {
+    navni::run(GAME_ID, async move {
         ui::init_game();
 
         if args.new_game.is_some() {
             log::info!("New game requested, deleting any existing saves");
-            game().delete_save(GAME_NAME);
+            game().delete_save(GAME_ID);
         }
 
         // Restore game or init a new one.
         loop {
-            match game().load(GAME_NAME) {
+            match game().load(GAME_ID) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
                     let seed = if let Some(Some(logos)) = args.new_game {
@@ -96,7 +100,7 @@ fn main() -> anyhow::Result<()> {
                     if crate::run::ask("Corrupt save file detected. Delete it?")
                         .await
                     {
-                        game().delete_save(GAME_NAME);
+                        game().delete_save(GAME_ID);
                         continue;
                     } else {
                         // Can't load the save file and can't clobber it, exiting
@@ -122,9 +126,9 @@ fn main() -> anyhow::Result<()> {
 
         // Save the game if we exited with the game still running.
         if !game().is_game_over() {
-            game().save(GAME_NAME);
+            game().save(GAME_ID);
         } else {
-            game().delete_save(GAME_NAME);
+            game().delete_save(GAME_ID);
         }
     });
 
