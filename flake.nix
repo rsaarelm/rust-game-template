@@ -57,13 +57,13 @@
           lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi alsa-lib ];
 
       in rec {
-        defaultPackage = packages.gametemplate;
+        defaultPackage = packages.${pname};
 
-        # For `nix build .#gametemplate`
-        packages.gametemplate =
+        # For `nix build .#${pname}`
+        packages.${pname} =
           naerskBuildPackage "x86_64-unknown-linux-gnu" {
             src = ./.;
-            pname = "gametemplate";
+            pname = "${pname}";
             doCheck = true;
 
             nativeBuildInputs = with pkgs; [ makeWrapper ];
@@ -77,11 +77,11 @@
             '';
           };
 
-        # For `nix build .#gametemplate-tty`
-        packages.gametemplate-tty =
+        # For `nix build .#${pname}-tty`
+        packages."${pname}-tty" =
           naerskBuildPackage "x86_64-unknown-linux-gnu" {
             src = ./.;
-            pname = "gametemplate-tty";
+            pname = "${pname}-tty";
             doCheck = true;
 
             release = false;
@@ -100,8 +100,8 @@
             '';
           };
 
-        # For `nix build .#gametemplate-wasm`:
-        packages.gametemplate-wasm =
+        # For `nix build .#${pname}-wasm`:
+        packages."${pname}-wasm" =
           naerskBuildPackage "wasm32-unknown-unknown" {
             src = ./.;
             doCheck = false;
@@ -112,8 +112,8 @@
             cargoTestOptions = (x: x ++ [ "--all" ]);
           };
 
-        # For `nix build .#gametemplate-win`:
-        packages.gametemplate-win =
+        # For `nix build .#${pname}-win`:
+        packages."${pname}-win" =
           naerskBuildPackage "x86_64-pc-windows-gnu" {
             src = ./.;
             # FIXME: Unit test running doensn't work
@@ -137,10 +137,7 @@
           };
 
         devShell = pkgs.mkShell ({
-          inputsFrom = with packages; [
-            gametemplate
-            gametemplate-win
-          ];
+          inputsFrom = [ packages."${pname}" packages."${pname}-win" ];
 
           buildInputs = with pkgs; [
             cargo-outdated

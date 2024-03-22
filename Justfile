@@ -1,3 +1,5 @@
+pname := "gametemplate"
+
 # Run game in TTY terminal mode.
 run-tty *ARGS:
     @cargo run --release --features=tty --no-default-features -- {{ARGS}}
@@ -14,27 +16,27 @@ run-wasm: build-wasm
 # Build a WASM version
 build-wasm:
     cargo build --target=wasm32-unknown-unknown --profile=release-lto
-    cp target/wasm32-unknown-unknown/release-lto/gametemplate.wasm web/
+    cp target/wasm32-unknown-unknown/release-lto/{{pname}}.wasm web/
 
 # Build a WASM version (use nix build)
 build-wasm-nix:
-    nix build .#gametemplate-wasm
-    cp result/bin/gametemplate.wasm web/
-    chmod u+w web/gametemplate.wasm
+    nix build .#{{pname}}-wasm
+    cp result/bin/{{pname}}.wasm web/
+    chmod u+w web/{{pname}}.wasm
 
 # Cross-compile a Windows executable
 build-win:
-    @nix build .#gametemplate-win
+    @nix build .#{{pname}}-win
     @echo Built windows executable in result/bin/
 
 profile-debug *ARGS:
     @cargo build
-    perf record -- ./target/x86_64-unknown-linux-gnu/debug/gametemplate {{ARGS}}
+    perf record -- ./target/x86_64-unknown-linux-gnu/debug/{{pname}} {{ARGS}}
     hotspot ./perf.data
 
 profile-release *ARGS:
     @cargo build --release
-    perf record -- ./target/x86_64-unknown-linux-gnu/release/gametemplate {{ARGS}}
+    perf record -- ./target/x86_64-unknown-linux-gnu/release/{{pname}} {{ARGS}}
     hotspot ./perf.data
 
 # Update pinned nix flake programs.
