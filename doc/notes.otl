@@ -30,6 +30,24 @@ Releases
 	A release commit must increment the release string in Cargo.toml
 	The game built from the release commit will report it's release string without an appended git hash
 
+Developing games on top of the template project
+	The template isn't really an engine
+	Instead of the game having a dependency to the separate engine library, game projects are forked off the engine base
+	You can keep pushing generic changes to the template and keep the game-specific stuff in a separate branch
+	(This setup is untested as of 2024-03 and might turn out to be too annoying in practice)
+	Setup for game project
+	Set gametemplate as a secondary remote
+		git remote add template https://github.com/rsaarelm/gametemplate  # Wherever you have it hosted
+		git fetch
+	Check out template's master branch as the local template branch
+		git checkout -b template --track template/master
+	Git doesn't like to push to a differently-named remote branch by default, so you need to do
+		git config --local push.default upstream
+	You can now work on the shared machinery in `template` branch and work on the game-specific stuff in `master`
+	You probably don't want to keep rebasing game `master` branch on `template`, so bring it up to speed with merge commits to `master` instead
+		git checkout master
+		git merge template
+
 Async runner functions and display frames
 	Runner functions like run::explore, run::aim should do a draw().await early on to start a new frame
 	If they are triggered by an earlier runner and don't switch frame, they will be seeing the same keypress the previous frame saw
