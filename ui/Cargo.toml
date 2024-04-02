@@ -10,7 +10,7 @@ content = { path = "../content" }
 derive_more = "0.99"
 engine = { path = "../engine" }
 gfx = { path = "../gfx" }
-glam = { version = "0.25", features = ["serde"] }
+glam = { version = "0.27", features = ["serde"] }
 idm = "0.4"
 log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }

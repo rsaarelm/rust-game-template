@@ -34,7 +34,7 @@ content = { path = "content" }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }
-glam = "0.25"
+glam = { version = "0.27", features = ["serde"] }
 idm = "0.4"
 log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
