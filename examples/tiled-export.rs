@@ -105,7 +105,9 @@ fn extract(path: &Path) -> Result<()> {
     }
 
     let tiled: Map = cells.into_iter().collect();
-    fs::write(path.with_extension("json"), serde_json::to_string(&tiled)?)?;
+    let output = path.with_extension("json");
+    fs::write(&output, serde_json::to_string(&tiled)?)?;
+    eprintln!("Wrote Tiled world map to {}", output.display());
     Ok(())
 }
 
@@ -192,9 +194,13 @@ fn inject(path: &Path) -> Result<()> {
     }
 
     fs::write(
-        scenario_path,
+        &scenario_path,
         idm::to_string_styled_like(&scenario_text, &scenario)?,
     )?;
+    eprintln!(
+        "Rewrote scenario file {} with Tiled map",
+        scenario_path.display()
+    );
     Ok(())
 }
 
