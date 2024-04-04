@@ -157,11 +157,12 @@
             hotspot
 
             # Utils
-            just
-            tiled
             grafx2
+            just
             neovim-qt
+            optipng
             snzip
+            tiled
           ];
 
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
