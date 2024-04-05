@@ -236,7 +236,10 @@ impl DisplayTile {
                 // unexplored terrain though.
 
                 if let Some(mask) = util::wallform_mask(
-                    |loc: Location| loc.is_explored(r) && loc.tile(r).is_wall(),
+                    |loc: Location| {
+                        (loc.is_explored(r) && loc.tile(r).is_wall())
+                            || loc.is_interior_wall(r)
+                    },
                     loc,
                 ) {
                     let tileset = match block {
