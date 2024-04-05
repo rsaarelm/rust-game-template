@@ -13,7 +13,7 @@ pub struct SectorMap {
     pub map: String,
     // Values are spawns, but store them as strings here since they can't be
     // validated until gamedata has been completely loaded.
-    pub legend: IndexMap<char, String>,
+    pub legend: IndexMap<char, _String>,
 }
 
 impl SectorMap {
@@ -94,7 +94,10 @@ impl SectorMap {
         Self {
             name: Default::default(),
             map,
-            legend: rev_legend.into_iter().map(|(k, v)| (v, k)).collect(),
+            legend: rev_legend
+                .into_iter()
+                .map(|(k, v)| (v, _String(k)))
+                .collect(),
         }
     }
 
