@@ -112,7 +112,7 @@ impl RuntimeCoordinates for Location {
 
         if matches!(
             self.voxel(r),
-            Some(Rock) | Some(SplatteredRock) | Some(Grass)
+            Some(Stone) | Some(SplatteredRock) | Some(Grass)
         ) {
             r.set_voxel(self, Some(b));
         }

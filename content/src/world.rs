@@ -461,7 +461,7 @@ impl World {
         if loc.z >= 0 {
             None
         } else {
-            Some(Block::Rock)
+            Some(Block::Stone)
         }
     }
 }

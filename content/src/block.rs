@@ -34,10 +34,13 @@ pub type Voxel = Option<Block>;
 )]
 pub enum Block {
     #[default]
-    Rock,
+    /// Smooth, worked walls, shown as shaped walls.
+    Stone,
     SplatteredRock,
     Grass,
     Glass,
+    /// Rough, unworked mass, drawn as undifferentiated blob.
+    Rubble,
 
     Door,
 
@@ -50,11 +53,11 @@ use Block::*;
 impl Block {
     /// Block is solid matter that can be stood on top of.
     pub fn is_support(self) -> bool {
-        matches!(self, Rock | SplatteredRock | Grass | Glass)
+        matches!(self, Stone | SplatteredRock | Rubble | Grass | Glass)
     }
 
     pub fn blocks_sight(self) -> bool {
-        matches!(self, Rock | SplatteredRock | Grass | Magma | Door)
+        matches!(self, Stone | SplatteredRock | Rubble | Grass | Magma | Door)
     }
 }
 
@@ -65,10 +68,11 @@ impl TryFrom<char> for Block {
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
-            '*' => Ok(Rock),
+            '*' => Ok(Stone),
             '§' => Ok(SplatteredRock),
             ';' => Ok(Grass),
             '+' => Ok(Glass),
+            '%' => Ok(Rubble),
 
             '|' => Ok(Door),
 
@@ -83,10 +87,11 @@ impl From<Block> for char {
     fn from(value: Block) -> Self {
         // This must match the mapping in Block::try_from.
         match value {
-            Rock => '*',
+            Stone => '*',
             SplatteredRock => '§',
             Grass => ';',
             Glass => '+',
+            Rubble => '%',
 
             Door => '|',
 

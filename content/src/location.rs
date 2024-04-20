@@ -344,23 +344,28 @@ impl Coordinates for Location {
         use Block::*;
         match c {
             '#' => {
-                r.set_voxel(&self.above(), Some(Rock));
-                r.set_voxel(self, Some(Rock));
-                r.set_voxel(&self.below(), Some(Rock));
+                r.set_voxel(&self.above(), Some(Stone));
+                r.set_voxel(self, Some(Stone));
+                r.set_voxel(&self.below(), Some(Stone));
+            }
+            '%' => {
+                r.set_voxel(&self.above(), Some(Rubble));
+                r.set_voxel(self, Some(Rubble));
+                r.set_voxel(&self.below(), Some(Rubble));
             }
             '+' => {
-                r.set_voxel(&self.above(), Some(Rock));
+                r.set_voxel(&self.above(), Some(Stone));
                 r.set_voxel(self, Some(Door));
-                r.set_voxel(&self.below(), Some(Rock));
+                r.set_voxel(&self.below(), Some(Stone));
             }
             '|' => {
-                r.set_voxel(&self.above(), Some(Rock));
+                r.set_voxel(&self.above(), Some(Stone));
                 r.set_voxel(self, Some(Glass));
-                r.set_voxel(&self.below(), Some(Rock));
+                r.set_voxel(&self.below(), Some(Stone));
             }
             '.' => {
                 r.set_voxel(self, None);
-                r.set_voxel(&self.below(), Some(Rock));
+                r.set_voxel(&self.below(), Some(Stone));
             }
             '~' => {
                 r.set_voxel(self, None);
@@ -376,8 +381,8 @@ impl Coordinates for Location {
             }
             '<' => {
                 r.set_voxel(&self.above(), None);
-                r.set_voxel(self, Some(Rock));
-                r.set_voxel(&self.below(), Some(Rock));
+                r.set_voxel(self, Some(Stone));
+                r.set_voxel(&self.below(), Some(Stone));
             }
             _ => bail!("Unknown terrain {c:?}"),
         };

@@ -245,6 +245,7 @@ impl DisplayTile {
                     let tileset = match block {
                         Door => &CROSSED,
                         Glass => &SINGLE_LINE,
+                        Rubble => &ROUGH,
                         _ => &DOUBLE_LINE,
                     };
                     c0 = CharCell::c(tileset[mask]);
@@ -253,8 +254,11 @@ impl DisplayTile {
                     if connect_right {
                         // Adjacent windows form continuous pane, adjacent
                         // doors don't.
+                        //
+                        // Rough tiles make rough lines.
                         let tileset_2 = match right {
                             Wall(Glass) if block == Glass => &SINGLE_LINE,
+                            Wall(Rubble) if block == Rubble => &ROUGH,
                             _ => &DOUBLE_LINE,
                         };
                         c1 = CharCell::c(tileset_2[0b10]);
@@ -316,7 +320,7 @@ fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
                 CharCell::c(' ')
             }
         }
-        Rock | Glass | Door | Grass => CharCell::c(' '),
+        Stone | Glass | Door | Grass | Rubble => CharCell::c(' '),
         SplatteredRock => CharCell::c(match rng.gen_range(0..=10) {
             d if d < 4 => ',',
             d if d < 7 => '\'',
@@ -356,6 +360,13 @@ const DOUBLE_LINE: [char; 16] = [
 const CROSSED: [char; 16] = [
     '╫', '╫', '╪', '+', '╫', '╫', '+', '+',
     '╪', '+', '╪', '+', '+', '+', '+', '+',
+];
+
+/// Rock, foliage etc. show up as unshaped mass.
+#[rustfmt::skip]
+const ROUGH: [char; 16] = [
+    '%', '%', '%', '%', '%', '%', '%', '%',
+    '%', '%', '%', '%', '%', '%', '%', '%',
 ];
 
 // ▲▶▼◀

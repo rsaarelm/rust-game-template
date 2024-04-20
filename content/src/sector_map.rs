@@ -82,6 +82,7 @@ impl SectorMap {
                     crate::Tile::Surface(_, _) => '.',
                     crate::Tile::Wall(Door) => '+',
                     crate::Tile::Wall(Glass) => '|',
+                    crate::Tile::Wall(Rubble) => '%',
                     crate::Tile::Wall(_) => '#',
                     crate::Tile::Void => '_',
                 };

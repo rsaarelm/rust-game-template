@@ -80,7 +80,7 @@ fn main() -> anyhow::Result<()> {
     // Fill unmapped area with earth.
     for p in volume.fat() {
         if !map.terrain.contains_key(&p) {
-            map.terrain.insert(p, Some(Block::Rock));
+            map.terrain.insert(p, Some(Block::Stone));
         }
     }
 

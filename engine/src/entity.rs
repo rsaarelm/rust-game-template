@@ -137,7 +137,7 @@ impl Entity {
     /// Return the type of terrain the entity is expected to spawn in.
     pub fn preferred_block(&self, _c: &impl AsRef<Runtime>) -> Block {
         // Return a different block if entity is aquatic or another weird type.
-        Block::Rock
+        Block::Stone
     }
 
     pub fn icon(&self, r: &impl AsRef<Runtime>) -> char {
