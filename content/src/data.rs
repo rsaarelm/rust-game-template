@@ -328,7 +328,6 @@ impl EquippedAt {
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum Power {
-    BerserkRage,
     CallLightning,
     Confusion,
     Fireball,

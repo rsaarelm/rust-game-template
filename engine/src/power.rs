@@ -20,7 +20,6 @@ impl Runtime {
     ) {
         use Power::*;
         match power {
-            BerserkRage => msg!("TODO!"),
             CallLightning => self.lightning(perp, loc),
             Confusion => self.confusion(perp, loc, v),
             Fireball => self.fireball(perp, loc, v),
