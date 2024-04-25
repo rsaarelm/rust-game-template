@@ -68,7 +68,13 @@ pub struct Logos(String);
 
 impl fmt::Display for Logos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        for (i, c) in self.0.chars().enumerate() {
+            if i % 3 == 0 && i > 0 {
+                write!(f, "-")?;
+            }
+            write!(f, "{c}")?;
+        }
+        Ok(())
     }
 }
 
