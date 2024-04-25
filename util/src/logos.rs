@@ -82,7 +82,13 @@ impl FromIterator<char> for Logos {
     fn from_iter<T: IntoIterator<Item = char>>(iter: T) -> Self {
         Logos(
             iter.into_iter()
-                .map(|c| c.to_ascii_uppercase())
+                .map(|c| match c.to_ascii_uppercase() {
+                    'O' => '0',
+                    'I' => '1',
+                    'S' => '5',
+                    'E' => '3',
+                    a => a,
+                })
                 .filter(|&c| idx(c).is_some())
                 .collect(),
         )
@@ -92,22 +98,11 @@ impl FromIterator<char> for Logos {
 impl Logos {
     /// Construct a new logos, stripping out punctuation, whitespace,
     /// character case and non-ASCII characters from the input.
+    ///
+    /// Lowercase characters are treated as if they were uppercase and "OISE"
+    /// are treated as "0153".
     pub fn new(s: impl AsRef<str>) -> Self {
         s.as_ref().chars().collect()
-    }
-
-    /// Apply the nOISE letter substitution to turn arbitrary text into Logos.
-    pub fn elite_new(s: impl AsRef<str>) -> Self {
-        s.as_ref()
-            .chars()
-            .map(|c| match c.to_ascii_uppercase() {
-                'O' => '0',
-                'I' => '1',
-                'S' => '5',
-                'E' => '3',
-                a => a,
-            })
-            .collect()
     }
 
     pub fn from_bytes(data: &[u8]) -> Self {
@@ -173,13 +168,13 @@ impl Logos {
             // early.
             if vec.len() < 8 && vec.iter().all(|&e| e == 0) {
                 break;
-            } else {
-                ret.push(
-                    vec.into_iter()
-                        .enumerate()
-                        .fold(0, |a, (i, b)| a + (b << i)),
-                );
             }
+
+            ret.push(
+                vec.into_iter()
+                    .enumerate()
+                    .fold(0, |a, (i, b)| a + (b << i)),
+            );
         }
 
         ret
@@ -386,10 +381,10 @@ mod test {
 
         // For real now.
         let mut rng = crate::rng::srng(&seed);
-        assert_eq!(rng.gen_range(0..100), 10);
-        assert_eq!(rng.gen_range(0..100), 11);
-        assert_eq!(rng.gen_range(0..100), 85);
-        assert_eq!(rng.gen_range(0..100), 17);
+        assert_eq!(rng.gen_range(0..100), 13);
+        assert_eq!(rng.gen_range(0..100), 94);
+        assert_eq!(rng.gen_range(0..100), 96);
+        assert_eq!(rng.gen_range(0..100), 18);
     }
 
     #[quickcheck]

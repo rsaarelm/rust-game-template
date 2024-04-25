@@ -11,7 +11,7 @@ struct Args {
     #[arg(
         long,
         value_name = "SEED",
-        value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)),
+        value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)),
         help = "Specify a seed"
     )]
     seed: Option<Logos>,

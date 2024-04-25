@@ -24,7 +24,7 @@ struct Args {
     #[arg(
         long,
         value_name = "SEED",
-        value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)),
+        value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)),
     )]
     /// Start a new game, optionally with specific seed
     new_game: Option<Option<Logos>>,

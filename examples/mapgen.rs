@@ -12,7 +12,7 @@ enum Args {
 
 #[derive(Parser, Debug)]
 struct CorridorsArgs {
-    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::elite_new(e)))]
+    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)))]
     /// Fixed RNG seed.
     seed: Option<Logos>,
 
