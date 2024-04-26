@@ -97,7 +97,7 @@ impl Runtime {
         place: impl Into<Place>,
     ) -> Entity {
         let e = self.spawn(spawn);
-        e.place(self, place);
+        e.place(self, e.open_placement_spot(self, place));
         e
     }
 

@@ -3,7 +3,7 @@ use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
 use util::{dijkstra_map, v3, Neighbors2D, Sdf};
 
-use crate::prelude::*;
+use crate::{placement::Place, prelude::*};
 
 impl Runtime {
     pub fn autoexplore_map(
@@ -213,26 +213,38 @@ impl Entity {
         None
     }
 
+    /// Given a starting place, find a nearby spot where the entity will fit
+    /// comfortably. Returns the original pos if finding a different one
+    /// fails.
+    pub fn open_placement_spot(
+        &self,
+        r: &impl AsRef<Runtime>,
+        place: impl Into<Place>,
+    ) -> Place {
+        let r = r.as_ref();
+        match place.into() {
+            // TODO: Take inventory limits into account, if the item doesn't
+            // fit in recipient's inventory, recurse with new place at
+            // recipient's location, so it'll spawn on your feet instead.
+            Place::In(e) => Place::In(e),
+            Place::At(loc) => Place::At(
+                r.perturbed_fill_positions(&loc)
+                    .find(|&e| self.can_enter(r, e))
+                    .unwrap_or(loc),
+            ),
+        }
+    }
+
     /// Place an item near `loc`, deviating to avoid similar entities.
     ///
     /// Items will avoid other items, mobs will avoid other mobs.
     pub fn place_on_open_spot(
         &self,
         r: &mut impl AsMut<Runtime>,
-        loc: &Location,
+        place: impl Into<Place>,
     ) {
         let r = r.as_mut();
-        // If no open position is found, just squeeze the thing right where it
-        // was asked to go.
-        let mut place_loc = *loc;
-        for loc in r.perturbed_fill_positions(loc) {
-            if self.can_enter(r, loc) {
-                place_loc = loc;
-                break;
-            }
-        }
-
-        self.place(r, place_loc);
+        self.place(r, self.open_placement_spot(r, place));
     }
 
     pub(crate) fn vec_towards(

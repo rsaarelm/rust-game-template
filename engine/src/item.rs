@@ -212,7 +212,7 @@ impl Entity {
         let r = r.as_mut();
 
         if let Some(loc) = self.loc(r) {
-            item.place_on_open_spot(r, &loc);
+            item.place_on_open_spot(r, loc);
             msg!("[One] drop[s] [another]."; self.noun(r), item.noun(r));
         } else {
             log::warn!("Entity::drop: Dropping entity has no location");

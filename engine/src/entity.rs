@@ -272,7 +272,7 @@ impl Entity {
         if let Some(loc) = self.loc(r) {
             // Drop stuff on floor.
             for e in self.contents(r).collect::<Vec<_>>() {
-                e.place_on_open_spot(r, &loc);
+                e.place_on_open_spot(r, loc);
             }
         }
 
