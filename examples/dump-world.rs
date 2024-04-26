@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use clap::Parser;
 use content::{AtlasKey, Location, Scenario, SectorMap, World};
-use util::{IndexMap, Logos};
+use util::{IndexMap, Silo};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -11,10 +11,10 @@ struct Args {
     #[arg(
         long,
         value_name = "SEED",
-        value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)),
+        value_parser = |e: &str| Ok::<Silo, &str>(Silo::new(e)),
         help = "Specify a seed"
     )]
-    seed: Option<Logos>,
+    seed: Option<Silo>,
 
     #[arg(long, help = "Dump raw voxels instead of maps")]
     raw: bool,
@@ -26,12 +26,12 @@ fn main() -> anyhow::Result<()> {
     let scenario: Scenario =
         idm::from_str(&std::fs::read_to_string(args.scenario)?)?;
 
-    let seed = if let Some(logos) = args.seed {
+    let seed = if let Some(seed) = args.seed {
         // A fixed seed was given, use that.
-        logos
+        seed
     } else {
         // Otherwise sample from the system clock.
-        Logos::sample(&mut rand::thread_rng(), 10)
+        Silo::sample(&mut rand::thread_rng(), 10)
     };
 
     eprintln!("seed: {seed}");

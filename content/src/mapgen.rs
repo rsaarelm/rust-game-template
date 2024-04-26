@@ -2,7 +2,7 @@ use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec2, IVec3};
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, RngCore};
 use util::{
-    a3, v3, Cloud, HashMap, HashSet, IndexMap, IndexSet, Logos, Neighbors2D,
+    a3, v3, Cloud, HashMap, HashSet, IndexMap, IndexSet, Neighbors2D, Silo,
 };
 
 use crate::{
@@ -76,7 +76,7 @@ impl Default for Lot {
     fn default() -> Self {
         let volume = Level::level_from(&Default::default());
         let sides = 0;
-        let seed = Logos::default();
+        let seed = Silo::default();
         let up = Some(world::default_down_stairs(&seed, volume.above()));
         let down = Some(world::default_down_stairs(&seed, volume));
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 use content::{Data, Environs, Voxel, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use util::{GameRng, Logos};
+use util::{GameRng, Silo};
 
 use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 
@@ -48,7 +48,7 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    pub fn new(seed: Logos) -> Result<Self> {
+    pub fn new(seed: Silo) -> Result<Self> {
         let world = World::new(seed, Data::get().scenario.clone())?;
         let rng = util::srng(world.seed());
 
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn build_world() {
-        let runtime = Runtime::new(Logos::new("rand0m")).unwrap();
+        let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         assert!(runtime.player().is_some());
     }
 }

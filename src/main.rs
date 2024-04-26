@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use engine::prelude::*;
 use ui::game;
-use util::{IncrementalOutline, Logos};
+use util::{IncrementalOutline, Silo};
 use version::VERSION;
 
 mod map_view;
@@ -24,10 +24,10 @@ struct Args {
     #[arg(
         long,
         value_name = "SEED",
-        value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)),
+        value_parser = |e: &str| Ok::<Silo, &str>(Silo::new(e)),
     )]
     /// Start a new game, optionally with specific seed
-    new_game: Option<Option<Logos>>,
+    new_game: Option<Option<Silo>>,
 
     #[arg(
         long,
@@ -73,12 +73,12 @@ fn main() -> anyhow::Result<()> {
             match game().load(GAME_ID) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
-                    let seed = if let Some(Some(logos)) = args.new_game {
+                    let seed = if let Some(Some(seed)) = args.new_game {
                         // A fixed seed was given, use that.
-                        logos
+                        seed
                     } else {
                         // Otherwise sample from the system clock.
-                        Logos::sample(
+                        Silo::sample(
                             &mut util::srng(&navni::now().to_le_bytes()),
                             10,
                         )

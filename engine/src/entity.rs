@@ -5,7 +5,7 @@ use content::{Block, EquippedAt};
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-use util::{Logos, Noun};
+use util::{Noun, Silo};
 
 use crate::{ecs::*, placement::Place, prelude::*};
 
@@ -316,7 +316,7 @@ impl fmt::Display for Entity {
         let u = self.0.to_bits().get();
         let a = util::spread_u64_by_2(u);
         let b = util::spread_u64_by_2(u >> 32) << 1;
-        write!(f, "#{}", Logos::from(a | b).value())
+        write!(f, "#{}", Silo::from(a | b).value())
     }
 }
 
@@ -327,7 +327,7 @@ impl FromStr for Entity {
         if !s.starts_with('#') || s.len() < 2 {
             return Err("bad entity");
         }
-        let v = u64::from(&Logos::new(&s[1..]));
+        let v = u64::from(&Silo::new(&s[1..]));
         let a = util::compact_u64_by_2(v);
         let b = util::compact_u64_by_2(v >> 1);
         let u = a | (b << 32);

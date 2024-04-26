@@ -5,7 +5,7 @@ use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Logos, Neighbors2D};
+use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo};
 
 use crate::{
     data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
@@ -18,7 +18,7 @@ use crate::{
 #[serde(default, rename_all = "kebab-case")]
 struct SerWorld {
     /// PRNG seed for the game.
-    seed: Logos,
+    seed: Silo,
     /// Terrain that has been changed at runtime.
     overlay: Terrain,
     /// Sectors that have already had their entities spawned.
@@ -130,7 +130,7 @@ impl TryFrom<SerWorld> for World {
 
 /// Unfold the structural region variants into primitive regions.
 fn unfold(
-    seed: &Logos,
+    seed: &Silo,
     mut origin: IVec3,
     out: &mut IndexMap<IVec3, Region>,
     existing_shafts: &mut HashSet<IVec2>,
@@ -210,7 +210,7 @@ fn unfold(
 }
 
 fn build_skeleton(
-    seed: &Logos,
+    seed: &Silo,
     scenario: &Scenario,
 ) -> anyhow::Result<(Location, HashMap<Level, Segment>)> {
     use Region::*;
@@ -312,7 +312,7 @@ fn build_skeleton(
 }
 
 impl World {
-    pub fn new(seed: Logos, scenario: Scenario) -> anyhow::Result<Self> {
+    pub fn new(seed: Silo, scenario: Scenario) -> anyhow::Result<Self> {
         let (player_entrance, skeleton) = build_skeleton(&seed, &scenario)?;
 
         Ok(World {
@@ -327,7 +327,7 @@ impl World {
         })
     }
 
-    pub fn seed(&self) -> &Logos {
+    pub fn seed(&self) -> &Silo {
         &self.inner.seed
     }
 
@@ -475,7 +475,7 @@ pub type Level = Cube;
 ///
 /// The up and down stairwell positions generated using this method are
 /// guaranteed to be apart for every level.
-pub fn default_down_stairs(seed: &Logos, s: Level) -> Location {
+pub fn default_down_stairs(seed: &Silo, s: Level) -> Location {
     snap_stairwell_position(
         (Cube::from(s).border([0, 0, -1]) + ivec3(0, 0, -1))
             .sample(&mut util::srng(&(seed, s))),

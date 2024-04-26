@@ -6,18 +6,18 @@ use itertools::Itertools;
 use rand::prelude::*;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-/// Strings that are normalized to be case, whitespace and punctuation
-/// insensitive. Use as RNG seeds so that trivial transcription errors like an
-/// added space can't mess up the seed.
+/// Binary data encoding strings that are normalized to be case, whitespace
+/// and punctuation insensitive. Use as RNG seeds so that trivial
+/// transcription errors like an added space can't mess up the seed.
 ///
-/// Logos strings can be spoken out loud unambigously using the NATO phonetic
+/// Silo strings can be spoken out loud unambigously using the NATO phonetic
 /// alphabet and can be used as a binary serialization format. Letters 'I',
 /// 'L', 'O' and 'S' are removed to because they are easy to confuse with '1',
 /// '0' and '5'. Use 133T5P3AK to get around the missing characters.
 ///
-/// A Logos string corresponds to a little-endian binary number with each
+/// A Silo string corresponds to a little-endian binary number with each
 /// letter corresponding to one sequence of five bits in the order of their
-/// ASCII encodings, with letter `0` corresponding to `0b00000`. Logos strings
+/// ASCII encodings, with letter `0` corresponding to `0b00000`. Silo strings
 /// with matching prefixes and any length of `0` as suffix are numerically
 /// equal. If treated as a byte sequence, the string is considered to specify
 /// bytes as far as it encodes bytes that either have at least one bit set or
@@ -27,7 +27,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 /// amounts to `[0u8, 0u8]` (16 bits covered, but not 24).
 ///
 /// ```
-/// # use util::{Logos, srng};
+/// # use util::{Silo, srng};
 /// use rand::prelude::*;
 ///
 /// assert_ne!(
@@ -35,21 +35,21 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 ///   srng("password").gen_range(0..1000));
 ///
 /// assert_eq!(
-///   srng(&Logos::new("pAss Word")).gen_range(0..1000),
-///   srng(&Logos::new("password")).gen_range(0..1000));
+///   srng(&Silo::new("pAss Word")).gen_range(0..1000),
+///   srng(&Silo::new("password")).gen_range(0..1000));
 ///
 /// // Trailing zeroes are ignored for hashing.
 /// assert_eq!(
-///   srng(&Logos::new("xyzzy")).gen_range(0..1000),
-///   srng(&Logos::new("xyzzy000")).gen_range(0..1000));
+///   srng(&Silo::new("xyzzy")).gen_range(0..1000),
+///   srng(&Silo::new("xyzzy000")).gen_range(0..1000));
 ///
 /// assert_ne!(
-///   srng(&Logos::new("pAss Word 123")).gen_range(0..1000),
-///   srng(&Logos::new("password")).gen_range(0..1000));
+///   srng(&Silo::new("pAss Word 123")).gen_range(0..1000),
+///   srng(&Silo::new("password")).gen_range(0..1000));
 ///
 /// assert_eq!(
-///   srng(&Logos::new("!@#'")).gen_range(0..1000),
-///   srng(&Logos::new(" ")).gen_range(0..1000));
+///   srng(&Silo::new("!@#'")).gen_range(0..1000),
+///   srng(&Silo::new(" ")).gen_range(0..1000));
 /// ```
 #[derive(
     Clone,
@@ -63,9 +63,9 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
     SerializeDisplay,
     DeserializeFromStr,
 )]
-pub struct Logos(String);
+pub struct Silo(String);
 
-impl fmt::Display for Logos {
+impl fmt::Display for Silo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, c) in self.0.chars().enumerate() {
             if i % 3 == 0 && i > 0 {
@@ -77,9 +77,9 @@ impl fmt::Display for Logos {
     }
 }
 
-impl FromIterator<char> for Logos {
+impl FromIterator<char> for Silo {
     fn from_iter<T: IntoIterator<Item = char>>(iter: T) -> Self {
-        Logos(
+        Silo(
             iter.into_iter()
                 .map(|c| match c.to_ascii_uppercase() {
                     'O' => '0',
@@ -93,12 +93,12 @@ impl FromIterator<char> for Logos {
     }
 }
 
-impl Logos {
-    /// Construct a new logos, stripping out punctuation, whitespace,
+impl Silo {
+    /// Construct a new silo, stripping out punctuation, whitespace,
     /// character case and non-ASCII characters from the input.
     ///
-    /// Lowercase characters are treated as if they were uppercase and "OISE"
-    /// are treated as "0153".
+    /// Lowercase characters are treated as if they were uppercase and "SILO"
+    /// are treated as "5110".
     pub fn new(s: impl AsRef<str>) -> Self {
         s.as_ref().chars().collect()
     }
@@ -141,11 +141,11 @@ impl Logos {
             ret.push(ALPHABET.as_bytes()[c] as char);
         }
 
-        Logos(ret)
+        Silo(ret)
     }
 
-    /// Generate a random logos of `len` characters.
-    pub fn sample<R: Rng + ?Sized>(rng: &mut R, len: usize) -> Logos {
+    /// Generate a random silo of `len` characters.
+    pub fn sample<R: Rng + ?Sized>(rng: &mut R, len: usize) -> Silo {
         (0..len)
             .map(|_| *ALPHABET.as_bytes().choose(rng).unwrap() as char)
             .collect()
@@ -157,7 +157,7 @@ impl Logos {
         for chunk in &self
             .0
             .chars()
-            .map(|c| idx(c).expect("invalid logos") as u8)
+            .map(|c| idx(c).expect("invalid silo") as u8)
             .flat_map(|b| (0..5).map(move |i| (b >> i) & 1))
             .chunks(8)
         {
@@ -190,15 +190,15 @@ impl Logos {
         self
     }
 
-    /// Trim trailing zeroes off the logos.
+    /// Trim trailing zeroes off the silo.
     pub fn trim(&mut self) {
         self.0.truncate(self.0.len() - self.suffix_len());
     }
 
-    /// Return the value prefix of the logos that omits trailing zeroes.
+    /// Return the value prefix of the silo that omits trailing zeroes.
     ///
-    /// Logoi are assumed to have the same value regardless of trailing
-    /// zeroes, analogous to how 00360 and 360 denote the same number.
+    /// Silos are assumed to have the same value regardless of trailing
+    /// zeroes, analogous to how 00360 and 360 denote the same integer.
     pub fn value(&self) -> &str {
         let n = self.0.len() - self.suffix_len();
         if n == 0 {
@@ -212,14 +212,14 @@ impl Logos {
 
 // Hashing uses the true value and discounts the trailing zeroes.
 
-impl Hash for Logos {
+impl Hash for Silo {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.value().hash(state);
     }
 }
 
-impl<const N: usize> From<&Logos> for [u8; N] {
-    fn from(value: &Logos) -> Self {
+impl<const N: usize> From<&Silo> for [u8; N] {
+    fn from(value: &Silo) -> Self {
         let mut bytes = value.to_bytes();
         while bytes.len() < N {
             bytes.push(0);
@@ -231,14 +231,14 @@ impl<const N: usize> From<&Logos> for [u8; N] {
 
 macro_rules! int_conv {
     ($t: ty) => {
-        impl From<$t> for Logos {
+        impl From<$t> for Silo {
             fn from(value: $t) -> Self {
-                Logos::from_bytes(&value.to_le_bytes()).trimmed()
+                Silo::from_bytes(&value.to_le_bytes()).trimmed()
             }
         }
 
-        impl From<&Logos> for $t {
-            fn from(value: &Logos) -> Self {
+        impl From<&Silo> for $t {
+            fn from(value: &Silo) -> Self {
                 <$t>::from_le_bytes(value.into())
             }
         }
@@ -252,7 +252,7 @@ int_conv!(u64);
 int_conv!(u128);
 int_conv!(usize);
 
-impl FromStr for Logos {
+impl FromStr for Silo {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -260,18 +260,18 @@ impl FromStr for Logos {
             .chars()
             .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
         {
-            bail!("not a valid logos")
+            bail!("not a valid silo")
         } else {
-            Ok(Logos(s.into()))
+            Ok(Silo(s.into()))
         }
     }
 }
 
 #[cfg(test)]
-impl quickcheck::Arbitrary for Logos {
-    fn arbitrary(g: &mut quickcheck::Gen) -> Logos {
+impl quickcheck::Arbitrary for Silo {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Silo {
         let size = { usize::arbitrary(g) % 40 };
-        Logos(
+        Silo(
             (0..size)
                 .map(|_| *g.choose(ALPHABET.as_bytes()).unwrap() as char)
                 .collect(),
@@ -310,10 +310,10 @@ mod test {
     use quickcheck_macros::quickcheck;
 
     fn m(log: &str, bytes: &[u8]) {
-        let logos = Logos::new(log);
-        assert_eq!(logos.0, log);
-        assert_eq!(logos, Logos::from_bytes(bytes));
-        assert_eq!(bytes, logos.to_bytes());
+        let silo = Silo::new(log);
+        assert_eq!(silo.0, log);
+        assert_eq!(silo, Silo::from_bytes(bytes));
+        assert_eq!(bytes, silo.to_bytes());
     }
 
     #[test]
@@ -339,12 +339,12 @@ mod test {
 
     #[test]
     fn value() {
-        assert_eq!(Logos::new("").value(), "0");
-        assert_eq!(Logos::new("0").value(), "0");
-        assert_eq!(Logos::new("1").value(), "1");
-        assert_eq!(Logos::new("0000").value(), "0");
-        assert_eq!(Logos::new("123000").value(), "123");
-        assert_eq!(Logos::new("000001").value(), "000001");
+        assert_eq!(Silo::new("").value(), "0");
+        assert_eq!(Silo::new("0").value(), "0");
+        assert_eq!(Silo::new("1").value(), "1");
+        assert_eq!(Silo::new("0000").value(), "0");
+        assert_eq!(Silo::new("123000").value(), "123");
+        assert_eq!(Silo::new("000001").value(), "000001");
     }
 
     #[test]
@@ -356,16 +356,16 @@ mod test {
             ("X0", "X"),
             ("00A00", "00A"),
         ] {
-            let mut logos = Logos::new(a);
-            logos.trim();
-            assert_eq!(*logos, b);
+            let mut silo = Silo::new(a);
+            silo.trim();
+            assert_eq!(*silo, b);
         }
     }
 
     #[test]
     fn seeding() {
         // Check that seeding works the same way on all platforms.
-        let seed = Logos::new("squeamish ossifrage");
+        let seed = Silo::new("squeamish ossifrage");
 
         // Print the correct sequence to stderr if the test goes wrong.
         let mut rng = crate::rng::srng(&seed);
@@ -386,18 +386,18 @@ mod test {
     }
 
     #[quickcheck]
-    fn bytes_to_logos(bytes: Vec<u8>) -> bool {
-        let logos = Logos::from_bytes(&bytes);
-        logos.to_bytes() == bytes
+    fn bytes_to_silo(bytes: Vec<u8>) -> bool {
+        let silo = Silo::from_bytes(&bytes);
+        silo.to_bytes() == bytes
     }
 
     #[quickcheck]
-    fn logos_to_bytes(logos: Logos) -> bool {
-        let bytes = logos.to_bytes();
-        let roundtrip = Logos::from_bytes(&bytes);
+    fn silo_to_bytes(silo: Silo) -> bool {
+        let bytes = silo.to_bytes();
+        let roundtrip = Silo::from_bytes(&bytes);
 
-        // All logoi don't survive the roundtrip intact wrt. their 0-suffixes.
+        // All silos don't survive the roundtrip intact wrt. their 0-suffixes.
         // Their values must match though.
-        logos.value() == roundtrip.value()
+        silo.value() == roundtrip.value()
     }
 }

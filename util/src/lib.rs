@@ -37,14 +37,14 @@ pub use keyboard_layout::Layout;
 mod lazy_res;
 pub use lazy_res::LazyRes;
 
-mod logos;
-pub use logos::Logos;
-
 mod path;
 pub use path::{astar_path, dijkstra_map, within_range};
 
 mod rng;
 pub use rng::{srng, Odds, RngExt};
+
+mod silo;
+pub use silo::Silo;
 
 mod sync;
 pub use sync::SameThread;

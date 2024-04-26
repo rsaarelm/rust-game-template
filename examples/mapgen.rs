@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use content::{mapgen, Block, Lot, Patch, SectorMap, Zone};
-use util::{GameRng, Logos};
+use util::{GameRng, Silo};
 
 #[derive(Parser, Debug)]
 #[command(about = "Test map generators")]
@@ -12,9 +12,9 @@ enum Args {
 
 #[derive(Parser, Debug)]
 struct CorridorsArgs {
-    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Logos, &str>(Logos::new(e)))]
+    #[arg(long, value_name = "SEED", value_parser = |e: &str| Ok::<Silo, &str>(Silo::new(e)))]
     /// Fixed RNG seed.
-    seed: Option<Logos>,
+    seed: Option<Silo>,
 
     #[arg(long)]
     /// Is the map connected horizontally to neighbors.
@@ -41,7 +41,7 @@ impl CorridorsArgs {
         if let Some(seed) = self.seed.as_ref() {
             util::srng(seed)
         } else {
-            let seed = Logos::sample(
+            let seed = Silo::sample(
                 &mut util::srng(&std::time::SystemTime::now()),
                 10,
             );
