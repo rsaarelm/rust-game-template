@@ -109,6 +109,7 @@ Gamedata notes
 	Such as item and creature specifications and the terrain of fixed maps
 	The rest of the code assumes that the gamedata value is available for it as a static reference
 		This introduces a potential deadlock, as gamedata itself cannot involve types which require gamedata to be available when they're deserialized
+		An example of a type you can't directly have in gamedata is `Spawn` which relies on gamedata existing to validate itself
 		Use util::LazyRes type to break this deadlock
 		LazyRes allows serializing data as (usually) string, and will fetch the actual data the first time the value is accessed
 
