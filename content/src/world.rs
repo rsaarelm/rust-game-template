@@ -75,11 +75,11 @@ impl Serialize for World {
 }
 
 impl Environs for World {
-    fn voxel(&self, loc: &Location) -> Voxel {
+    fn voxel(&self, loc: Location) -> Voxel {
         self.get(loc)
     }
 
-    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+    fn set_voxel(&mut self, loc: Location, voxel: Voxel) {
         self.set(loc, voxel);
     }
 }
@@ -290,7 +290,7 @@ fn build_skeleton(
                             .find_downstairs()
                             .map(|p| origin + p.extend(-1)),
                         generator: Box::new(Patch::from_sector_map(
-                            &origin, map,
+                            origin, map,
                         )?),
                     }
                 }
@@ -331,10 +331,7 @@ impl World {
         &self.inner.seed
     }
 
-    pub fn populate_around(
-        &mut self,
-        loc: &Location,
-    ) -> Vec<(Location, Spawn)> {
+    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
         let s = Level::level_from(loc);
 
         // Early exit if this is already a core generated sector.
@@ -402,7 +399,7 @@ impl World {
             .expect("Sector procgen failed");
 
         for (loc, block) in patch.terrain.iter() {
-            if *block != self.default_terrain(&v3(*loc)) {
+            if *block != self.default_terrain(v3(*loc)) {
                 self.terrain_cache.insert(*loc, *block);
             }
         }
@@ -440,8 +437,8 @@ impl World {
         self.player_entrance
     }
 
-    pub fn get(&self, loc: &Location) -> Voxel {
-        let pt = a3(*loc);
+    pub fn get(&self, loc: Location) -> Voxel {
+        let pt = a3(loc);
         if let Some(&mutated) = self.inner.overlay.get(&pt) {
             return mutated;
         }
@@ -453,11 +450,11 @@ impl World {
         self.default_terrain(loc)
     }
 
-    pub fn set(&mut self, loc: &Location, voxel: Voxel) {
-        self.inner.overlay.insert(*loc, voxel);
+    pub fn set(&mut self, loc: Location, voxel: Voxel) {
+        self.inner.overlay.insert(loc, voxel);
     }
 
-    fn default_terrain(&self, loc: &Location) -> Voxel {
+    fn default_terrain(&self, loc: Location) -> Voxel {
         if loc.z >= 0 {
             None
         } else {

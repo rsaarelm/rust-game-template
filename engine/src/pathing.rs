@@ -9,7 +9,7 @@ impl Runtime {
     pub fn autoexplore_map(
         &self,
         zone: &Cube,
-        start: &Location,
+        start: Location,
     ) -> HashMap<Location, usize> {
         let travel_zone = zone.fat();
         let ret: HashMap<Location, usize> = dijkstra_map(
@@ -34,7 +34,7 @@ impl Runtime {
         )
         .collect();
 
-        if !ret.contains_key(start) {
+        if !ret.contains_key(&start) {
             // Map must reach the starting location.
             Default::default()
         } else {
@@ -45,7 +45,7 @@ impl Runtime {
     /// Parametrizable pathfinding.
     pub fn find_path_with<I>(
         &self,
-        start: &Location,
+        start: Location,
         neighbors: impl Fn(&Location) -> I,
         dest: &impl Sdf,
     ) -> Option<Vec<Location>>
@@ -53,7 +53,7 @@ impl Runtime {
         I: IntoIterator<Item = Location>,
     {
         if let Some(mut path) = astar(
-            start,
+            &start,
             |a| neighbors(a).into_iter().map(|c| (c, 1)),
             |a| dest.sd(*a),
             |a| dest.sd(*a) <= 0,
@@ -76,8 +76,8 @@ impl Runtime {
     /// single step from the fat slice.
     pub fn fog_exploring_path(
         &self,
-        origin: &Location,
-        current: &Location,
+        origin: Location,
+        current: Location,
         dest: &impl Sdf,
         is_exploring: bool,
     ) -> Option<Vec<Location>> {
@@ -116,7 +116,7 @@ impl Runtime {
     /// existing terrain.
     pub fn enemy_path(
         &self,
-        start: &Location,
+        start: Location,
         dest: &impl Sdf,
     ) -> Option<Vec<Location>> {
         let sec = start.sector().fat();
@@ -134,7 +134,7 @@ impl Runtime {
 
     pub fn fill_positions(
         &self,
-        start: &Location,
+        start: Location,
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |loc| {
@@ -143,7 +143,7 @@ impl Runtime {
                     .map(|(_, loc2)| loc2)
                     .filter(move |loc2| loc.sector().fat().contains(*loc2))
             },
-            [*start],
+            [start],
         )
         .map(|n| n.0)
     }
@@ -152,7 +152,7 @@ impl Runtime {
     /// the same sector and on walkable tiles.
     pub fn perturbed_fill_positions(
         &self,
-        start: &Location,
+        start: Location,
     ) -> impl Iterator<Item = Location> + '_ {
         util::dijkstra_map(
             move |&loc| {
@@ -164,7 +164,7 @@ impl Runtime {
                 elts.shuffle(&mut util::srng(&loc));
                 elts
             },
-            [*start],
+            [start],
         )
         .map(|n| n.0)
     }
@@ -228,7 +228,7 @@ impl Entity {
             // recipient's location, so it'll spawn on your feet instead.
             Place::In(e) => Place::In(e),
             Place::At(loc) => Place::At(
-                r.perturbed_fill_positions(&loc)
+                r.perturbed_fill_positions(loc)
                     .find(|&e| self.can_enter(r, e))
                     .unwrap_or(loc),
             ),

@@ -15,7 +15,7 @@ impl Runtime {
         &mut self,
         power: Power,
         perp: Option<Entity>,
-        loc: &Location,
+        loc: Location,
         v: IVec2,
     ) {
         use Power::*;
@@ -40,7 +40,7 @@ impl Runtime {
     pub fn trace_target(
         &self,
         perp: Option<Entity>,
-        from: &Location,
+        from: Location,
         dir: IVec2,
         range: usize,
     ) -> Location {
@@ -76,7 +76,7 @@ impl Runtime {
     pub fn trace_enemy(
         &self,
         perp: Option<Entity>,
-        from: &Location,
+        from: Location,
         dir: IVec2,
         range: usize,
     ) -> Option<Entity> {
@@ -94,7 +94,7 @@ impl Runtime {
         None
     }
 
-    fn confusion(&mut self, perp: Option<Entity>, from: &Location, dir: IVec2) {
+    fn confusion(&mut self, perp: Option<Entity>, from: Location, dir: IVec2) {
         const CONFUSION_RANGE: usize = 12;
         if let Some(target) = self.trace_enemy(perp, from, dir, CONFUSION_RANGE)
         {
@@ -102,7 +102,7 @@ impl Runtime {
         }
     }
 
-    fn fireball(&mut self, perp: Option<Entity>, from: &Location, dir: IVec2) {
+    fn fireball(&mut self, perp: Option<Entity>, from: Location, dir: IVec2) {
         const FIREBALL_RANGE: usize = 12;
         const FIREBALL_DAMAGE: i32 = 10;
         let target = self.trace_target(perp, from, dir, FIREBALL_RANGE);
@@ -119,7 +119,7 @@ impl Runtime {
         }
     }
 
-    fn heal(&mut self, perp: Option<Entity>, _from: &Location) {
+    fn heal(&mut self, perp: Option<Entity>, _from: Location) {
         const HEAL_AMOUNT: i32 = 8;
         if let Some(e) = perp {
             let is_hurt = e.get::<Wounds>(self).0 != 0;
@@ -131,7 +131,7 @@ impl Runtime {
         }
     }
 
-    fn lightning(&mut self, perp: Option<Entity>, from: &Location) {
+    fn lightning(&mut self, perp: Option<Entity>, from: Location) {
         const LIGHTNING_DAMAGE: i32 = 14;
 
         let targets: Vec<_> = self
@@ -155,18 +155,18 @@ impl Runtime {
         target.damage(self, perp, LIGHTNING_DAMAGE);
     }
 
-    fn magic_map(&mut self, _perp: Option<Entity>, from: &Location) {
+    fn magic_map(&mut self, _perp: Option<Entity>, from: Location) {
         const MAGIC_MAP_RANGE: usize = 100;
 
         let zone = from.sector().fat();
 
         let mut revealed: Vec<(Location, usize)> = util::dijkstra_map(
-            |loc| {
+            |&loc| {
                 loc.hover_neighbors(self)
                     .map(|(_, loc)| loc)
                     .filter(|&loc| zone.contains(loc))
             },
-            [*from],
+            [from],
         )
         .filter(|(loc, d)| !loc.is_explored(self) && *d < MAGIC_MAP_RANGE)
         .collect();
@@ -207,10 +207,10 @@ impl Runtime {
     fn summon_monster(
         &mut self,
         perp: Option<Entity>,
-        from: &Location,
+        from: Location,
         monster: impl AsRef<Spawn>,
     ) {
-        let mob = self.spawn_at(monster.as_ref(), *from);
+        let mob = self.spawn_at(monster.as_ref(), from);
 
         if let Some(perp) = perp {
             // Player and allies make friendly summons.
@@ -246,7 +246,7 @@ impl Entity {
     ) {
         let r = r.as_mut();
         let Some(loc) = self.loc(r) else { return };
-        r.invoke_power(power, Some(*self), &loc, v);
+        r.invoke_power(power, Some(*self), loc, v);
         self.complete_turn(r);
     }
 }

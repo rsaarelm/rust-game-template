@@ -19,9 +19,9 @@ use crate::{Cube, Location, LEVEL_BASIS, SECTOR_HEIGHT, SECTOR_WIDTH};
 ///   sectors with the z origin at an integer multiple of `LEVEL_DEPTH`.
 pub trait Zone: Neighbors3D + Clone + Sized {
     /// Construct 1 z level thick sector zone from location.
-    fn sector_from(loc: &Location) -> Self;
+    fn sector_from(loc: Location) -> Self;
 
-    fn level_from(loc: &Location) -> Self {
+    fn level_from(loc: Location) -> Self {
         Self::sector_from(loc).level()
     }
 
@@ -86,7 +86,7 @@ pub trait Zone: Neighbors3D + Clone + Sized {
 }
 
 impl Zone for Cube {
-    fn sector_from(loc: &Location) -> Self {
+    fn sector_from(loc: Location) -> Self {
         let origin = ivec3(
             loc.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
             loc.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,

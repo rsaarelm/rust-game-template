@@ -74,7 +74,7 @@ const SOUTH: u8 = 0b100;
 
 impl Default for Lot {
     fn default() -> Self {
-        let volume = Level::level_from(&Default::default());
+        let volume = Level::level_from(Default::default());
         let sides = 0;
         let seed = Silo::default();
         let up = Some(world::default_down_stairs(&seed, volume.above()));
@@ -147,7 +147,7 @@ pub struct Patch {
 
 impl Patch {
     pub fn from_sector_map(
-        origin: &Location,
+        origin: Location,
         value: &SectorMap,
     ) -> anyhow::Result<Self> {
         Ok(Patch {
@@ -221,7 +221,7 @@ pub fn rooms_and_corridors(
     // Set the horizontal exit cells.
     for dir in 0..4 {
         if let Some(exit) = lot.exit(dir) {
-            ret.set_voxel(&exit, None);
+            ret.set_voxel(exit, None);
             regions.insert(exit, region_idx);
             region_idx += 1;
             plan.insert(exit, Exit);
@@ -391,7 +391,7 @@ pub fn rooms_and_corridors(
     {
         let p = v3(p);
 
-        ret.set_voxel(&p, None);
+        ret.set_voxel(p, None);
         regions.insert(p, region_idx);
         region_idx += 1;
     }
@@ -444,13 +444,13 @@ pub fn rooms_and_corridors(
     while let Some((p, [a, b])) = edges.pop() {
         // Open this one.
         if plan.get(&p) == Some(&Doorway)
-            && ret.voxel(&p.above()).is_some()
-            && ret.voxel(&p.below()).is_some()
+            && ret.voxel(p.above()).is_some()
+            && ret.voxel(p.below()).is_some()
         {
             // Don't place doors unless lintel and threshold are present.
-            ret.set_voxel(&p, Some(Block::Door));
+            ret.set_voxel(p, Some(Block::Door));
         } else {
-            ret.set_voxel(&p, None);
+            ret.set_voxel(p, None);
         }
 
         // Mark the region merge in the others.
@@ -505,9 +505,9 @@ pub fn rooms_and_corridors(
     let n_loops = (extra_edges.len() as f32 * loopiness) as usize;
     for p in extra_edges.iter().take(n_loops) {
         if plan.get(p) == Some(&Doorway) {
-            ret.set_voxel(p, Some(Block::Door));
+            ret.set_voxel(*p, Some(Block::Door));
         } else {
-            ret.set_voxel(p, None);
+            ret.set_voxel(*p, None);
         }
     }
 
@@ -653,7 +653,7 @@ pub fn rooms_and_corridors(
         }
 
         for p in cave {
-            ret.terrain.set_voxel(&p, None);
+            ret.terrain.set_voxel(p, None);
         }
     }
 

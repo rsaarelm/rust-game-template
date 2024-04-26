@@ -60,8 +60,8 @@ impl Runtime {
 
         let entrance = ret.world.player_entrance();
         // Construct the initial world space and create the spawns.
-        ret.bump_cache_at(&entrance);
-        ret.spawn_player_at(&entrance);
+        ret.bump_cache_at(entrance);
+        ret.spawn_player_at(entrance);
 
         Ok(ret)
     }
@@ -106,7 +106,7 @@ impl Runtime {
     }
 
     /// Spawns a new player entity if there isn't currently a player.
-    pub fn spawn_player_at(&mut self, loc: &Location) {
+    pub fn spawn_player_at(&mut self, loc: Location) {
         if self.player.is_some() {
             return;
         }
@@ -126,7 +126,7 @@ impl Runtime {
         )));
 
         self.player = Some(player);
-        player.place(self, *loc);
+        player.place(self, loc);
         let sword = self.wish(player, "sword").unwrap();
         player.make_equipped(self, &sword);
     }
@@ -142,11 +142,11 @@ impl Runtime {
     /// Do a cache update around the player character's current location.
     pub fn bump_cache(&mut self) {
         if let Some(loc) = self.player().and_then(|p| p.loc(self)) {
-            self.bump_cache_at(&loc);
+            self.bump_cache_at(loc);
         }
     }
 
-    fn bump_cache_at(&mut self, loc: &Location) {
+    fn bump_cache_at(&mut self, loc: Location) {
         for (loc, spawn) in self.world.populate_around(loc) {
             self.spawn_at(&spawn, loc);
         }
@@ -230,11 +230,11 @@ impl Runtime {
 }
 
 impl Environs for Runtime {
-    fn voxel(&self, loc: &Location) -> Voxel {
+    fn voxel(&self, loc: Location) -> Voxel {
         self.world.get(loc)
     }
 
-    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+    fn set_voxel(&mut self, loc: Location, voxel: Voxel) {
         self.world.set(loc, voxel);
     }
 }

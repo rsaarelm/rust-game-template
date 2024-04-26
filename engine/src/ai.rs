@@ -57,7 +57,7 @@ impl Entity {
                     }
                 }
 
-                let explore_map = r.autoexplore_map(&zone, &loc);
+                let explore_map = r.autoexplore_map(&zone, loc);
                 if explore_map.is_empty() {
                     return None;
                 }
@@ -159,9 +159,9 @@ impl Entity {
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
         if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fog_exploring_path(&path_origin, &loc, &path_dest, path_exploring)
+            r.fog_exploring_path(path_origin, loc, &path_dest, path_exploring)
         } else {
-            r.enemy_path(&loc, &path_dest)
+            r.enemy_path(loc, &path_dest)
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -360,7 +360,7 @@ impl Entity {
                 Some(*self)
             };
 
-            if let Some(enemy) = r.trace_enemy(perp, &loc, dir, range) {
+            if let Some(enemy) = r.trace_enemy(perp, loc, dir, range) {
                 return Some(enemy);
             }
         }
@@ -386,7 +386,7 @@ impl Entity {
         let Some(loc) = self.loc(r) else {
             return Default::default();
         };
-        r.fov_from(&loc, range)
+        r.fov_from(loc, range)
             .filter_map(|(_, loc)| loc.mob_at(r))
             .collect()
     }
@@ -416,7 +416,7 @@ impl Entity {
         let Some(loc) = self.loc(r) else { return };
 
         let cells: Vec<Location> =
-            r.fov_from(&loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
+            r.fov_from(loc, FOV_RADIUS).map(|(_, loc)| loc).collect();
 
         // Should we look for a fight while doing the scan?
         let mut looking_for_target = self.is_looking_for_fight(r);

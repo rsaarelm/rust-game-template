@@ -248,7 +248,7 @@ impl Entity {
 
             // Ground splatter.
             let splat: Vec<Location> =
-                r.perturbed_fill_positions(&loc).take(6).collect();
+                r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
                 if let Some(loc) = loc.ground_voxel(r) {
                     loc.decorate_block(r, Block::SplatteredRock);

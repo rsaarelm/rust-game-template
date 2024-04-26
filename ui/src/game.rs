@@ -366,8 +366,8 @@ impl Game {
                         // If player is threatened, see if it looks like
                         // you're trying to fight or flee.
                         let Some(mut planned_path) = self.r.fog_exploring_path(
-                            &current_loc,
-                            &current_loc,
+                            current_loc,
+                            current_loc,
                             &destination,
                             true,
                         ) else {
@@ -450,7 +450,7 @@ impl Game {
     pub fn travel(&mut self, dir: IVec3) {
         if let Some(p) = self.current_active() {
             let Some(origin) = p.loc(self) else { return };
-            let destination = Level::level_from(&origin).offset(dir).floor();
+            let destination = Level::level_from(origin).offset(dir).floor();
             self.act(Goal::GoTo {
                 origin,
                 destination,
@@ -700,7 +700,7 @@ impl PlannedPath {
 
         self.posns.clear();
         if let Some(path) =
-            r.fog_exploring_path(&orig, &orig, &Cube::unit(dest), false)
+            r.fog_exploring_path(orig, orig, &Cube::unit(dest), false)
         {
             self.posns = path;
         }

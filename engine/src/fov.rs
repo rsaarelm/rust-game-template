@@ -34,7 +34,7 @@ impl From<Fov> for BitAtlas {
 impl Runtime {
     pub fn fov_from(
         &self,
-        loc: &Location,
+        loc: Location,
         radius: i32,
     ) -> impl Iterator<Item = (IVec2, Location)> + '_ {
         #[derive(Copy, Clone)]
@@ -85,14 +85,12 @@ impl Runtime {
             }
         }
 
-        fov::Square::new(FovState::new(*loc, self, radius)).flat_map(
-            |(v, s)| {
-                (s.origin + v.extend(0))
-                    .transparent_volume(self)
-                    .into_iter()
-                    .map(move |loc| (v, loc))
-                    .collect::<Vec<_>>()
-            },
-        )
+        fov::Square::new(FovState::new(loc, self, radius)).flat_map(|(v, s)| {
+            (s.origin + v.extend(0))
+                .transparent_volume(self)
+                .into_iter()
+                .map(move |loc| (v, loc))
+                .collect::<Vec<_>>()
+        })
     }
 }

@@ -114,7 +114,7 @@ impl RuntimeCoordinates for Location {
             self.voxel(r),
             Some(Stone) | Some(SplatteredRock) | Some(Grass)
         ) {
-            r.set_voxel(self, Some(b));
+            r.set_voxel(*self, Some(b));
         }
     }
 
@@ -222,7 +222,7 @@ impl RuntimeCoordinates for Location {
         r: &'a impl AsRef<Runtime>,
     ) -> impl Iterator<Item = Entity> + 'a {
         let r = r.as_ref();
-        r.placement.entities_at(self)
+        r.placement.entities_at(*self)
     }
 
     fn damage(

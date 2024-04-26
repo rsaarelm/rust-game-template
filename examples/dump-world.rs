@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
         world.levels().map(|a| Location::from(a.min())).collect();
     let mut spawns = IndexMap::default();
     for p in pts {
-        for (a, b) in world.populate_around(&p) {
+        for (a, b) in world.populate_around(p) {
             spawns.insert(a, b);
         }
     }

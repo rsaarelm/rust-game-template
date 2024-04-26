@@ -145,13 +145,13 @@ impl SectorMap {
 
     pub fn spawns(
         &self,
-        origin: &Location,
+        origin: Location,
     ) -> anyhow::Result<Vec<(Location, Spawn)>> {
         let mut ret = Vec::default();
 
         for (p, c) in text::char_grid(&self.map) {
             if let Some(name) = self.legend.get(&c) {
-                ret.push((*origin + p.extend(0), name.parse()?));
+                ret.push((origin + p.extend(0), name.parse()?));
             }
         }
 
@@ -177,14 +177,11 @@ impl SectorMap {
         (border, inside)
     }
 
-    pub fn terrain(
-        &self,
-        origin: &Location,
-    ) -> anyhow::Result<Cloud<3, Voxel>> {
+    pub fn terrain(&self, origin: Location) -> anyhow::Result<Cloud<3, Voxel>> {
         let mut ret = Cloud::default();
 
         for (p, c) in text::char_grid(&self.map) {
-            let p = *origin + p.extend(0);
+            let p = origin + p.extend(0);
 
             let c = match c {
                 // Rewrite entrace cells.

@@ -206,7 +206,7 @@ impl Coordinates for Location {
     }
 
     fn voxel(&self, r: &impl Environs) -> Voxel {
-        r.voxel(self)
+        r.voxel(*self)
     }
 
     fn sector_snap_2d(&self) -> Self {
@@ -312,7 +312,7 @@ impl Coordinates for Location {
     }
 
     fn sector(&self) -> Cube {
-        Zone::sector_from(self)
+        Zone::sector_from(*self)
     }
 
     fn at_sector_edge(&self) -> bool {
@@ -344,45 +344,45 @@ impl Coordinates for Location {
         use Block::*;
         match c {
             '#' => {
-                r.set_voxel(&self.above(), Some(Stone));
-                r.set_voxel(self, Some(Stone));
-                r.set_voxel(&self.below(), Some(Stone));
+                r.set_voxel(self.above(), Some(Stone));
+                r.set_voxel(*self, Some(Stone));
+                r.set_voxel(self.below(), Some(Stone));
             }
             '%' => {
-                r.set_voxel(&self.above(), Some(Rubble));
-                r.set_voxel(self, Some(Rubble));
-                r.set_voxel(&self.below(), Some(Rubble));
+                r.set_voxel(self.above(), Some(Rubble));
+                r.set_voxel(*self, Some(Rubble));
+                r.set_voxel(self.below(), Some(Rubble));
             }
             '+' => {
-                r.set_voxel(&self.above(), Some(Stone));
-                r.set_voxel(self, Some(Door));
-                r.set_voxel(&self.below(), Some(Stone));
+                r.set_voxel(self.above(), Some(Stone));
+                r.set_voxel(*self, Some(Door));
+                r.set_voxel(self.below(), Some(Stone));
             }
             '|' => {
-                r.set_voxel(&self.above(), Some(Stone));
-                r.set_voxel(self, Some(Glass));
-                r.set_voxel(&self.below(), Some(Stone));
+                r.set_voxel(self.above(), Some(Stone));
+                r.set_voxel(*self, Some(Glass));
+                r.set_voxel(self.below(), Some(Stone));
             }
             '.' => {
-                r.set_voxel(self, None);
-                r.set_voxel(&self.below(), Some(Stone));
+                r.set_voxel(*self, None);
+                r.set_voxel(self.below(), Some(Stone));
             }
             '~' => {
-                r.set_voxel(self, None);
-                r.set_voxel(&self.below(), Some(Water));
+                r.set_voxel(*self, None);
+                r.set_voxel(self.below(), Some(Water));
             }
             '&' => {
-                r.set_voxel(self, None);
-                r.set_voxel(&self.below(), Some(Magma));
+                r.set_voxel(*self, None);
+                r.set_voxel(self.below(), Some(Magma));
             }
             '>' | '_' => {
-                r.set_voxel(self, None);
-                r.set_voxel(&self.below(), None);
+                r.set_voxel(*self, None);
+                r.set_voxel(self.below(), None);
             }
             '<' => {
-                r.set_voxel(&self.above(), None);
-                r.set_voxel(self, Some(Stone));
-                r.set_voxel(&self.below(), Some(Stone));
+                r.set_voxel(self.above(), None);
+                r.set_voxel(*self, Some(Stone));
+                r.set_voxel(self.below(), Some(Stone));
             }
             _ => bail!("Unknown terrain {c:?}"),
         };
@@ -392,18 +392,18 @@ impl Coordinates for Location {
 }
 
 pub trait Environs {
-    fn voxel(&self, loc: &Location) -> Voxel;
-    fn set_voxel(&mut self, loc: &Location, voxel: Voxel);
+    fn voxel(&self, loc: Location) -> Voxel;
+    fn set_voxel(&mut self, loc: Location, voxel: Voxel);
 }
 
 impl Environs for Cloud<3, Voxel> {
-    fn voxel(&self, loc: &Location) -> Voxel {
-        BTreeMap::get(self, &a3(*loc)).copied().unwrap_or_default()
+    fn voxel(&self, loc: Location) -> Voxel {
+        BTreeMap::get(self, &a3(loc)).copied().unwrap_or_default()
     }
 
-    fn set_voxel(&mut self, loc: &Location, voxel: Voxel) {
+    fn set_voxel(&mut self, loc: Location, voxel: Voxel) {
         // XXX: Empty voxels become explicit when first set and there isn't an
         // interface to forget about them in Environs.
-        self.insert(*loc, voxel);
+        self.insert(loc, voxel);
     }
 }

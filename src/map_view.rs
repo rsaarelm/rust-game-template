@@ -75,7 +75,7 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
     }
 
     let sector_area = {
-        let bounds = Level::sector_from(&camera).wide();
+        let bounds = Level::sector_from(camera).wide();
 
         Rect::new(
             view.project(bounds.min()),
