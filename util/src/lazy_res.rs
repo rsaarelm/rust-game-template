@@ -46,9 +46,9 @@ impl<S: fmt::Display, T> fmt::Display for LazyRes<S, T> {
     }
 }
 
-impl<S: AsRef<U>, T, U> AsRef<U> for LazyRes<S, T> {
-    fn as_ref(&self) -> &U {
-        self.0.as_ref()
+impl<S: Clone, T: TryFrom<S>> AsRef<T> for LazyRes<S, T> {
+    fn as_ref(&self) -> &T {
+        self.deref()
     }
 }
 
@@ -59,6 +59,18 @@ impl<S: PartialEq, T> PartialEq for LazyRes<S, T> {
 }
 
 impl<S: Eq, T> Eq for LazyRes<S, T> {}
+
+impl<S: PartialOrd, T> PartialOrd for LazyRes<S, T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<S: Ord, T> Ord for LazyRes<S, T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
 
 impl<'de, S, T> Deserialize<'de> for LazyRes<S, T>
 where
