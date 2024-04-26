@@ -1,10 +1,11 @@
---                might  kind      rarity  power
-dagger                4  melee-weapon  10  -
-sword                 8  melee-weapon  20  -
-leather_armor         2  armor         10  -
-chain_mail            5  armor         20  -
-scroll_of_lightning  10  scroll        20  call-lightning
-magic_map             0  scroll        15  magic-mapping
-scroll_of_confusion   4  scroll        10  confusion
-scroll_of_fireball    8  scroll        40  fireball
-potion_of_healing     8  potion        20  heal-self
+--                    might  kind      rarity  power
+dagger                    4  melee-weapon  10  -
+sword                     8  melee-weapon  20  -
+leather_armor             2  armor         10  -
+chain_mail                5  armor         20  -
+scroll_of_lightning      10  scroll        20  call-lightning
+magic_map                 0  scroll        15  magic-mapping
+scroll_of_confusion       4  scroll        10  confusion
+scroll_of_fireball        8  scroll        40  fireball
+potion_of_healing         8  potion        20  heal-self
+scroll_of_summon_goblin   4  scroll        10  summon goblin
