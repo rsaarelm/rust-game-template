@@ -12,9 +12,8 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 ///
 /// Logos strings can be spoken out loud unambigously using the NATO phonetic
 /// alphabet and can be used as a binary serialization format. Letters 'I',
-/// 'S' and 'O' are removed to prevent ambiguity with '1', '5' and '0' and 'E'
-/// is removed to bring the total alphabet down to 32 characters for better
-/// data encoding. Use L33T5P3AK to get around the missing characters.
+/// 'L', 'O' and 'S' are removed to because they are easy to confuse with '1',
+/// '0' and '5'. Use 133T5P3AK to get around the missing characters.
 ///
 /// A Logos string corresponds to a little-endian binary number with each
 /// letter corresponding to one sequence of five bits in the order of their
@@ -84,9 +83,8 @@ impl FromIterator<char> for Logos {
             iter.into_iter()
                 .map(|c| match c.to_ascii_uppercase() {
                     'O' => '0',
-                    'I' => '1',
+                    'I' | 'L' => '1',
                     'S' => '5',
-                    'E' => '3',
                     a => a,
                 })
                 .filter(|&c| idx(c).is_some())
@@ -292,14 +290,14 @@ impl quickcheck::Arbitrary for Logos {
     }
 }
 
-pub const ALPHABET: &str = "0123456789ABCDFGHJKLMNPQRTUVWXYZ";
+pub const ALPHABET: &str = "0123456789ABCDEFGHJKMNPQRTUVWXYZ";
 
 const fn idx(c: char) -> Option<usize> {
     match c as u8 {
         c @ (b'0'..=b'9') => Some(c as usize - 48),
-        c @ (b'A'..=b'D') => Some(c as usize - 55),
-        c @ (b'F'..=b'H') => Some(c as usize - 56),
-        c @ (b'J'..=b'N') => Some(c as usize - 57),
+        c @ (b'A'..=b'H') => Some(c as usize - 55),
+        c @ (b'J'..=b'K') => Some(c as usize - 56),
+        c @ (b'M'..=b'N') => Some(c as usize - 57),
         c @ (b'P'..=b'R') => Some(c as usize - 58),
         c @ (b'T'..=b'Z') => Some(c as usize - 59),
         _ => None,
@@ -334,7 +332,7 @@ mod test {
         m("08", &[0, 1]);
         m("00000", &[0, 0, 0]);
         m("0000000", &[0, 0, 0, 0]);
-        m("0000H", &[0, 0, 0, 1]);
+        m("0000G", &[0, 0, 0, 1]);
         m("00000000", &[0, 0, 0, 0, 0]);
         m("ZZZZZZZZ", &[0xff, 0xff, 0xff, 0xff, 0xff]);
     }
@@ -381,10 +379,10 @@ mod test {
 
         // For real now.
         let mut rng = crate::rng::srng(&seed);
-        assert_eq!(rng.gen_range(0..100), 13);
-        assert_eq!(rng.gen_range(0..100), 94);
-        assert_eq!(rng.gen_range(0..100), 96);
-        assert_eq!(rng.gen_range(0..100), 18);
+        assert_eq!(rng.gen_range(0..100), 14);
+        assert_eq!(rng.gen_range(0..100), 58);
+        assert_eq!(rng.gen_range(0..100), 51);
+        assert_eq!(rng.gen_range(0..100), 52);
     }
 
     #[quickcheck]
