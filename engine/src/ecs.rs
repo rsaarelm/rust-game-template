@@ -162,9 +162,7 @@ pub struct IsMob(pub bool);
 )]
 pub struct IsFriendly(pub bool);
 
-#[derive(
-    Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
-)]
+#[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct ItemPower(pub Option<Power>);
 
 #[derive(

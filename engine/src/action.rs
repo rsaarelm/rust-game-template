@@ -271,7 +271,7 @@ impl Entity {
 }
 
 /// Atomic single-step actions.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Action {
     Pass,
     // Mixed step and melee attack. Split to separate "Step" and "Attack"

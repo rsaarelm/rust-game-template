@@ -29,7 +29,7 @@ impl EntitySpec for Item {
         Entity(r.ecs.spawn((
             Name(name.into()),
             Icon(self.kind.icon()),
-            ItemPower(self.power),
+            ItemPower(self.power.clone()),
             self.kind,
             Level(self.might),
         )))

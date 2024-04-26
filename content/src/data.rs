@@ -4,7 +4,7 @@ use anyhow::bail;
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{IncrementalOutline, IndexMap, Outline, _String};
+use util::{IncrementalOutline, IndexMap, LazyRes, Outline, _String};
 
 use crate::SectorMap;
 
@@ -60,7 +60,9 @@ impl Data {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(
+    Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Deserialize, Serialize,
+)]
 #[serde(try_from = "_String", into = "_String")]
 pub enum Spawn {
     Monster(String, &'static Monster),
@@ -214,7 +216,9 @@ pub enum GenericSector {
     Dungeon,
 }
 
-#[derive(Clone, Default, Debug, Deserialize)]
+#[derive(
+    Clone, Default, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize,
+)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Monster {
     pub icon: char,
@@ -233,7 +237,9 @@ impl SpawnDist for Monster {
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize)]
+#[derive(
+    Clone, Default, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize,
+)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Item {
     pub might: i32,
@@ -255,7 +261,16 @@ impl SpawnDist for Item {
 }
 
 #[derive(
-    Copy, Clone, Default, Debug, Eq, PartialEq, Serialize, Deserialize,
+    Copy,
+    Clone,
+    Default,
+    Debug,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Serialize,
+    Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum ItemKind {
@@ -324,7 +339,7 @@ impl EquippedAt {
 }
 
 #[derive(
-    Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
+    Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum Power {
@@ -333,6 +348,7 @@ pub enum Power {
     Fireball,
     MagicMapping,
     HealSelf,
+    Summon(LazyRes<_String, Spawn>),
 }
 
 impl Power {

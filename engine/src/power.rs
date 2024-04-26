@@ -1,11 +1,11 @@
 //! Special powers entities can use
 
-use content::{Power, Rect, Zone};
+use content::{Power, Rect, Spawn, Zone};
 use serde::{Deserialize, Serialize};
 use util::{v2, Neighbors2D};
 
 use crate::{
-    ecs::{Powers, Wounds},
+    ecs::{self, Powers, Wounds},
     prelude::*,
     FOV_RADIUS,
 };
@@ -25,6 +25,7 @@ impl Runtime {
             Fireball => self.fireball(perp, loc, v),
             MagicMapping => self.magic_map(perp, loc),
             HealSelf => self.heal(perp, loc),
+            Summon(monster) => self.summon_monster(perp, loc, monster),
         }
     }
 
@@ -202,6 +203,22 @@ impl Runtime {
 
         send_msg(Msg::MagicMap(revealed));
     }
+
+    fn summon_monster(
+        &mut self,
+        perp: Option<Entity>,
+        from: &Location,
+        monster: impl AsRef<Spawn>,
+    ) {
+        let mob = self.spawn_at(monster.as_ref(), *from);
+
+        if let Some(perp) = perp {
+            // Player and allies make friendly summons.
+            if perp.is_player_aligned(self) {
+                mob.set(self, ecs::IsFriendly(true));
+            }
+        }
+    }
 }
 
 #[derive(
@@ -218,7 +235,7 @@ impl Entity {
     }
 
     pub fn powers(&self, r: &impl AsRef<Runtime>) -> Vec<Power> {
-        self.with::<Powers, _>(r, |ab| ab.0.keys().copied().collect())
+        self.with::<Powers, _>(r, |ab| ab.0.keys().cloned().collect())
     }
 
     pub(crate) fn cast(

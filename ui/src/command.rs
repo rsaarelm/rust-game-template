@@ -1,6 +1,6 @@
 use engine::prelude::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Command {
     Direct(Action),
     Indirect(Goal),
