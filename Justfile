@@ -41,6 +41,7 @@ profile-release *ARGS:
 
 # Update pinned nix flake programs.
 update-flake:
+    rm -rf .direnv/
     nix flake update
 
 # Update Rust dependencies
