@@ -22,5 +22,6 @@ strum = { version = "0.26", features = ["derive"] }
 util = { path = "../util" }
 
 [dev-dependencies]
+pretty_assertions = "1"
 quickcheck = "1"
 quickcheck_macros = "1"

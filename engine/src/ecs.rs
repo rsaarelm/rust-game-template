@@ -297,7 +297,13 @@ where
     S: Serializer,
 {
     let mut seq = serializer.serialize_map(Some(world.len() as usize))?;
-    for e in world {
+
+    // Force entities to serialize in order so we get same savefile text for
+    // same world state every time.
+    let mut refs: Vec<_> = world.into_iter().collect();
+    refs.sort_by_key(|a| a.entity());
+
+    for e in refs {
         seq.serialize_key(&Entity(e.entity()))?;
         seq.serialize_value(&SerializeComponents(RefCell::new((
             context,

@@ -242,10 +242,20 @@ impl Environs for Runtime {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn build_world() {
         let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         assert!(runtime.player().is_some());
+    }
+
+    #[test]
+    fn saving_and_loading() {
+        let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
+        let save = idm::to_string(&runtime).expect("Save failed");
+        let runtime2: Runtime = idm::from_str(&save).expect("Load failed");
+        // Check that roundtrip keeps it same.
+        assert_eq!(save, idm::to_string(&runtime2).unwrap());
     }
 }
