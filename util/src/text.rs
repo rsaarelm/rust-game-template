@@ -3,6 +3,8 @@ use std::{iter, sync::LazyLock};
 use glam::{ivec2, IVec2};
 use regex::Regex;
 
+use crate::HashMap;
+
 /// Split text at whitespace so it fits within `max_width`.
 ///
 /// Words that are longer than `max_width` will be sliced into `max_width`
@@ -265,6 +267,46 @@ where
     Ok(ret)
 }
 
+pub fn pluralize(
+    irregular_words: &HashMap<String, String>,
+    input: &str,
+) -> String {
+    if input.trim().is_empty() {
+        return input.to_string();
+    }
+
+    // Pluralize before the " of whatever" part, if there is one.
+    let (input, suffix) = if let Some(idx) = input.find(" of ") {
+        (&input[..idx], &input[idx..input.len()])
+    } else {
+        (input, "")
+    };
+    let word = input.split(&[' ', '-'][..]).last().unwrap_or("");
+    let prefix = &input[0..(input.len() - word.len())];
+
+    if let Some(plural) = irregular_words.get(word) {
+        let mut parts = plural.rsplitn(2, ' ');
+        let plural = parts.next().unwrap_or("");
+
+        if let Some(head) = parts.next() {
+            return format!("{head} {prefix}{plural}{suffix}");
+        } else {
+            return format!("{prefix}{plural}{suffix}");
+        }
+    }
+
+    if word.ends_with("ch")
+        || word.ends_with('s')
+        || word.ends_with("sh")
+        || word.ends_with('x')
+        || word.ends_with('z')
+    {
+        return format!("{prefix}{word}es{suffix}");
+    }
+
+    format!("{prefix}{word}s{suffix}")
+}
+
 /// Get the smallest common indentation depth of nonempty lines of text.
 ///
 /// Both tabs and spaces are treated as a single unit of indentation.
@@ -349,6 +391,35 @@ All mimsy were the borogoves,
                 is_capitalized(text),
                 !text.is_empty() && capitalize(text) == text
             );
+        }
+    }
+
+    #[test]
+    fn plurals() {
+        let irregulars: HashMap<String, String> =
+            [("vortex", "vortices"), ("gauntlets", "pairs of gauntlets")]
+                .iter()
+                .map(|(a, b)| (a.to_string(), b.to_string()))
+                .collect();
+
+        for (a, b) in [
+            ("", ""),
+            ("cat", "cats"),
+            ("box", "boxes"),
+            ("bus", "buses"),
+            ("splotch", "splotches"),
+            ("wash", "washes"),
+            ("wand of fireballs", "wands of fireballs"),
+            ("vortex", "vortices"),
+            ("vortex of doom", "vortices of doom"),
+            ("crimson vortex of doom", "crimson vortices of doom"),
+            ("hell-vortex of doom", "hell-vortices of doom"),
+            (
+                "uranium gauntlets of smiting",
+                "pairs of uranium gauntlets of smiting",
+            ),
+        ] {
+            assert_eq!(&pluralize(&irregulars, a), b);
         }
     }
 
