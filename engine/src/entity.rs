@@ -1,11 +1,11 @@
 //! Generic entity logic.
 use std::{fmt, str::FromStr};
 
-use content::{Block, EquippedAt};
+use content::{Block, Data};
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-use util::{Noun, Silo};
+use util::{text, Noun, Silo};
 
 use crate::{ecs::*, placement::Place, prelude::*};
 
@@ -123,15 +123,57 @@ impl Entity {
         let place = place.into();
         if Some(place) != r.placement.get(self) {
             self.detach(r);
+            // Try to merge stacks in the new place, if successful will
+            // consume self to grow a stack. Otherwise move self.
+            if self.try_merge_in(r, place) {
+                return;
+            }
+
             r.placement.insert(place, *self);
             self.post_move_hook(r);
         }
     }
 
+    /// Look for an entity at target place to merge into.
+    ///
+    /// If merging was succesful, destroy this entity, grow the target by this
+    /// entity's count and
+    fn try_merge_in(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        place: impl Into<Place>,
+    ) -> bool {
+        let r = r.as_mut();
+
+        match self.get::<Count>(r).0 {
+            // Not a stackable item.
+            0 => return false,
+            x if x < 0 => {
+                panic!("Entity::merge_at: Entity has negative count {x}");
+            }
+            _ => {}
+        }
+
+        for e in r.entities(place).collect::<Vec<_>>() {
+            // Just in case.
+            if e == *self {
+                continue;
+            }
+
+            // Match found, merge self with it and exit.
+            if self.can_stack_with(r, &e) {
+                let count = self.get::<Count>(r).0 + e.get::<Count>(r).0;
+                e.set(r, Count(count));
+                self.destroy(r);
+                return true;
+            }
+        }
+
+        false
+    }
+
     fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
         self.scan_fov(r);
-        // Equipped items become unequipped.
-        self.set(r, EquippedAt::None);
     }
 
     /// Return the type of terrain the entity is expected to spawn in.
@@ -158,20 +200,42 @@ impl Entity {
         self.loc(r).is_some()
     }
 
-    pub fn name(&self, r: &impl AsRef<Runtime>) -> String {
+    /// Return whether this is the sort of entity that only one of it should
+    /// exist in the game world.
+    pub fn is_unique(&self, r: &impl AsRef<Runtime>) -> bool {
+        // Add more cases here as needed. Currently we're using the convention
+        // that unique items have Proper Nouns and non-uniques have a generic
+        // name.
+        text::is_capitalized(&self.desc(r))
+    }
+
+    /// Description string of the entity.
+    pub fn desc(&self, r: &impl AsRef<Runtime>) -> String {
         let nickname = self.get::<Nickname>(r).0;
-        let name = self.get::<Name>(r).0;
+
+        let count = self.count(r);
+        let name = if count > 1 {
+            format!(
+                "{count} {}",
+                text::pluralize(&Data::get().plurals, &self.get::<Name>(r).0)
+            )
+        } else {
+            self.get::<Name>(r).0.to_string()
+        };
+
         let is_proper = name.chars().next().map_or(false, |c| c.is_uppercase());
 
         if !nickname.is_empty() {
             if is_proper {
                 // Fully rename proper-named entities.
                 nickname.to_string()
+            } else if self.is_mob(r) {
+                format!("{nickname} the {name}")
             } else {
-                format!("{} the {}", nickname, name)
+                format!("{name} called {nickname}")
             }
         } else {
-            name.to_string()
+            name
         }
     }
 
@@ -179,8 +243,10 @@ impl Entity {
     pub fn noun(&self, r: &impl AsRef<Runtime>) -> Noun {
         if self.is_player(r) {
             Noun::You
+        } else if self.count(r) > 1 {
+            Noun::Plural(self.desc(r))
         } else {
-            Noun::It(self.name(r))
+            Noun::It(self.desc(r))
         }
     }
 

@@ -4,7 +4,7 @@ use anyhow::bail;
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{IncrementalOutline, IndexMap, LazyRes, Outline, _String};
+use util::{HashMap, IncrementalOutline, IndexMap, LazyRes, Outline, _String};
 
 use crate::SectorMap;
 
@@ -28,6 +28,8 @@ pub struct Data {
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
     pub scenario: Scenario,
+    /// Irregular plural words.
+    pub plurals: HashMap<String, String>,
 }
 
 // Custom loader that initializes the global static gamedata from the data

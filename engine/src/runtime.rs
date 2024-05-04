@@ -129,6 +129,13 @@ impl Runtime {
         player.place(self, loc);
         let sword = self.wish(player, "sword").unwrap();
         player.make_equipped(self, &sword);
+
+        let money = Entity(self.ecs.spawn((
+            Name("silver coin".into()),
+            Icon('$'),
+            Count(123),
+        )));
+        money.place(self, player);
     }
 
     pub fn player(&self) -> Option<Entity> {
@@ -137,6 +144,16 @@ impl Runtime {
 
     pub fn live_entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.placement.all_entities()
+    }
+
+    pub fn entities(
+        &self,
+        place: impl Into<Place>,
+    ) -> Box<dyn Iterator<Item = Entity> + '_> {
+        match place.into() {
+            Place::In(e) => Box::new(self.placement.entities_in(&e)),
+            Place::At(loc) => Box::new(self.placement.entities_at(loc)),
+        }
     }
 
     /// Do a cache update around the player character's current location.

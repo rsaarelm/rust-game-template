@@ -22,7 +22,7 @@ pub fn item_list(
     let keypress = navni::keypress();
 
     for (k, e) in keys.chars().zip(items.into_iter()) {
-        if cur.print_button(&format!("{k}) {}", e.name(&g.r)))
+        if cur.print_button(&format!("{k}) {}", e.desc(&g.r)))
             || keypress.key() == Key::Char(k)
         {
             return Some(e);
@@ -97,7 +97,7 @@ impl Widget for StatusPanel {
             }
         };
 
-        writeln!(cur, "{}", player.name(g));
+        writeln!(cur, "{}", player.desc(g));
         let max_hp = player.max_wounds(g);
         let hp = max_hp - player.wounds(&g.r).min(max_hp);
         writeln!(cur, "{hp} / {max_hp}");

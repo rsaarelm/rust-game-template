@@ -5,11 +5,46 @@ use rand::seq::SliceRandom;
 use strum::IntoEnumIterator;
 use util::{s4, RngExt};
 
-use crate::{ecs::ItemPower, prelude::*, THROW_RANGE};
+use crate::{
+    ecs::{Count, ItemPower},
+    prelude::*,
+    THROW_RANGE,
+};
 
 impl Entity {
     pub fn is_item(&self, r: &impl AsRef<Runtime>) -> bool {
         !self.is_mob(r)
+    }
+
+    pub fn can_stack_with(
+        &self,
+        r: &impl AsRef<Runtime>,
+        other: &Entity,
+    ) -> bool {
+        // Both items must be designated stackable.
+        if self.get::<Count>(r).0 == 0 || other.get::<Count>(r).0 == 0 {
+            return false;
+        }
+
+        // Both items must be non-unique.
+        if self.is_unique(r) || other.is_unique(r) {
+            return false;
+        }
+
+        // NB. I'm not even trying to make this more robust than this. It's on
+        // the data designer to only designate things as stackable with the
+        // 'count' component if items with that name cannot vary otherwise.
+
+        self.is_item(r) && other.is_item(r) && self.desc(r) == other.desc(r)
+    }
+
+    pub fn count(&self, r: &impl AsRef<Runtime>) -> i32 {
+        match self.get::<Count>(r).0 {
+            // The component value is 0 for un-stackable entities, but they
+            // still logically have a count of 1.
+            x if x <= 1 => 1,
+            x => x,
+        }
     }
 
     pub fn use_needs_aim(&self, r: &impl AsRef<Runtime>) -> bool {

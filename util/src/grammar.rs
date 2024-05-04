@@ -37,7 +37,7 @@ impl Noun {
     pub fn the_name(&self) -> String {
         if matches!(self, You) {
             "you".into()
-        } else if self.is_proper_noun() {
+        } else if self.is_proper_noun() || matches!(self, Plural(_)) {
             self.name().into()
         } else {
             format!("the {}", self.name())
