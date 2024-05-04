@@ -256,14 +256,23 @@ impl FromStr for Silo {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s
-            .chars()
-            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
-        {
-            bail!("not a valid silo")
-        } else {
-            Ok(Silo(s.into()))
+        let mut ret = String::new();
+        for c in s.chars() {
+            // Ignore hyphens.
+            if c == '-' {
+                continue;
+            }
+
+            if !matches!(c, 'S' | 'I' | 'L' | 'O')
+                && (c.is_ascii_uppercase() || c.is_ascii_digit())
+            {
+                ret.push(c);
+            } else {
+                bail!("not a valid silo: {s:?}");
+            }
         }
+
+        Ok(Silo(ret))
     }
 }
 
