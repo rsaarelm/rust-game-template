@@ -113,6 +113,14 @@ impl Entity {
         ret
     }
 
+    /// Spawn an exact copy of an entity.
+    pub(crate) fn spawn_clone(&self, r: &mut impl AsMut<Runtime>) -> Entity {
+        let r = r.as_mut();
+
+        let mut cloner = crate::ecs::clone_builder(&r.ecs, self.0);
+        Entity(r.ecs.spawn(cloner.build()))
+    }
+
     pub fn loc(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
         let r = r.as_ref();
         r.placement.entity_pos(self)

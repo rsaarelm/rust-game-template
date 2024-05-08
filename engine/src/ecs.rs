@@ -93,6 +93,17 @@ macro_rules! components {
                 Ok(())
             }
         }
+
+        /// Create an `EntityBuilder` that clones an existing entity.
+        pub(crate) fn clone_builder(world: &hecs::World, e: hecs::Entity) -> hecs::EntityBuilder {
+            let mut builder = hecs::EntityBuilder::new();
+            $(
+                if let Ok(comp) = world.get::<&$attrname>(e) {
+                    builder.add((&*comp).clone());
+                }
+            )+
+            builder
+        }
     }
 }
 
