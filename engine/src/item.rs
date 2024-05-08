@@ -269,7 +269,7 @@ impl Entity {
             r.invoke_power(effect, Some(*self), loc, v);
         }
         if item.consumed_on_use(r) {
-            item.destroy(r);
+            item.consume(r);
         }
         self.complete_turn(r);
     }
@@ -296,9 +296,12 @@ impl Entity {
 
         let target = r.trace_target(perp, loc, v, THROW_RANGE as usize);
 
+        // If it's a stack of items, just throw one.
+        let item = item.split_off_one(r);
+
         if target == loc {
             // No room to throw, just drop it.
-            self.drop(r, item);
+            self.drop(r, &item);
         } else {
             // Throw time.
             send_msg(Msg::Fire(*self, v));

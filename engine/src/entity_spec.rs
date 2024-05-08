@@ -26,12 +26,16 @@ impl EntitySpec for Monster {
 
 impl EntitySpec for Item {
     fn build(&self, r: &mut Runtime, name: &str) -> Entity {
-        Entity(r.ecs.spawn((
+        let ret = Entity(r.ecs.spawn((
             Name(name.into()),
             Icon(self.kind.icon()),
             ItemPower(self.power.clone()),
             self.kind,
             Level(self.might),
-        )))
+        )));
+        if self.kind.is_stacking() {
+            ret.set(r, Count(1));
+        }
+        ret
     }
 }

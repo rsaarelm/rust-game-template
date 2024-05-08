@@ -314,6 +314,11 @@ impl ItemKind {
             Treasure => '$',
         }
     }
+
+    pub fn is_stacking(&self) -> bool {
+        use ItemKind::*;
+        matches!(self, Scroll | Potion | Treasure)
+    }
 }
 
 #[derive(

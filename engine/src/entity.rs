@@ -369,6 +369,34 @@ impl Entity {
         r.placement.remove(self);
     }
 
+    /// Like destroy, but only decrements one item from stack if it's a stack
+    /// of multiple.
+    pub(crate) fn consume(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
+        let count = self.count(r);
+        if count > 1 {
+            self.set(r, Count(count - 1));
+        } else {
+            self.destroy(r);
+        }
+    }
+
+    /// Split one item off from a stack.
+    pub(crate) fn split_off_one(&self, r: &mut impl AsMut<Runtime>) -> Entity {
+        let r = r.as_mut();
+
+        let count = self.count(r);
+        if count > 1 {
+            self.set(r, Count(count - 1));
+            let ret = self.spawn_clone(r);
+            ret.set(r, Count(1));
+            ret
+        } else {
+            *self
+        }
+    }
+
     pub fn contents<'a>(
         &self,
         r: &'a impl AsRef<Runtime>,
