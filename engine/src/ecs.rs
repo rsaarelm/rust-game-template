@@ -130,6 +130,7 @@ components! {
     Goal,
     ActsNext,
     Momentum,
+    IsEphemeral,
 }
 
 /// Time when the mob can act next.
@@ -163,15 +164,21 @@ pub struct Count(pub i32);
 )]
 pub struct Icon(pub char);
 
+/// Entities with this flag will be destroyed when the player respawns.
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
-pub struct IsMob(pub bool);
+pub struct IsEphemeral(pub bool);
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
 pub struct IsFriendly(pub bool);
+
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
+)]
+pub struct IsMob(pub bool);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct ItemPower(pub Option<Power>);

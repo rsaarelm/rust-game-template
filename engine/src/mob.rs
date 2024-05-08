@@ -2,7 +2,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ecs::{ActsNext, Buffs, IsMob, Momentum, NumDeaths, Speed, Stats, Wounds},
+    ecs::{
+        ActsNext, Buffs, IsEphemeral, IsMob, Momentum, NumDeaths, Speed, Stats,
+        Wounds,
+    },
     prelude::*,
     PHASES_IN_TURN,
 };
@@ -263,6 +266,24 @@ impl Entity {
 
     pub fn respawn(&self, r: &mut impl AsMut<Runtime>) {
         let r = r.as_mut();
+
+        // Clear out all ephemeral items at respawn. This is the failed corpse
+        // run mechanic, if you can't get your stuff back without dying, it's
+        // gone forever.
+        let ephemerals: Vec<Entity> = r
+            .ecs
+            .query::<&IsEphemeral>()
+            .iter()
+            .map(|(e, _)| Entity(e))
+            .collect();
+
+        for e in ephemerals {
+            if e == *self {
+                log::warn!("Respawning an ephemeral entity.");
+                continue;
+            }
+            e.destroy(r);
+        }
 
         let num_deaths = self.get::<NumDeaths>(r).0;
         if num_deaths == 0 {
