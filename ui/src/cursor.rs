@@ -25,6 +25,14 @@ impl Cursor {
             "print_button: only single line supported"
         );
         let w = text.chars().count() as i32;
+
+        // Trim to size
+        let text = if w > self.win.width() {
+            text.chars().take(self.win.width() as usize).collect()
+        } else {
+            text.to_owned()
+        };
+
         // Move to next line if line would go past right edge.
         if self.win.width() - self.pos.x < w {
             self.pos.x = 0;
@@ -34,7 +42,7 @@ impl Cursor {
         let bounds = self.win.sub(Rect::new(self.pos, self.pos + v2([w, 1])));
         self.pos.x += w;
 
-        bounds.button(text)
+        bounds.button(&text)
     }
 }
 
