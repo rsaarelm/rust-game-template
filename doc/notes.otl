@@ -7,6 +7,8 @@ Semantic commit tags
 	Roughly in order of importance, pick the highest one if multiple categories apply
 	feat
 		New feature for the user, not a new feature for build script
+	ui
+		UI niceties that don't reflect new game functionality
 	lib
 		New library machinery used by features
 	fix
