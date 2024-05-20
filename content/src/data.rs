@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr, sync::OnceLock};
+use std::{collections::BTreeMap, fmt, str::FromStr, sync::OnceLock};
 
 use anyhow::bail;
 use glam::IVec2;
@@ -27,7 +27,7 @@ pub fn register_mods(mods: Vec<IncrementalOutline>) {
 pub struct Data {
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
-    pub scenario: Scenario,
+    pub campaign: BTreeMap<String, Scenario>,
     /// Irregular plural words.
     pub plurals: HashMap<String, String>,
 }

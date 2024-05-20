@@ -49,7 +49,10 @@ impl Default for Runtime {
 
 impl Runtime {
     pub fn new(seed: Silo) -> Result<Self> {
-        let world = World::new(seed, Data::get().scenario.clone())?;
+        let world = World::new(
+            seed,
+            Data::get().campaign.iter().next().unwrap().1.clone(),
+        )?;
         let rng = util::srng(world.seed());
 
         let mut ret = Runtime {
