@@ -159,7 +159,9 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                 }
             }
 
-            MouseState::Drag(p, q, MouseButton::Left) if win.contains(q) => {
+            MouseState::Drag(p, q, MouseButton::Left)
+                if sector_area.contains(q) =>
+            {
                 // Marquee drag in progress, draw box.
                 if p != q && sector_area.contains(p) && sector_area.contains(q)
                 {
