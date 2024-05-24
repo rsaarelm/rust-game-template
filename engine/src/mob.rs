@@ -206,19 +206,13 @@ impl Entity {
         stats
     }
 
-    /// Return score for how fast this entity should beat the other.
-    #[allow(dead_code)]
-    fn kill_speed(&self, r: &impl AsRef<Runtime>, other: &Entity) -> i32 {
-        let s1 = self.stats(r);
-        let s2 = other.stats(r);
+    pub fn to_hit(&self, r: &impl AsRef<Runtime>) -> i32 {
+        let stats = self.stats(r);
+        stats.might + stats.hit
+    }
 
-        if s1.dmg == 0 {
-            -1
-        } else {
-            (other.max_wounds(r) as f32 * Odds(s1.hit - s2.ev).prob()
-                / s1.dmg as f32)
-                .round() as i32
-        }
+    pub fn evasion(&self, r: &impl AsRef<Runtime>) -> i32 {
+        self.stats(r).ev
     }
 
     pub fn confuse(&self, r: &mut impl AsMut<Runtime>) {

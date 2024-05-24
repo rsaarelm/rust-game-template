@@ -13,12 +13,12 @@ impl EntitySpec for Monster {
             Name(name.into()),
             Icon(self.icon),
             Speed(3),
-            Level(self.might),
             IsMob(true),
             Stats {
-                hit: self.might,
-                ev: self.might / 2,
-                dmg: self.might,
+                might: self.might,
+                hit: 0,
+                ev: self.evasion,
+                dmg: self.attack_damage,
             },
         )))
     }

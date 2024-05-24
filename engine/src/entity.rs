@@ -282,7 +282,7 @@ impl Entity {
     }
 
     pub fn max_wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
-        ((self.get::<Level>(r).0 * 2) as f32).powf(1.25).round() as i32
+        5 + self.get::<Stats>(r).might.max(0) * 5
     }
 
     pub fn wounds(&self, r: &impl AsRef<Runtime>) -> i32 {

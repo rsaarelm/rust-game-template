@@ -118,13 +118,13 @@ impl Runtime {
             Name("Player".into()),
             Icon('1'),
             Speed(4),
-            Level(5),
             IsMob(true),
             IsFriendly(true),
             Stats {
+                might: 3,
                 hit: 6,
                 ev: 4,
-                dmg: 4,
+                dmg: 5,
             },
         )));
 

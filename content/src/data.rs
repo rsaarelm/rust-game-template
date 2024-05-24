@@ -225,6 +225,8 @@ pub enum GenericSector {
 pub struct Monster {
     pub icon: char,
     pub might: i32,
+    pub evasion: i32,
+    pub attack_damage: i32,
     pub rarity: u32,
     pub min_depth: u32,
 }

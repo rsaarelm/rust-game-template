@@ -201,10 +201,8 @@ impl Entity {
         other: &Entity,
     ) -> bool {
         let r = r.as_mut();
-        let stats = self.stats(r);
-        let other_stats = other.stats(r);
 
-        let odds = Odds(stats.hit - other_stats.ev);
+        let odds = Odds(self.to_hit(r) - other.evasion(r));
         r.rng().sample(odds)
     }
 
