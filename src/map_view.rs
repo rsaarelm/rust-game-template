@@ -137,11 +137,21 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
 
     // Project locations of planned path and use polyline to fill in the gaps
     // to make a continuous line.
-    for p in PolyLineIter::new(
-        game().planned_path.posns().iter().map(|&a| view.project(a)),
-    ) {
-        if let Some(c) = win.get_mut(p) {
-            c.invert();
+    {
+        let player_pos = game().current_active().and_then(|a| a.loc(game()));
+        let path = game().planned_path.posns();
+
+        for p in PolyLineIter::new(
+            player_pos
+                .iter()
+                .chain(path.iter().rev())
+                .map(|&a| view.project(a)),
+        )
+        .skip(1)
+        {
+            if let Some(c) = win.get_mut(p) {
+                c.invert();
+            }
         }
     }
 

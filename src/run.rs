@@ -47,12 +47,21 @@ pub async fn main_gameplay() {
                     game().current_active().and_then(|p| p.loc(game()))
                 {
                     let mouse_pos = navni::mouse_state().cursor_pos();
-                    game().planned_path.update(
-                        game(),
-                        orig,
-                        loc.ui_path_destination(game()),
-                        mouse_pos,
-                    );
+
+                    // Clear path when hovering over a friendly mob, clicks
+                    // have different function then, otherwise try pathing to
+                    // cell.
+                    let cursor_on_friendly = matches!(loc.mob_at(game()), Some(npc) if npc.is_player_aligned(game()));
+                    if cursor_on_friendly {
+                        game().planned_path.clear();
+                    } else {
+                        game().planned_path.update(
+                            game(),
+                            orig,
+                            loc.ui_path_destination(game()),
+                            mouse_pos,
+                        );
+                    }
                 }
             }
             Some(SelectActive(sel)) => game().set_selection(sel),
