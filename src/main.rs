@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use content::settings;
 use engine::prelude::*;
 use ui::game;
 use util::{IncrementalOutline, Outline, Silo};
@@ -12,12 +13,6 @@ mod map_view;
 mod run;
 mod version;
 mod view;
-
-/// Human-readable game title.
-pub const GAME_NAME: &str = "Template Game";
-
-/// System identifier for game.
-pub const GAME_ID: &str = "gametemplate";
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -44,12 +39,11 @@ struct Args {
 
 fn main() -> anyhow::Result<()> {
     util::panic_handler();
-    navni::logger::start(GAME_ID);
 
     let args = Args::parse();
 
     if args.version {
-        println!("{GAME_NAME} version {VERSION}");
+        println!("{} version {VERSION}", settings().game_title);
         return Ok(());
     }
 
@@ -71,17 +65,19 @@ fn main() -> anyhow::Result<()> {
 
     content::register_data(idm::transmute(&data).unwrap());
 
-    navni::run(GAME_ID, async move {
+    navni::logger::start(&settings().game_id);
+
+    navni::run(&settings().game_id, async move {
         ui::init_game();
 
         if args.new_game.is_some() {
             log::info!("New game requested, deleting any existing saves");
-            game().delete_save(GAME_ID);
+            game().delete_save(&settings().game_id);
         }
 
         // Restore game or init a new one.
         loop {
-            match game().load(GAME_ID) {
+            match game().load(&settings().game_id) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
                     let seed = if let Some(Some(seed)) = args.new_game {
@@ -99,7 +95,11 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(seed).unwrap();
 
-                    msg!("Welcome to {}, {}!", GAME_NAME, util::user_name());
+                    msg!(
+                        "Welcome to {}, {}!",
+                        settings().game_title,
+                        util::user_name()
+                    );
                 }
                 Ok(Some(save)) => {
                     // Load the save.
@@ -111,7 +111,7 @@ fn main() -> anyhow::Result<()> {
                     if crate::run::ask("Corrupt save file detected. Delete it?")
                         .await
                     {
-                        game().delete_save(GAME_ID);
+                        game().delete_save(&settings().game_id);
                         continue;
                     } else {
                         // Can't load the save file and can't clobber it, exiting
@@ -137,9 +137,9 @@ fn main() -> anyhow::Result<()> {
 
         // Save the game if we exited with the game still running.
         if !game().is_game_over() {
-            game().save(GAME_ID);
+            game().save(&settings().game_id);
         } else {
-            game().delete_save(GAME_ID);
+            game().delete_save(&settings().game_id);
         }
     });
 

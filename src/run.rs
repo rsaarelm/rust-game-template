@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt::Write};
 
-use content::{DOWN, EAST, NORTH, SOUTH, UP, WEST};
+use content::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use navni::X256Color as X;
 use ui::{prelude::*, ConfirmationDialog};
@@ -84,7 +84,7 @@ pub async fn main_gameplay() {
         // Allows
         if navni::keypress() == "Esc".parse().unwrap() && !game().is_game_over()
         {
-            game().save(crate::GAME_ID);
+            game().save(&settings().game_id);
             msg!("Game saved.");
         }
 

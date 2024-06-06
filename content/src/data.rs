@@ -36,11 +36,27 @@ pub fn register_data(data: Data) {
 #[derive(Clone, Default, Eq, PartialEq, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
+    pub settings: Settings,
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
     pub campaign: BTreeMap<String, Scenario>,
     /// Irregular plural words.
     pub plurals: HashMap<String, String>,
+}
+
+/// Game-wide general settings.
+#[derive(Clone, Default, Eq, PartialEq, Debug, Deserialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct Settings {
+    /// Internal human-readable identifier of the game, used for save
+    /// directories etc.
+    pub game_id: String,
+    /// Player-visible full title of the game.
+    pub game_title: String,
+}
+
+pub fn settings() -> &'static Settings {
+    &Data::get().settings
 }
 
 // Custom loader that initializes the global static gamedata from the data
