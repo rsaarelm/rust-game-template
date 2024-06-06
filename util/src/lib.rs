@@ -1,5 +1,4 @@
 //! Unopinionated standalone utilities.
-#![feature(lazy_cell)]
 
 mod axis_box;
 pub use axis_box::{AxisBox, Cube, Element, IntegerBox, Rect};

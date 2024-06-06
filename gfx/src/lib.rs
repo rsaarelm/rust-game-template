@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 mod buffer;
 pub use buffer::Buffer;
 
