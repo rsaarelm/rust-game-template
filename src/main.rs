@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use engine::prelude::*;
 use ui::game;
-use util::{IncrementalOutline, Silo};
+use util::{IncrementalOutline, Outline, Silo};
 use version::VERSION;
 
 mod map_view;
@@ -58,7 +58,18 @@ fn main() -> anyhow::Result<()> {
         let md = util::dir_to_idm(path)?;
         mods.push(md);
     }
-    content::register_mods(mods);
+
+    let data = snap::raw::Decoder::new()
+        .decompress_vec(include_bytes!("../target/data.idm.sz"))
+        .unwrap();
+    let data = std::str::from_utf8(&data).unwrap();
+    let mut data: Outline = idm::from_str(data).unwrap();
+
+    for md in &mods {
+        data += md;
+    }
+
+    content::register_data(idm::transmute(&data).unwrap());
 
     navni::run(GAME_ID, async move {
         ui::init_game();

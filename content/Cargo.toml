@@ -3,7 +3,6 @@ name = "content"
 version = "0.1.0"
 edition = "2021"
 description = "Game content datatypes and generation"
-build = "build.rs"
 
 [dependencies]
 anyhow = "1"
@@ -16,11 +15,6 @@ pathfinding = "4"
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_with = "3"
-snap = "1"
 static_assertions = "1"
 strum = { version = "0.26", features = ["derive"] }
-util = { path = "../util" }
-
-[build-dependencies]
-snap = "1"
 util = { path = "../util" }

@@ -266,12 +266,16 @@ mod tests {
 
     #[test]
     fn build_world() {
+        content::register_data_from("../data").unwrap();
+
         let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         assert!(runtime.player().is_some());
     }
 
     #[test]
     fn saving_and_loading() {
+        content::register_data_from("../data").unwrap();
+
         let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         let save = idm::to_string(&runtime).expect("Save failed");
         let runtime2: Runtime = idm::from_str(&save).expect("Load failed");

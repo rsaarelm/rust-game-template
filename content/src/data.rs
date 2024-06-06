@@ -1,28 +1,39 @@
-use std::{collections::BTreeMap, fmt, str::FromStr, sync::OnceLock};
+use std::{
+    collections::BTreeMap, fmt, path::Path, str::FromStr, sync::OnceLock,
+};
 
 use anyhow::bail;
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
-use util::{HashMap, IncrementalOutline, IndexMap, LazyRes, Outline, _String};
+use util::{HashMap, IndexMap, LazyRes, _String};
 
 use crate::SectorMap;
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
-static MODS: OnceLock<Vec<IncrementalOutline>> = OnceLock::new();
+/// Load content data from filesystem path.
+pub fn register_data_from(path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let data = util::dir_to_idm(path.as_ref())?;
+    register_data(idm::from_str(&data.to_string()).unwrap());
+    Ok(())
+}
 
-pub fn register_mods(mods: Vec<IncrementalOutline>) {
-    assert!(
-        DATA.get().is_none(),
-        "too late to register mods, game data is already initialized"
-    );
-    assert!(MODS.get().is_none(), "mods can only be registered once");
-    MODS.set(mods).unwrap();
+/// Register content data directly from value.
+pub fn register_data(data: Data) {
+    match DATA.get() {
+        None => DATA.set(data).unwrap(),
+        Some(x) if x == &data => {
+            log::info!("registering the same gamedata twice, ignored");
+        }
+        _ => {
+            panic!("Tried to register different gamedata when data is already registered");
+        }
+    }
 }
 
 /// Static global game data.
-#[derive(Clone, Default, Debug, Deserialize)]
+#[derive(Clone, Default, Eq, PartialEq, Debug, Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
     pub bestiary: IndexMap<_String, Monster>,
@@ -37,22 +48,7 @@ pub struct Data {
 // crate's build.rs script.
 impl Default for &'static Data {
     fn default() -> Self {
-        DATA.get_or_init(|| {
-            let data = snap::raw::Decoder::new()
-                .decompress_vec(include_bytes!("../../target/data.idm.sz"))
-                .unwrap();
-            let data = std::str::from_utf8(&data).unwrap();
-            let mut data: Outline = idm::from_str(data).unwrap();
-
-            let mods: &Vec<IncrementalOutline> =
-                MODS.get_or_init(Default::default);
-
-            for md in mods {
-                data += md;
-            }
-
-            idm::transmute(&data).unwrap()
-        })
+        DATA.get().expect("No data registered")
     }
 }
 
@@ -141,14 +137,14 @@ impl SpawnDist for Spawn {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Scenario {
     pub map: String,
     pub legend: IndexMap<char, Vec<Region>>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Region {
     /// A procgen level
@@ -208,7 +204,7 @@ impl Region {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum GenericSector {
     Water,
@@ -375,6 +371,7 @@ mod test {
     fn load_data() {
         // This test will crash if the static gamedata won't deserialize
         // cleanly.
+        register_data_from("../data").unwrap();
         assert!(!Data::get().bestiary.is_empty());
     }
 }

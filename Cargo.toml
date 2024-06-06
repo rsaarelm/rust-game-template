@@ -39,6 +39,7 @@ idm = "0.4"
 log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
 rand = "0.8"
+snap = "1"
 ui = { path = "ui" }
 util = { path = "util" }
 
@@ -47,6 +48,8 @@ getrandom = { version = "0.2", features = ["custom"] }
 
 [build-dependencies]
 anyhow = "1"
+snap = "1"
+util = { path = "util" }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }

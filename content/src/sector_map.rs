@@ -6,7 +6,7 @@ use util::{HashMap, IndexMap, _String, text, Cloud, Neighbors2D};
 use crate::{Block, Coordinates, Cube, Environs, Location, Spawn, Voxel};
 
 /// Text map for 2D world part.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SectorMap {
     pub name: String,
