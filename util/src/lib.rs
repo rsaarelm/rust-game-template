@@ -36,6 +36,8 @@ pub use keyboard_layout::Layout;
 mod lazy_res;
 pub use lazy_res::LazyRes;
 
+pub mod parse;
+
 mod path;
 pub use path::{astar_path, dijkstra_map, within_range};
 
