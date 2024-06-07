@@ -22,7 +22,9 @@ pub fn register_data_from(path: impl AsRef<Path>) -> anyhow::Result<()> {
 /// Register content data directly from value.
 pub fn register_data(data: Data) {
     match DATA.get() {
-        None => DATA.set(data).unwrap(),
+        None => {
+            let _ = DATA.set(data);
+        }
         Some(x) if x == &data => {
             log::info!("registering the same gamedata twice, ignored");
         }

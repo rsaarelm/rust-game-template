@@ -16,24 +16,28 @@ mod view;
 
 #[derive(Parser, Debug)]
 struct Args {
+    /// Start a new game, optionally with specific seed
     #[arg(
         long,
         value_name = "SEED",
         value_parser = |e: &str| Ok::<Silo, &str>(Silo::new(e)),
     )]
-    /// Start a new game, optionally with specific seed
     new_game: Option<Option<Silo>>,
 
+    /// Load game data from a given path instead of using default data.
+    #[arg(long, value_name = "PATH")]
+    gamedata: Option<PathBuf>,
+
+    /// Comma-separarted list of mod files to apply
     #[arg(
         long,
         value_delimiter = ',',
         help = "Comma-separarted list of mod files to apply"
     )]
-    /// Comma-separarted list of mod files to apply
     mods: Vec<PathBuf>,
 
+    /// Display game version and exit
     #[arg(short = 'v', long)]
-    /// Display game version
     version: bool,
 }
 
@@ -53,17 +57,22 @@ fn main() -> anyhow::Result<()> {
         mods.push(md);
     }
 
-    let data = snap::raw::Decoder::new()
-        .decompress_vec(include_bytes!("../target/data.idm.sz"))
-        .unwrap();
-    let data = std::str::from_utf8(&data).unwrap();
-    let mut data: Outline = idm::from_str(data).unwrap();
+    let mut data: Outline = if let Some(gamedata) = args.gamedata.as_ref() {
+        let data = util::dir_to_idm(gamedata)?.to_string();
+        eprint!("{data}");
+        idm::from_str(&data)?
+    } else {
+        let data = snap::raw::Decoder::new()
+            .decompress_vec(include_bytes!("../target/data.idm.sz"))?;
+        let data = std::str::from_utf8(&data)?;
+        idm::from_str(data)?
+    };
 
     for md in &mods {
         data += md;
     }
 
-    content::register_data(idm::transmute(&data).unwrap());
+    content::register_data(idm::transmute(&data)?);
 
     navni::logger::start(&settings().game_id);
 
