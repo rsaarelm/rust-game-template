@@ -20,7 +20,7 @@ pub fn word(input: &str) -> Result<&str> {
     }
 }
 
-pub fn multiple(input: &str) -> Result<i32> {
+pub fn multiples(input: &str) -> Result<i32> {
     let (word, rest) = word(input)?;
     let Some(num) = word.strip_suffix("x") else {
         return Err(input);
@@ -36,15 +36,28 @@ pub fn multiple(input: &str) -> Result<i32> {
     }
 }
 
+pub fn multipliable(input: &str) -> (i32, &str) {
+    if let Ok((count, rest)) = multiples(input) {
+        (count, rest)
+    } else {
+        (1, input)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_multiple() {
-        assert_eq!(multiple("13x squid"), Ok((13, "squid")));
-        assert_eq!(multiple("13yx squid"), Err("13yx squid"));
-        assert_eq!(multiple("13 squid"), Err("13 squid"));
-        assert_eq!(multiple("0x squid"), Err("0x squid"));
+        assert_eq!(multipliable("13x squid"), (13, "squid"));
+        assert_eq!(multipliable("1x squid"), (1, "squid"));
+        assert_eq!(multipliable("squid"), (1, "squid"));
+        // Deformed multipliers just go in the main word for now.
+        // We might want these to be errors but let's keep things stupid and
+        // simple for the time being.
+        assert_eq!(multipliable("13yx squid"), (1, "13yx squid"));
+        assert_eq!(multipliable("13 squid"), (1, "13 squid"));
+        assert_eq!(multipliable("0x squid"), (1, "0x squid"));
     }
 }
