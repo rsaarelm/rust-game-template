@@ -3,8 +3,10 @@ use std::{
 };
 
 use anyhow::bail;
+use derive_more::{Deref, From};
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::EnumIter;
 use util::{HashMap, IndexMap, LazyRes, _String};
 
@@ -39,6 +41,7 @@ pub fn register_data(data: Data) {
 #[serde(default, rename_all = "kebab-case")]
 pub struct Data {
     pub settings: Settings,
+    pub loadout: LazyRes<Pod>,
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
     pub campaign: BTreeMap<String, Scenario>,
@@ -76,54 +79,139 @@ impl Data {
     }
 }
 
+/// A pod is an inert value that can hatch into one or several live runtime
+/// objects.
 #[derive(
-    Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Deserialize, Serialize,
+    Clone,
+    Debug,
+    Default,
+    Deref,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Deserialize,
+    Serialize,
 )]
-#[serde(try_from = "_String", into = "_String")]
-pub enum Spawn {
-    Monster(String, &'static Monster),
-    Item(String, &'static Item),
-}
+pub struct Pod(Vec<((PodObject,), Pod)>);
 
-impl TryFrom<_String> for Spawn {
-    type Error = anyhow::Error;
+impl<'a> IntoIterator for &'a Pod {
+    type Item = &'a ((PodObject,), Pod);
 
-    fn try_from(value: _String) -> Result<Self, Self::Error> {
-        (*value).parse()
+    type IntoIter = std::slice::Iter<'a, ((PodObject,), Pod)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
 
-impl From<Spawn> for _String {
-    fn from(value: Spawn) -> Self {
-        _String(value.to_string())
+impl FromStr for Pod {
+    type Err = idm::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.chars().any(|c| c == '\n') {
+            // Hack, IDM goes into different mode without trailing newline.
+            idm::from_str(&format!("{s}\n"))
+        } else {
+            idm::from_str(s)
+        }
     }
 }
 
-impl FromStr for Spawn {
+impl<T: Into<PodObject>> From<T> for Pod {
+    fn from(value: T) -> Self {
+        Pod(vec![((value.into(),), Pod(vec![]))])
+    }
+}
+
+/// A single element in a hatch specification, object contents are not stored
+/// in eggs.
+#[derive(
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    DeserializeFromStr,
+    SerializeDisplay,
+)]
+pub struct PodObject {
+    /// How many copies of this object are hatched?
+    ///
+    /// Stackable objects will form a single stack, non-stackable objects will
+    /// appear in the same place, being offset from earlier hatched objects as
+    /// needed.
+    pub count: i32,
+    /// The name of the object, this isn't stored in `PodKind` data.
+    pub name: String,
+    /// What kind of an object it is, concrete properties.
+    pub kind: PodKind,
+}
+
+impl fmt::Display for PodObject {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.count != 1 {
+            write!(f, "{}x ", self.count)?;
+        }
+
+        write!(f, "{}", self.name)
+    }
+}
+
+impl PodObject {
+    pub fn new(name: String, kind: PodKind) -> Self {
+        PodObject {
+            count: 1,
+            name,
+            kind,
+        }
+    }
+
+    /// Set the element count of the egg to something other than 1.
+    pub fn x(mut self, count: i32) -> Self {
+        assert!(count > 0);
+        self.count = count;
+        self
+    }
+}
+
+impl FromStr for PodObject {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (count, name) = util::parse::multipliable(s);
+        let kind = name.parse()?;
+        let name = name.to_string();
+
+        Ok(PodObject { count, name, kind })
+    }
+}
+
+/// The concrete data of an object to hatch, what kind of thing is it.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, From)]
+pub enum PodKind {
+    #[from]
+    Monster(&'static Monster),
+    #[from]
+    Item(&'static Item),
+}
+
+impl FromStr for PodKind {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Magic switchboard that trawls the data files looking for named
-        // things that can be spawned.
+        // things that can be hatched.
         if let Some(monster) = Data::get().bestiary.get(s) {
-            return Ok(Spawn::Monster(s.into(), monster));
+            return Ok(PodKind::Monster(monster));
         }
 
         if let Some(item) = Data::get().armory.get(s) {
-            return Ok(Spawn::Item(s.into(), item));
+            return Ok(PodKind::Item(item));
         }
 
-        bail!("Unknown spawn {s:?}")
-    }
-}
-
-impl fmt::Display for Spawn {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Spawn::Monster(name, _) | Spawn::Item(name, _) => {
-                write!(f, "{name}")
-            }
-        }
+        bail!("Unknown pod kind {s:?}")
     }
 }
 
@@ -139,18 +227,18 @@ pub trait SpawnDist {
     }
 }
 
-impl SpawnDist for Spawn {
+impl SpawnDist for PodKind {
     fn rarity(&self) -> u32 {
         match self {
-            Spawn::Monster(_, a) => a.rarity(),
-            Spawn::Item(_, a) => a.rarity(),
+            PodKind::Monster(a) => a.rarity(),
+            PodKind::Item(a) => a.rarity(),
         }
     }
 
     fn min_depth(&self) -> u32 {
         match self {
-            Spawn::Monster(_, a) => a.min_depth(),
-            Spawn::Item(_, a) => a.min_depth(),
+            PodKind::Monster(a) => a.min_depth(),
+            PodKind::Item(a) => a.min_depth(),
         }
     }
 }
@@ -371,7 +459,7 @@ pub enum Power {
     Fireball,
     MagicMapping,
     HealSelf,
-    Summon(LazyRes<_String, Spawn>),
+    Summon(LazyRes<PodObject>),
 }
 
 impl Power {

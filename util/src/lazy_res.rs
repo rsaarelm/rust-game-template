@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 
 /// Lazily initialized resource handle.
 ///
@@ -12,81 +12,77 @@ use serde::{Deserialize, Serialize, Serializer};
 /// values, so lazy initialization is needed to allow gamedata to deserialize
 /// fully before resource loading starts.
 ///
-/// Failing to parse the resource causes a runtime panic.
+/// The resource is instantiated by deserializing the cached string using IDM.
 #[derive(Clone, Default)]
-pub struct LazyRes<S, T>(S, Arc<OnceLock<T>>);
+pub struct LazyRes<T>(String, Arc<OnceLock<T>>);
 
-impl<S, T> LazyRes<S, T> {
-    pub fn new(seed: impl Into<S>) -> Self {
-        LazyRes(seed.into(), Default::default())
+impl<T> LazyRes<T> {
+    pub fn new(seed: String) -> Self {
+        LazyRes(seed, Default::default())
     }
 }
 
-impl<S: Clone, T: TryFrom<S>> Deref for LazyRes<S, T> {
+impl<T: DeserializeOwned> Deref for LazyRes<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
         self.1.get_or_init(|| {
-            T::try_from(self.0.clone())
-                .ok()
-                .expect("failed to parse resource")
+            idm::from_str(&self.0).expect("failed to parse resource")
         })
     }
 }
 
-impl<S: fmt::Debug, T> fmt::Debug for LazyRes<S, T> {
+impl<T> fmt::Debug for LazyRes<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "LazyRes({:?})", self.0)
     }
 }
 
-impl<S: fmt::Display, T> fmt::Display for LazyRes<S, T> {
+impl<T> fmt::Display for LazyRes<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl<S: Clone, T: TryFrom<S>> AsRef<T> for LazyRes<S, T> {
+impl<T: DeserializeOwned> AsRef<T> for LazyRes<T> {
     fn as_ref(&self) -> &T {
         self.deref()
     }
 }
 
-impl<S: PartialEq, T> PartialEq for LazyRes<S, T> {
+impl<T> PartialEq for LazyRes<T> {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<S: Eq, T> Eq for LazyRes<S, T> {}
+impl<T> Eq for LazyRes<T> {}
 
-impl<S: PartialOrd, T> PartialOrd for LazyRes<S, T> {
+impl<T> PartialOrd for LazyRes<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.0.partial_cmp(&other.0)
+        Some(self.cmp(other))
     }
 }
 
-impl<S: Ord, T> Ord for LazyRes<S, T> {
+impl<T> Ord for LazyRes<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.0.cmp(&other.0)
     }
 }
 
-impl<'de, S, T> Deserialize<'de> for LazyRes<S, T>
-where
-    S: Deserialize<'de>,
-{
+impl<'de, T> Deserialize<'de> for LazyRes<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let seed = S::deserialize(deserializer)?;
-
-        Ok(LazyRes(seed, Default::default()))
+        Ok(LazyRes(
+            String::deserialize(deserializer)?,
+            Default::default(),
+        ))
     }
 }
 
-impl<S: Serialize, T> Serialize for LazyRes<S, T> {
+impl<T> Serialize for LazyRes<T> {
     fn serialize<R>(&self, serializer: R) -> Result<R::Ok, R::Error>
     where
         R: Serializer,

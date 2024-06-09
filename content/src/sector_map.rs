@@ -1,9 +1,11 @@
+use std::ops::Deref;
+
 use glam::{ivec2, ivec3, IVec2};
 use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
-use util::{HashMap, IndexMap, _String, text, Cloud, Neighbors2D};
+use util::{text, Cloud, HashMap, IndexMap, LazyRes, Neighbors2D};
 
-use crate::{Block, Coordinates, Cube, Environs, Location, Spawn, Voxel};
+use crate::{Block, Coordinates, Cube, Environs, Location, Pod, Voxel};
 
 /// Text map for 2D world part.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
@@ -11,16 +13,16 @@ use crate::{Block, Coordinates, Cube, Environs, Location, Spawn, Voxel};
 pub struct SectorMap {
     pub name: String,
     pub map: String,
-    // Values are spawns, but store them as strings here since they can't be
-    // validated until gamedata has been completely loaded.
-    pub legend: IndexMap<char, _String>,
+    // Use LazyRes for values since clutches can't be parsed until gamedata has
+    // been loaded.
+    pub legend: IndexMap<char, LazyRes<Pod>>,
 }
 
 impl SectorMap {
     pub fn from_area<'a, 'b>(
         r: &'a impl Environs,
         volume: &Cube,
-        spawns: impl IntoIterator<Item = (&'b Location, &'b Spawn)>,
+        spawns: impl IntoIterator<Item = (&'b Location, &'b Pod)>,
     ) -> Self {
         // XXX This is kinda hacky, mostly intended for visualization of
         // generated maps, not actual gameplay use.
@@ -48,7 +50,8 @@ impl SectorMap {
 
             let loc = ivec3(loc.x, loc.y, z);
 
-            let name = _String::from(spawn.clone()).0;
+            let name =
+                idm::to_string(spawn).expect("Spawn serialization error");
 
             let c = if let Some(c) = rev_legend.get(&name) {
                 *c
@@ -97,7 +100,7 @@ impl SectorMap {
             map,
             legend: rev_legend
                 .into_iter()
-                .map(|(k, v)| (v, _String(k)))
+                .map(|(k, v)| (v, LazyRes::new(k)))
                 .collect(),
         }
     }
@@ -146,12 +149,12 @@ impl SectorMap {
     pub fn spawns(
         &self,
         origin: Location,
-    ) -> anyhow::Result<Vec<(Location, Spawn)>> {
+    ) -> anyhow::Result<Vec<(Location, Pod)>> {
         let mut ret = Vec::default();
 
         for (p, c) in text::char_grid(&self.map) {
             if let Some(name) = self.legend.get(&c) {
-                ret.push((origin + p.extend(0), name.parse()?));
+                ret.push((origin + p.extend(0), name.deref().clone()));
             }
         }
 

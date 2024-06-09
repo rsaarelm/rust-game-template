@@ -1,6 +1,6 @@
 //! Special powers entities can use
 
-use content::{Power, Rect, Spawn, Zone};
+use content::{Pod, PodObject, Power, Rect, Zone};
 use serde::{Deserialize, Serialize};
 use util::{v2, Neighbors2D};
 
@@ -208,14 +208,16 @@ impl Runtime {
         &mut self,
         perp: Option<Entity>,
         from: Location,
-        monster: impl AsRef<Spawn>,
+        monster: impl AsRef<PodObject>,
     ) {
-        let mob = self.spawn_at(monster.as_ref(), from);
+        let mobs = self.spawn_at(&Pod::from(monster.as_ref().clone()), from);
 
         if let Some(perp) = perp {
             // Player and allies make friendly summons.
             if perp.is_player_aligned(self) {
-                mob.set(self, ecs::IsFriendly(true));
+                for mob in mobs {
+                    mob.set(self, ecs::IsFriendly(true));
+                }
             }
         }
     }

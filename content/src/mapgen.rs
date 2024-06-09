@@ -1,14 +1,18 @@
+use std::sync::Arc;
+
 use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec2, IVec3};
+use memoize::memoize;
 use rand::{distributions::Distribution, seq::SliceRandom, Rng, RngCore};
 use util::{
     a3, v3, Cloud, HashMap, HashSet, IndexMap, IndexSet, Neighbors2D, Silo,
+    _String,
 };
 
 use crate::{
-    data::GenericSector, world, Block, Coordinates, Cube, Data, Environs,
-    Level, Location, SectorMap, Spawn, SpawnDist, Voxel, Zone, SECTOR_HEIGHT,
-    SECTOR_WIDTH,
+    data::GenericSector, world, Block, Coordinates, Cube, Data, Environs, Item,
+    Level, Location, Monster, Pod, PodObject, SectorMap, SpawnDist, Voxel,
+    Zone, SECTOR_HEIGHT, SECTOR_WIDTH,
 };
 
 pub trait MapGenerator {
@@ -142,7 +146,7 @@ pub struct Patch {
     #[deref]
     #[deref_mut]
     pub terrain: Cloud<3, Voxel>,
-    pub spawns: IndexMap<Location, Spawn>,
+    pub spawns: IndexMap<Location, Pod>,
 }
 
 impl Patch {
@@ -684,43 +688,66 @@ pub fn rooms_and_corridors(
     spawn_posns.shuffle(rng);
 
     let depth = 0.max(-lot.volume.min()[2]) as u32;
-    let mobs = monster_spawns(depth);
-    let items = item_spawns(depth);
 
-    if !mobs.is_empty() {
-        for _ in 0..10 {
-            let Some(pos) = spawn_posns.pop() else { break };
-            let mob = mobs.choose_weighted(rng, |a| a.spawn_weight()).unwrap();
-            ret.spawns.insert(pos, mob.clone());
-        }
+    for _ in 0..10 {
+        let Some(pos) = spawn_posns.pop() else { break };
+        let Some(mob) = random_monster(rng, depth) else {
+            break;
+        };
+        ret.spawns.insert(pos, mob);
     }
 
-    if !items.is_empty() {
-        for _ in 0..10 {
-            let Some(pos) = spawn_posns.pop() else { break };
-            let item =
-                items.choose_weighted(rng, |a| a.spawn_weight()).unwrap();
-            ret.spawns.insert(pos, item.clone());
-        }
+    for _ in 0..10 {
+        let Some(pos) = spawn_posns.pop() else { break };
+        let Some(item) = random_item(rng, depth) else {
+            break;
+        };
+        ret.spawns.insert(pos, item);
     }
 
     Ok(ret)
 }
 
-fn monster_spawns(depth: u32) -> Vec<Spawn> {
-    Data::get()
-        .bestiary
-        .iter()
-        .filter(|(_, m)| m.min_depth() <= depth)
-        .map(|(n, _)| n.parse().unwrap())
-        .collect()
+fn random_monster(rng: &mut dyn RngCore, depth: u32) -> Option<Pod> {
+    #[memoize]
+    fn monster_set(
+        depth: u32,
+    ) -> Arc<Vec<(&'static _String, &'static Monster)>> {
+        Arc::new(
+            Data::get()
+                .bestiary
+                .iter()
+                .filter(|(_, m)| m.min_depth() <= depth)
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    let set = monster_set(depth);
+    let Ok((name, data)) = set.choose_weighted(rng, |(_, a)| a.spawn_weight())
+    else {
+        return None;
+    };
+
+    Some(PodObject::new(name.to_string(), (*data).into()).into())
 }
 
-fn item_spawns(depth: u32) -> Vec<Spawn> {
-    Data::get()
-        .armory
-        .iter()
-        .filter(|(_, m)| m.min_depth() <= depth)
-        .map(|(n, _)| n.parse().unwrap())
-        .collect()
+fn random_item(rng: &mut dyn RngCore, depth: u32) -> Option<Pod> {
+    #[memoize]
+    fn item_set(depth: u32) -> Arc<Vec<(&'static _String, &'static Item)>> {
+        Arc::new(
+            Data::get()
+                .armory
+                .iter()
+                .filter(|(_, m)| m.min_depth() <= depth)
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    let set = item_set(depth);
+    let Ok((name, data)) = set.choose_weighted(rng, |(_, a)| a.spawn_weight())
+    else {
+        return None;
+    };
+
+    Some(PodObject::new(name.to_string(), (*data).into()).into())
 }

@@ -9,7 +9,7 @@ use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo};
 
 use crate::{
     data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
-    MapGenerator, Patch, Rect, Scenario, Spawn, Terrain, Voxel, Zone, DOWN,
+    MapGenerator, Patch, Pod, Rect, Scenario, Terrain, Voxel, Zone, DOWN,
     LEVEL_DEPTH, NORTH, SECTOR_HEIGHT, SECTOR_WIDTH, UP, WEST,
 };
 
@@ -331,7 +331,7 @@ impl World {
         &self.inner.seed
     }
 
-    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Spawn)> {
+    pub fn populate_around(&mut self, loc: Location) -> Vec<(Location, Pod)> {
         let s = Level::level_from(loc);
 
         // Early exit if this is already a core generated sector.
@@ -363,7 +363,7 @@ impl World {
     fn generate_sector(
         &mut self,
         s: &Level,
-        spawns: &mut Vec<(Location, Spawn)>,
+        spawns: &mut Vec<(Location, Pod)>,
     ) {
         match self.gen_status.entry(*s) {
             // This sector has already been generated, do nothing.

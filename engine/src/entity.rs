@@ -180,7 +180,7 @@ impl Entity {
         false
     }
 
-    fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
+    pub(crate) fn post_move_hook(&self, r: &mut impl AsMut<Runtime>) {
         self.scan_fov(r);
     }
 

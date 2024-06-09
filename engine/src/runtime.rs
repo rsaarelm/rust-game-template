@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::Result;
 use content::{Data, Environs, Voxel, World};
 use rand::SeedableRng;
@@ -87,21 +89,62 @@ impl Runtime {
         }
     }
 
-    pub fn spawn(&mut self, spawn: &content::Spawn) -> Entity {
-        match spawn {
-            content::Spawn::Monster(name, data) => data.build(self, name),
-            content::Spawn::Item(name, data) => data.build(self, name),
+    /// Spawn a single pod object.
+    ///
+    /// Since objects specify counts but the entity type might not be
+    /// stackable, this can still produce multiple entities, so it returns a
+    /// vector.
+    fn spawn_object(&mut self, object: &content::PodObject) -> Vec<Entity> {
+        // Build the base entity before multiplication.
+        let entity = match &object.kind {
+            content::PodKind::Monster(data) => data.build(self, &object.name),
+            content::PodKind::Item(data) => data.build(self, &object.name),
+        };
+
+        let mut ret = vec![entity];
+
+        if object.count > 1 {
+            if entity.can_stack_with(self, &entity) {
+                // It's stackable, just set the multiple and we're done.
+                entity.set(self, Count(object.count));
+            } else {
+                // Otherwise we make a bunch of cloned entities.
+                for _ in 1..object.count {
+                    ret.push(entity.spawn_clone(self));
+                }
+            }
         }
+
+        ret
     }
 
     pub fn spawn_at(
         &mut self,
-        spawn: &content::Spawn,
+        pod: &content::Pod,
         place: impl Into<Place>,
-    ) -> Entity {
-        let e = self.spawn(spawn);
-        e.place(self, e.open_placement_spot(self, place));
-        e
+    ) -> Vec<Entity> {
+        let place = place.into();
+
+        let mut ret = Vec::new();
+        for ((o,), contents) in pod.deref() {
+            let es = self.spawn_object(o);
+
+            for e in es {
+                // Recursively generate contents.
+                let contents = self.spawn_at(contents, e);
+
+                // Autoequip contents in order for mobs.
+                if e.is_mob(self) {
+                    for i in contents {
+                        e.make_equipped(self, &i);
+                    }
+                }
+
+                e.place(self, e.open_placement_spot(self, place));
+                ret.push(e);
+            }
+        }
+        ret
     }
 
     pub fn spawn_raw(&mut self, loadout: impl hecs::DynamicBundle) -> Entity {
@@ -114,31 +157,23 @@ impl Runtime {
             return;
         }
 
-        let player = Entity(self.ecs.spawn((
-            Name("Player".into()),
-            Icon('1'),
-            Speed(4),
-            IsMob(true),
-            IsFriendly(true),
-            Stats {
-                might: 3,
-                hit: 6,
-                ev: 4,
-                dmg: 5,
-            },
-        )));
+        let players = self.spawn_at(&Data::get().loadout, loc);
 
-        self.player = Some(player);
-        player.place(self, loc);
-        let sword = self.wish(player, "sword").unwrap();
-        player.make_equipped(self, &sword);
+        if players.is_empty() {
+            panic!("Loadout does not define any characters");
+        }
 
-        let money = Entity(self.ecs.spawn((
-            Name("silver coin".into()),
-            Icon('$'),
-            Count(123),
-        )));
-        money.place(self, player);
+        for p in players {
+            p.set(self, IsFriendly(true));
+
+            // Set the first creature as the current player.
+            if self.player.is_none() {
+                self.player = Some(p);
+                // XXX: We need to do this again to register the player's
+                // initial FOV.
+                p.post_move_hook(self);
+            }
+        }
     }
 
     pub fn player(&self) -> Option<Entity> {
@@ -245,7 +280,8 @@ impl Runtime {
         place: impl Into<Place>,
         name: &str,
     ) -> Option<Entity> {
-        Some(self.spawn_at(&name.parse().ok()?, place))
+        // TODO Handle wishes that produce multiple entities
+        Some(self.spawn_at(&name.parse().ok()?, place)[0])
     }
 }
 
