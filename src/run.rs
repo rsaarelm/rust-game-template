@@ -84,7 +84,7 @@ pub async fn main_gameplay() {
         // Allows
         if navni::keypress() == "Esc".parse().unwrap() && !game().is_game_over()
         {
-            game().save(&settings().game_id);
+            game().save(&settings().id);
             msg!("Game saved.");
         }
 

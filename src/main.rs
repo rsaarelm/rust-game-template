@@ -47,7 +47,7 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     if args.version {
-        println!("{} version {VERSION}", settings().game_title);
+        println!("{} version {VERSION}", settings().title);
         return Ok(());
     }
 
@@ -74,19 +74,19 @@ fn main() -> anyhow::Result<()> {
 
     content::register_data(idm::transmute(&data)?);
 
-    navni::logger::start(&settings().game_id);
+    navni::logger::start(&settings().id);
 
-    navni::run(&settings().game_id, async move {
+    navni::run(&settings().id, async move {
         ui::init_game();
 
         if args.new_game.is_some() {
             log::info!("New game requested, deleting any existing saves");
-            game().delete_save(&settings().game_id);
+            game().delete_save(&settings().id);
         }
 
         // Restore game or init a new one.
         loop {
-            match game().load(&settings().game_id) {
+            match game().load(&settings().id) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
                     let seed = if let Some(Some(seed)) = args.new_game {
@@ -106,7 +106,7 @@ fn main() -> anyhow::Result<()> {
 
                     msg!(
                         "Welcome to {}, {}!",
-                        settings().game_title,
+                        settings().title,
                         util::user_name()
                     );
                 }
@@ -120,7 +120,7 @@ fn main() -> anyhow::Result<()> {
                     if crate::run::ask("Corrupt save file detected. Delete it?")
                         .await
                     {
-                        game().delete_save(&settings().game_id);
+                        game().delete_save(&settings().id);
                         continue;
                     } else {
                         // Can't load the save file and can't clobber it, exiting
@@ -146,9 +146,9 @@ fn main() -> anyhow::Result<()> {
 
         // Save the game if we exited with the game still running.
         if !game().is_game_over() {
-            game().save(&settings().game_id);
+            game().save(&settings().id);
         } else {
-            game().delete_save(&settings().game_id);
+            game().delete_save(&settings().id);
         }
     });
 

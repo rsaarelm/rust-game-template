@@ -52,9 +52,9 @@ pub struct Data {
 pub struct Settings {
     /// Internal human-readable identifier of the game, used for save
     /// directories etc.
-    pub game_id: String,
+    pub id: String,
     /// Player-visible full title of the game.
-    pub game_title: String,
+    pub title: String,
 }
 
 pub fn settings() -> &'static Settings {
