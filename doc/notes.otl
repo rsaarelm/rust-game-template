@@ -149,6 +149,12 @@ Voxel space guidelines
 		So door voxels should always have a wall voxel above (lintel) and below (threshold) them
 			If either the lintel or the threshold is removed by dynamic terrain change, the door should be removed as well
 
+Look for 2x2 floor squares
+	You can tell something isn't a corridor, slope or stairwell if it has a 2x2 square of floors at even Z level
+	Build an union of these squares to get "room space" where to spawn monsters
+	Look for a Z-level floor to snap to between stairwells by finding at least one 2x2 square on it
+	Snap mapgen corridor endpoints to a _fixed_ lattice of 2x2 cells to get rid of all sorts of corner cases with corridors slicing into each other
+
 Snappy compression
 	Save file data is very low entropy as of 2024-02 so it pays to use lossless compression
 	View compressed saves with `snunzip -ct raw saved.idm.sz`
