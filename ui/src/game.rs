@@ -652,6 +652,26 @@ impl Game {
     pub fn is_game_over(&self) -> bool {
         self.retired
     }
+
+    /// Return a monochrome text screenshot.
+    pub fn screenshot(&self) -> String {
+        let mut ret = String::new();
+        for y in 0..self.s.height() {
+            for x in 0..self.s.width() {
+                let mut c = char::from_u32(
+                    self.s.data()[(x + y * self.s.width()) as usize].c as u32,
+                )
+                .unwrap_or(' ');
+                if c == '\0' {
+                    c = ' ';
+                }
+                ret.push(c);
+            }
+            ret.push('\n');
+        }
+
+        ret
+    }
 }
 
 fn draw_anims(
