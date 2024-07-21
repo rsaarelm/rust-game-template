@@ -57,6 +57,7 @@ setup-envrc:
         echo ".envrc exists" >&2
     fi
 
+# Get latest versions of the JS shim files and minify them.
 generate-minified-js:
     #!/bin/sh
     OUT=$(pwd)/web
@@ -72,6 +73,8 @@ generate-minified-js:
     minify gl.js > $OUT/gl.js
     minify quad-storage.js > $OUT/quad-storage.js
     minify sapp_jsutils.js > $OUT/sapp_jsutils.js
+
+update-dependencies: update-cargo generate-minified-js update-flake
 
 # Make git do automated tests before commit and push
 register-githooks:
