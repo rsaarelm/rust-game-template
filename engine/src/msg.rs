@@ -88,8 +88,10 @@ impl Grammatize for (Noun, Noun) {
 
 #[macro_export]
 macro_rules! msg {
+    // NB. Even the simple cases needs to be wrapped in `format!` in case the
+    // fmt string is doing named variable capture.
     ($fmt:expr) => {
-        $crate::send_msg($crate::Msg::Message($fmt.into()))
+        $crate::send_msg($crate::Msg::Message(format!($fmt)))
     };
 
     ($fmt:expr, $($arg:expr),*) => {
@@ -98,7 +100,8 @@ macro_rules! msg {
     };
 
     ($fmt:expr; $($grammar_arg:expr),*) => {
-        let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), $fmt);
+        let __txt = format!($fmt);
+        let __txt = $crate::Grammatize::format(&($($grammar_arg,)*), &__txt);
         $crate::send_msg($crate::Msg::Message(__txt))
     };
 
