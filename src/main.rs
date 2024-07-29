@@ -84,8 +84,10 @@ fn main() -> anyhow::Result<()> {
             game().delete_save(&settings().id);
         }
 
-        // Restore game or init a new one.
+        let user_name = util::user_name();
+
         loop {
+            // Restore game or init a new one.
             match game().load(&settings().id) {
                 Ok(None) => {
                     // No save file found, initialize a new game.
@@ -104,16 +106,21 @@ fn main() -> anyhow::Result<()> {
 
                     game().r = Runtime::new(seed).unwrap();
 
-                    msg!(
-                        "Welcome to {}, {}!",
-                        settings().title,
-                        util::user_name()
-                    );
+                    if user_name == "Unknown" {
+                        msg!("Welcome to {}!", settings().title);
+                    } else {
+                        msg!("Welcome to {}, {user_name}!", settings().title);
+                    }
                 }
                 Ok(Some(save)) => {
                     // Load the save.
                     game().replace_runtime(save);
-                    msg!("Welcome back, {}!", util::user_name());
+
+                    if user_name == "Unknown" {
+                        msg!("Welcome back!");
+                    } else {
+                        msg!("Welcome back, {user_name}!");
+                    }
                 }
                 Err(_) => {
                     game().draw().await;
