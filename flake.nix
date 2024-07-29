@@ -54,7 +54,7 @@
         };
 
         libPath = with pkgs;
-          lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi alsa-lib ];
+          lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi libxkbcommon alsa-lib ];
 
       in rec {
         defaultPackage = packages.${pname};
@@ -116,7 +116,7 @@
         packages."${pname}-win" =
           naerskBuildPackage "x86_64-pc-windows-gnu" {
             src = ./.;
-            # FIXME: Unit test running doensn't work
+            # FIXME: Unit test running doesn't work in cross-compile build
             #doCheck = true;
             strictDeps = true;
 
@@ -147,6 +147,7 @@
             libGL
             xorg.libX11
             xorg.libXi
+            libxkbcommon
             alsa-lib
 
             # JS minifier
