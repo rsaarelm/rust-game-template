@@ -6,6 +6,7 @@ description = "Base project for game development"
 keywords = ["gamedev"]
 license = "GPL3"
 edition = "2021"
+rust-version = "1.80"
 build = "build.rs"
 
 [features]
