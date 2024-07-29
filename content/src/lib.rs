@@ -1,5 +1,3 @@
-#![feature(int_roundings)]
-
 mod atlas;
 pub use atlas::{Atlas, AtlasKey, BitAtlas};
 

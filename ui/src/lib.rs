@@ -1,5 +1,4 @@
 //! Game user interface machinery
-#![feature(int_roundings)]
 
 pub mod prelude {
     use navni::prelude::*;

@@ -505,7 +505,7 @@ pub(crate) fn snap_stairwell_position(loc: Location) -> Location {
 
     // Use location sector for parity, alternate valid squares for every other
     // sector, and snap to the position.
-    snap_to_chessboard3(loc.z.div_floor(LEVEL_DEPTH), &bounds, loc.truncate())
+    snap_to_chessboard3(loc.z.div_euclid(LEVEL_DEPTH), &bounds, loc.truncate())
         .extend(loc.z)
 }
 
@@ -532,7 +532,7 @@ fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
     // Figure out the chessboard color the point falls.
     let origin = v2(bounds.min());
     let tile = pos - origin;
-    let color = (tile.x.div_floor(N) + tile.y.div_floor(N)).rem_euclid(2);
+    let color = (tile.x.div_euclid(N) + tile.y.div_euclid(N)).rem_euclid(2);
 
     // Displace it to the next square over if it falls on the wrong pos for
     // the current parity.
@@ -546,8 +546,8 @@ fn snap_to_chessboard3(parity: i32, bounds: &Rect, pos: IVec2) -> IVec2 {
     let tile = adjusted_pos - origin;
     let adjusted_pos = origin
         + ivec2(
-            tile.x.div_floor(N) * N + N / 2,
-            tile.y.div_floor(N) * N + N / 2,
+            tile.x.div_euclid(N) * N + N / 2,
+            tile.y.div_euclid(N) * N + N / 2,
         );
 
     // Finally wrap it to the bounds of the chessboard and we're done.

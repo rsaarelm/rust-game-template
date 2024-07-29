@@ -211,8 +211,8 @@ impl Coordinates for Location {
 
     fn sector_snap_2d(&self) -> Self {
         ivec3(
-            self.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
-            self.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
+            self.x.div_euclid(SECTOR_WIDTH) * SECTOR_WIDTH,
+            self.y.div_euclid(SECTOR_HEIGHT) * SECTOR_HEIGHT,
             self.z,
         )
     }

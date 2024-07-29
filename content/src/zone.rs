@@ -88,8 +88,8 @@ pub trait Zone: Neighbors3D + Clone + Sized {
 impl Zone for Cube {
     fn sector_from(loc: Location) -> Self {
         let origin = ivec3(
-            loc.x.div_floor(SECTOR_WIDTH) * SECTOR_WIDTH,
-            loc.y.div_floor(SECTOR_HEIGHT) * SECTOR_HEIGHT,
+            loc.x.div_euclid(SECTOR_WIDTH) * SECTOR_WIDTH,
+            loc.y.div_euclid(SECTOR_HEIGHT) * SECTOR_HEIGHT,
             loc.z,
         );
 

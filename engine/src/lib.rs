@@ -1,5 +1,4 @@
 //! Game logic layer machinery.
-#![feature(int_roundings)]
 
 /// How far can the player see.
 pub const FOV_RADIUS: i32 = 10;

@@ -76,7 +76,7 @@ impl SectorView {
     /// the right" convention for the tiles.
     pub fn unproject_1(&self, pos: impl Into<IVec2>) -> Location {
         let mut pos = pos.into().extend(0) + self.0;
-        pos.x = pos.x.div_floor(2);
+        pos.x = pos.x.div_euclid(2);
         pos
     }
 

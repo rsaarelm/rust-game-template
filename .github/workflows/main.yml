@@ -12,12 +12,12 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           target: wasm32-unknown-unknown
           override: true
       - name: Build and deploy WASM binary
         run: |
-          cargo +nightly build --target=wasm32-unknown-unknown --profile=release-lto
+          cargo build --target=wasm32-unknown-unknown --profile=release-lto
           cp target/wasm32-unknown-unknown/release-lto/gametemplate.wasm web/
       - name: Publish static website
         env:
