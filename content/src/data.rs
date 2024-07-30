@@ -90,7 +90,7 @@ impl Data {
     PartialEq,
     Ord,
     PartialOrd,
-    Deserialize,
+    DeserializeFromStr,
     Serialize,
 )]
 pub struct Pod(Vec<((PodObject,), Pod)>);
@@ -109,11 +109,17 @@ impl FromStr for Pod {
     type Err = idm::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.chars().any(|c| c == '\n') {
-            // Hack, IDM goes into different mode without trailing newline.
-            idm::from_str(&format!("{s}\n"))
+        // XXX Need to hack around IDM here so newline-less single line items
+        // can still work as pods.
+        if s.trim().is_empty() {
+            Ok(Default::default())
+        } else if !s.chars().any(|c| c == '\n') {
+            // Parse the insides using standard IDM routine, be sure to wrap
+            // it in Pod outside of the IDM parse so that we don't just get an
+            // infinite recursion to the from_str wrapper.
+            Ok(Pod(idm::from_str(&format!("{s}\n"))?))
         } else {
-            idm::from_str(s)
+            Ok(Pod(idm::from_str(s)?))
         }
     }
 }
