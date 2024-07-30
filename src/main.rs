@@ -26,7 +26,7 @@ struct Args {
 
     /// Load game data from a given path instead of using default data.
     #[arg(long, value_name = "PATH")]
-    gamedata: Option<PathBuf>,
+    data_dir: Option<PathBuf>,
 
     /// Comma-separarted list of mod files to apply
     #[arg(
@@ -57,8 +57,8 @@ fn main() -> anyhow::Result<()> {
         mods.push(md);
     }
 
-    let mut data: Outline = if let Some(gamedata) = args.gamedata.as_ref() {
-        let data = util::dir_to_idm(gamedata)?.to_string();
+    let mut data: Outline = if let Some(data_dir) = args.data_dir.as_ref() {
+        let data = util::dir_to_idm(data_dir)?.to_string();
         eprint!("{data}");
         idm::from_str(&data)?
     } else {
