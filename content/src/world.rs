@@ -5,7 +5,7 @@ use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{a3, text, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo};
+use util::{a3, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo};
 
 use crate::{
     data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
@@ -227,11 +227,8 @@ fn build_skeleton(
     // surrounding the valid sector area at this point. Probably simpler to
     // just leave a dungeon-less rim of regions on the map though.
 
-    for (p, c) in text::char_grid(&scenario.map) {
-        let Some(slice) = scenario.legend.get(&c) else {
-            bail!("Unknown overworld char {c:?}");
-        };
-
+    let regions = scenario.regions()?;
+    for (p, slice) in regions {
         let mut branch = IndexMap::default();
         unfold(seed, p.extend(0), &mut branch, &mut existing_shafts, slice)?;
 

@@ -28,6 +28,9 @@ use util::{text, HashMap, HashSet};
 //
 // XXX: Above-ground must have at least one initial non-'_' tile to show up in
 // Tiled export.
+//
+// You need to have mapedit-tiles.png available in the directory of the
+// exported Tiled json file.
 
 const TILE_W: u32 = 8;
 const TILE_H: u32 = 8;
@@ -60,20 +63,21 @@ fn extract(path: &Path) -> Result<()> {
 
     let mut cells = Vec::new();
 
-    // In case the scenario overworld reuses a letter with maps attached to it,
+    // In case the scenario overworld reuses a region with maps attached to it,
     // only extract the first instance of it. This makes it unambiguous which
     // part of the Tiled file must be edited to propagate the changes back.
     let mut seen_regions = HashSet::default();
 
-    for (p, c) in text::char_grid(&scenario.map) {
-        if seen_regions.contains(&c) {
+    let regions = scenario.indexed_map()?;
+    for (p, idx) in regions {
+        if seen_regions.contains(&idx) {
             continue;
         }
-        seen_regions.insert(c);
+        seen_regions.insert(idx);
+
         let p = p * ivec2(SECTOR_WIDTH, SECTOR_HEIGHT);
 
-        let (overground, underground) =
-            extract_maps(scenario.legend[&c].as_ref());
+        let (overground, underground) = extract_maps(&scenario.legend[idx].1);
         for (z, map) in overground
             .iter()
             .enumerate()
@@ -121,15 +125,15 @@ fn inject(path: &Path) -> Result<()> {
 
     let mut seen_regions = HashSet::default();
 
-    for (p, c) in text::char_grid(&scenario.map) {
-        if seen_regions.contains(&c) {
+    let regions = scenario.indexed_map()?;
+    for (p, idx) in regions {
+        if seen_regions.contains(&idx) {
             continue;
         }
-        seen_regions.insert(c);
+        seen_regions.insert(idx);
         let p = p * ivec2(SECTOR_WIDTH, SECTOR_HEIGHT);
 
-        let (overground, underground) =
-            extract_maps(scenario.legend[&c].as_ref());
+        let (overground, underground) = extract_maps(&scenario.legend[idx].1);
 
         let mut new_overground = Vec::new();
         for (z, old_map) in overground
@@ -187,7 +191,7 @@ fn inject(path: &Path) -> Result<()> {
         new_underground.reverse();
 
         inject_maps(
-            scenario.legend[&c].as_mut(),
+            scenario.legend[idx].1.as_mut(),
             new_overground,
             new_underground,
         );

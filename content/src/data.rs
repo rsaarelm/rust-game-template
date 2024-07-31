@@ -2,13 +2,13 @@ use std::{
     collections::BTreeMap, fmt, path::Path, str::FromStr, sync::OnceLock,
 };
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use derive_more::{Deref, From};
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::EnumIter;
-use util::{HashMap, IndexMap, LazyRes, _String};
+use util::{HashMap, IndexMap, LazyRes, _String, text};
 
 use crate::SectorMap;
 
@@ -249,11 +249,55 @@ impl SpawnDist for PodKind {
     }
 }
 
+/// Serialized toplevel world structure.
+///
+/// Legend maps letters from `map` to `Region` stacks. The same letter can
+/// repeat in the legend, this means that when the map is iterated in scanline
+/// order, subsequent legend items are returned cyclically when the legend's
+/// letter repeats. If there are four values for `A` in legend, a cluster of
+/// four `A`s in map will be expanded into a complex region specified by the
+/// four legend values.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Scenario {
     pub map: String,
-    pub legend: IndexMap<char, Vec<Region>>,
+    pub legend: Vec<(char, Vec<Region>)>,
+}
+
+impl Scenario {
+    /// Convert map into indices to legend vec.
+    pub fn indexed_map(&self) -> anyhow::Result<HashMap<IVec2, usize>> {
+        let mut ret: HashMap<IVec2, usize> = Default::default();
+
+        let mut letter_indices: HashMap<char, Vec<usize>> = Default::default();
+
+        for (i, (c, _)) in self.legend.iter().enumerate() {
+            letter_indices.entry(*c).or_default().push(i);
+        }
+
+        // Keep track of how many times a letter was seen in map.
+        let mut letter_counts: HashMap<char, usize> = Default::default();
+        for (p, c) in text::char_grid(&self.map) {
+            let indices = letter_indices
+                .get(&c)
+                .ok_or_else(|| anyhow!("Char {c} not in legend"))?;
+
+            let n = *letter_counts.entry(c).or_default();
+            letter_counts.insert(c, n + 1);
+
+            ret.insert(p, indices[n % indices.len()]);
+        }
+
+        Ok(ret)
+    }
+
+    pub fn regions(&self) -> anyhow::Result<HashMap<IVec2, &'_ [Region]>> {
+        let indexes = self.indexed_map()?;
+        Ok(indexes
+            .iter()
+            .map(|(&p, &i)| (p, self.legend[i].1.as_ref()))
+            .collect())
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
