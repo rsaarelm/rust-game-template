@@ -59,7 +59,6 @@ fn main() -> anyhow::Result<()> {
 
     let mut data: Outline = if let Some(data_dir) = args.data_dir.as_ref() {
         let data = util::dir_to_idm(data_dir)?.to_string();
-        eprint!("{data}");
         idm::from_str(&data)?
     } else {
         let data = snap::raw::Decoder::new()
