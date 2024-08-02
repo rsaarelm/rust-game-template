@@ -261,7 +261,7 @@ impl SpawnDist for PodKind {
 #[serde(default)]
 pub struct Scenario {
     pub map: String,
-    pub legend: Vec<(char, Vec<Region>)>,
+    pub legend: Vec<((char,), Vec<Region>)>,
 }
 
 impl Scenario {
@@ -271,7 +271,7 @@ impl Scenario {
 
         let mut letter_indices: HashMap<char, Vec<usize>> = Default::default();
 
-        for (i, (c, _)) in self.legend.iter().enumerate() {
+        for (i, ((c,), _)) in self.legend.iter().enumerate() {
             letter_indices.entry(*c).or_default().push(i);
         }
 
