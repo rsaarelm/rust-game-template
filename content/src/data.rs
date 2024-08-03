@@ -261,6 +261,9 @@ impl SpawnDist for PodKind {
 #[serde(default)]
 pub struct Scenario {
     pub map: String,
+    // XXX: Using the IDM raw mode tuple wrapper for the character to make the
+    // legend serialize with a nice layout when using the tiled-export tool to
+    // modify and reserialize scenario data.
     pub legend: Vec<((char,), Vec<Region>)>,
 }
 

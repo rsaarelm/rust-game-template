@@ -39,6 +39,14 @@ profile-release *ARGS:
     perf record -- ./target/x86_64-unknown-linux-gnu/release/{{pname}} {{ARGS}}
     hotspot ./perf.data
 
+# Extract Tiled JSON map from IDM map.
+extract-idm-map idm-map:
+    cargo run --example tiled-export -- extract {{idm-map}}
+
+# Inject changes from JSON map back into IDM map.
+inject-json-map json-map:
+    cargo run --example tiled-export -- inject {{json-map}}
+
 # Update pinned nix flake programs.
 update-flake:
     rm -rf .direnv/
