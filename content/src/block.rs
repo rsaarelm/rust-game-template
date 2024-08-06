@@ -71,10 +71,10 @@ impl TryFrom<char> for Block {
             '*' => Ok(Stone),
             '§' => Ok(SplatteredRock),
             ';' => Ok(Grass),
-            '+' => Ok(Glass),
+            '|' => Ok(Glass),
             '%' => Ok(Rubble),
 
-            '|' => Ok(Door),
+            '+' => Ok(Door),
 
             '~' => Ok(Water),
             '&' => Ok(Magma),
@@ -90,10 +90,10 @@ impl From<Block> for char {
             Stone => '*',
             SplatteredRock => '§',
             Grass => ';',
-            Glass => '+',
+            Glass => '|',
             Rubble => '%',
 
-            Door => '|',
+            Door => '+',
 
             Water => '~',
             Magma => '&',
