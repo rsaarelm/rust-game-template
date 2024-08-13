@@ -7,7 +7,7 @@ description = "Game display and user interface"
 [dependencies]
 anyhow = "1"
 content = { path = "../content" }
-derive_more = "0.99"
+derive_more = "1"
 engine = { path = "../engine" }
 gfx = { path = "../gfx" }
 glam = { version = "0.28", features = ["serde"] }

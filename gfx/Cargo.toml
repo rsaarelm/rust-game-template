@@ -8,7 +8,7 @@ description = "Graphics and user interface primitives"
 [dependencies]
 util = { path = "../util" }
 
-derive_more = "0.99"
+derive_more = "1"
 glam = { version = "0.28", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 itertools = "0.13"
