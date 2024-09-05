@@ -164,7 +164,7 @@ where
     pub fn intersecting<'a>(
         &'a self,
         bounds: &'a AxisBox<T, N>,
-    ) -> impl Iterator<Item = (usize, &U)> {
+    ) -> impl Iterator<Item = (usize, &'a U)> {
         let mut seen = HashSet::default();
         bounds
             .intersecting_lattice(self.cell)
