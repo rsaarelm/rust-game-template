@@ -12,16 +12,15 @@ The WASM build should be playable in browser at
 ## Instructions
 
 Install the [Rust compiler toolchain](https://www.rust-lang.org/tools/install)
-and call `rustup install nightly` to install the nightly version of the
-compiler.
+and call `rustup install` to install the compiler.
 
 Build and run the desktop GUI version:
 
-    cargo +nightly --release run
+    cargo --release run
 
 Build and run the TTY terminal version:
 
-    cargo +nightly --release --no-default-features --features=tty run
+    cargo --release --no-default-features --features=tty run
 
 If you're using NixOS, you can run `nix develop` in the project directory to
 enter a development shell and then call `just run` or `just run-tty`.

@@ -1,4 +1,3 @@
-#![feature(int_roundings)]
 use std::{
     fs,
     path::{Path, PathBuf},

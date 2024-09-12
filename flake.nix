@@ -15,16 +15,16 @@
 
         toolchain = with fenix.packages.${system};
           combine [
-            minimal.rustc
-            minimal.cargo
-            complete.clippy
-            complete.rust-analyzer
-            complete.rust-src
-            complete.rustfmt
+            stable.rustc
+            stable.cargo
+            stable.clippy
+            stable.rust-analyzer
+            stable.rust-src
+            stable.rustfmt
 
-            targets.x86_64-unknown-linux-gnu.latest.rust-std
-            targets.wasm32-unknown-unknown.latest.rust-std
-            targets.x86_64-pc-windows-gnu.latest.rust-std
+            targets.x86_64-unknown-linux-gnu.stable.rust-std
+            targets.wasm32-unknown-unknown.stable.rust-std
+            targets.x86_64-pc-windows-gnu.stable.rust-std
           ];
 
         naersk' = naersk.lib.${system}.override {
