@@ -68,7 +68,7 @@ pub trait RuntimeCoordinates: Coordinates {
         self.entities_at(r).find(|e| e.is_item(r))
     }
 
-    /// Create a printable description of interesting features at location.
+    /// Create a printable description of interesting objects at location.
     fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
         let mut ret = String::new();
         if let Some(mob) = self.mob_at(r) {
@@ -84,6 +84,25 @@ pub trait RuntimeCoordinates: Coordinates {
             None
         }
         // Add more stuff here as needed.
+    }
+
+    /// Return printable ambient description when player is standing at
+    /// location.
+    fn ambient_description(
+        &self,
+        r: &impl AsRef<Runtime>,
+    ) -> Option<&'static str> {
+        let r = r.as_ref();
+
+        // Look for altar.
+        for d in s4::DIR {
+            let loc_2 = *self + d.extend(0);
+            if loc_2.voxel(r) == Some(Block::Altar) {
+                return Some("You stand next to an ancient stone altar.");
+            }
+        }
+
+        None
     }
 
     /// Description for the general area of the location.

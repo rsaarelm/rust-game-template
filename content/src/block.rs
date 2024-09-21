@@ -42,6 +42,7 @@ pub enum Block {
     /// Rough, unworked mass, drawn as undifferentiated blob.
     Rubble,
 
+    Altar,
     Door,
 
     Water,
@@ -74,6 +75,7 @@ impl TryFrom<char> for Block {
             '|' => Ok(Glass),
             '%' => Ok(Rubble),
 
+            '=' => Ok(Altar),
             '+' => Ok(Door),
 
             '~' => Ok(Water),
@@ -93,6 +95,7 @@ impl From<Block> for char {
             Glass => '|',
             Rubble => '%',
 
+            Altar => '=',
             Door => '+',
 
             Water => '~',

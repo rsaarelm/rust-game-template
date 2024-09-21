@@ -146,8 +146,12 @@ pub trait Coordinates:
     /// If the result is empty, this location should be treated as an opaque
     /// tile in terms of FoV.
     fn transparent_volume<'a>(&'a self, r: &'a impl Environs) -> Vec<Self> {
-        let is_transparent =
-            |loc: &Self| matches!(loc.voxel(r), None | Some(Block::Glass));
+        let is_transparent = |loc: &Self| {
+            matches!(
+                loc.voxel(r),
+                None | Some(Block::Altar) | Some(Block::Glass)
+            )
+        };
 
         let mut ret = Vec::new();
         if is_transparent(&self.above()) {

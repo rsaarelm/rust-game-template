@@ -242,13 +242,14 @@ impl DisplayTile {
                     },
                     loc,
                 ) {
-                    let tileset = match block {
+                    let tileset: &dyn Wallform = match block {
                         Door => &CROSSED,
                         Glass => &SINGLE_LINE,
-                        Rubble => &ROUGH,
+                        Rubble => &'%',
+                        Altar => &'=',
                         _ => &DOUBLE_LINE,
                     };
-                    c0 = CharCell::c(tileset[mask]);
+                    c0 = CharCell::c(tileset.idx(mask));
 
                     let connect_right = (mask & 0b10) != 0;
                     if connect_right {
@@ -256,12 +257,13 @@ impl DisplayTile {
                         // doors don't.
                         //
                         // Rough tiles make rough lines.
-                        let tileset_2 = match right {
+                        let tileset_2: &dyn Wallform = match right {
                             Wall(Glass) if block == Glass => &SINGLE_LINE,
-                            Wall(Rubble) if block == Rubble => &ROUGH,
+                            Wall(Rubble) if block == Rubble => &'%',
+                            Wall(Altar) if block == Altar => &'=',
                             _ => &DOUBLE_LINE,
                         };
-                        c1 = CharCell::c(tileset_2[0b10]);
+                        c1 = CharCell::c(tileset_2.idx(0b10));
                     }
                 }
             }
@@ -320,7 +322,7 @@ fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
                 CharCell::c(' ')
             }
         }
-        Stone | Glass | Door | Grass | Rubble => CharCell::c(' '),
+        Stone | Glass | Altar | Door | Grass | Rubble => CharCell::c(' '),
         SplatteredRock => CharCell::c(match rng.gen_range(0..=10) {
             d if d < 4 => ',',
             d if d < 7 => '\'',
@@ -335,6 +337,24 @@ fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
         Magma => CharCell::c(if is_center { '~' } else { ' ' })
             .col(X::MAROON)
             .inv(),
+    }
+}
+
+trait Wallform {
+    fn idx(&self, i: usize) -> char;
+}
+
+// Sample from the array using bitmask if using array.
+impl Wallform for [char; 16] {
+    fn idx(&self, i: usize) -> char {
+        self[i]
+    }
+}
+
+// Show the same char for all connections if using single char.
+impl Wallform for char {
+    fn idx(&self, _: usize) -> char {
+        *self
     }
 }
 
@@ -360,13 +380,6 @@ const DOUBLE_LINE: [char; 16] = [
 const CROSSED: [char; 16] = [
     '╫', '╫', '╪', '+', '╫', '╫', '+', '+',
     '╪', '+', '╪', '+', '+', '+', '+', '+',
-];
-
-/// Rock, foliage etc. show up as unshaped mass.
-#[rustfmt::skip]
-const ROUGH: [char; 16] = [
-    '%', '%', '%', '%', '%', '%', '%', '%',
-    '%', '%', '%', '%', '%', '%', '%', '%',
 ];
 
 // ▲▶▼◀
