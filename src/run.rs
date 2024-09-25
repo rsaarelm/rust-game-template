@@ -78,6 +78,18 @@ pub async fn main_gameplay() {
             writeln!(cur, "{m}");
         }
 
+        // Print ambient message to bottom of view.
+        if let Some(desc) = game()
+            .current_active()
+            .and_then(|p| p.loc(game()))
+            .and_then(|loc| loc.ambient_description(game()))
+        {
+            if !desc.is_empty() {
+                let mut cur = Cursor::new(main.split_bottom(1).0);
+                writeln!(cur, "{desc}");
+            }
+        }
+
         if let Some(side_action) = side_action {
             game().process_action(side_action);
         }
