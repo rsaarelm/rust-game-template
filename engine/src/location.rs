@@ -98,7 +98,7 @@ pub trait RuntimeCoordinates: Coordinates {
         for d in s4::DIR {
             let loc_2 = *self + d.extend(0);
             if loc_2.voxel(r) == Some(Block::Altar) {
-                return Some("You stand next to an ancient stone altar.");
+                return Some("An ancient stone altar stands here.");
             }
         }
 
