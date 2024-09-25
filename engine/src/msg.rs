@@ -84,8 +84,6 @@ impl Grammatize for (Noun, Noun) {
     }
 }
 
-// TODO: Figure out how to make msg!("{variable}") formatting work
-
 #[macro_export]
 macro_rules! msg {
     // NB. Even the simple cases needs to be wrapped in `format!` in case the

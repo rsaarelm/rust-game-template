@@ -51,7 +51,9 @@ pub async fn main_gameplay() {
                     // Clear path when hovering over a friendly mob, clicks
                     // have different function then, otherwise try pathing to
                     // cell.
-                    let cursor_on_friendly = matches!(loc.mob_at(game()), Some(npc) if npc.is_player_aligned(game()));
+                    let cursor_on_friendly = matches!(
+                        loc.mob_at(game()),
+                        Some(npc) if npc.is_player_aligned(game()));
                     if cursor_on_friendly {
                         game().planned_path.clear();
                     } else {

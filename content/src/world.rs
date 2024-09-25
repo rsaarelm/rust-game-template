@@ -27,6 +27,11 @@ struct SerWorld {
     scenario: Scenario,
 }
 
+/// Overall runtime game world data.
+///
+/// Contains compact essential and mutable information that is serialized in
+/// savefiles in the `inner` field and cached data computed from the game
+/// scenario in other fields.
 #[derive(Default, Deserialize)]
 #[serde(try_from = "SerWorld")]
 pub struct World {
@@ -58,8 +63,10 @@ pub struct World {
     /// Built from scenario.
     skeleton: HashMap<Level, Segment>,
 
+    /// Memory of which sectors have been generated.
     gen_status: HashMap<Level, GenStatus>,
 
+    /// Where the player enters the world.
     player_entrance: Location,
 }
 
