@@ -357,6 +357,13 @@ impl Coordinates for Location {
                 r.set_voxel(*self, Some(Rubble));
                 r.set_voxel(self.below(), Some(Rubble));
             }
+            '=' => {
+                // Always create ceiling above altar so player can't walk on
+                // top of the altar.
+                r.set_voxel(self.above(), Some(Stone));
+                r.set_voxel(*self, Some(Altar));
+                r.set_voxel(self.below(), Some(Stone));
+            }
             '+' => {
                 r.set_voxel(self.above(), Some(Stone));
                 r.set_voxel(*self, Some(Door));
