@@ -18,11 +18,16 @@ pub mod anim;
 mod backdrop;
 pub use backdrop::Backdrop;
 
+mod camp_menu;
+
 mod command;
 use command::Command;
 
 mod cursor;
 pub use cursor::Cursor;
+
+mod dialog;
+pub use dialog::ask;
 
 mod game;
 pub use game::{game, init_game, Game};

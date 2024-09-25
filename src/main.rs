@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use content::settings;
 use engine::prelude::*;
-use ui::game;
+use ui::{ask, game};
 use util::{IncrementalOutline, Outline, Silo};
 use version::VERSION;
 
@@ -123,9 +123,7 @@ fn main() -> anyhow::Result<()> {
                 }
                 Err(_) => {
                     game().draw().await;
-                    if crate::run::ask("Corrupt save file detected. Delete it?")
-                        .await
-                    {
+                    if ask("Corrupt save file detected. Delete it?").await {
                         game().delete_save(&settings().id);
                         continue;
                     } else {

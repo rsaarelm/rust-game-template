@@ -39,6 +39,9 @@ pub enum Msg {
     /// Lists the exposed locations and how far they are from the start of the
     /// exposure event.
     MagicMap(Vec<(Location, usize)>),
+
+    /// Altar was activated, run client-side altar menu.
+    ActivatedAltar(Location),
 }
 
 static RCV: LazyLock<Mutex<Option<Sender<Msg>>>> =

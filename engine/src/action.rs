@@ -1,6 +1,6 @@
 //! Entities doing things
 
-use content::{EquippedAt, Power};
+use content::{Block, EquippedAt, Power};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 use util::{s4, RngExt};
@@ -49,7 +49,19 @@ impl Entity {
         match action {
             Pass => self.pass(r, is_direct),
             Bump(dir) => {
-                self.attack_step(r, modified_dir(dir), is_direct);
+                let dir = modified_dir(dir);
+                let succeeded = self.attack_step(r, dir, is_direct);
+
+                if !succeeded && self.is_player(r) {
+                    // Player bumps into altar, request altar menu.
+                    if let Some(loc) =
+                        self.loc(r).map(|loc| loc + dir.extend(0))
+                    {
+                        if loc.voxel(r) == Some(Block::Altar) {
+                            send_msg(Msg::ActivatedAltar(loc));
+                        }
+                    }
+                }
             }
             Shoot(dir) => {
                 self.shoot(r, modified_dir(dir));

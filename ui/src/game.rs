@@ -5,7 +5,7 @@ use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
 
-use crate::{anim, prelude::*, Command, InputMap, SectorView};
+use crate::{anim, camp_menu::camp, prelude::*, Command, InputMap, SectorView};
 
 // Maximum GUI terminal size.
 // Get just about to a size where a whole sector fits on map screen.
@@ -113,7 +113,7 @@ impl Game {
         }
     }
 
-    pub fn tick(&mut self) {
+    pub async fn tick(&mut self) {
         // Clear the dead from selection.
         for i in (0..self.selection.len()).rev() {
             if !self.selection[i].is_alive(self) {
@@ -210,6 +210,11 @@ impl Game {
                             },
                         ));
                     }
+                }
+                ActivatedAltar(_loc) => {
+                    let op = camp().await;
+                    // TODO Do stuff based on action at altar.
+                    msg!("Altar op {op:?}");
                 }
             }
         }

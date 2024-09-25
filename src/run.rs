@@ -1,9 +1,9 @@
-use std::{borrow::Cow, fmt::Write};
+use std::fmt::Write;
 
 use content::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use navni::X256Color as X;
-use ui::{prelude::*, ConfirmationDialog};
+use ui::{ask, prelude::*};
 use util::writeln;
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 
 pub async fn main_gameplay() {
     loop {
-        game().tick();
+        game().tick().await;
         game().draw().await;
 
         let mut win = Window::root();
@@ -94,10 +94,11 @@ pub async fn main_gameplay() {
             game().process_action(side_action);
         }
 
-        // Hack: Explicitly save the game when esc is pressed.
-        // Allows
-        if navni::keypress() == "Esc".parse().unwrap() && !game().is_game_over()
-        {
+        // XXX: Explicitly save the game whenever Esc is pressed.
+        // This is for the WASM build where there's no natural "close
+        // application" event that can be intercepted so no natural point
+        // where to save the game.
+        if navni::keypress().is("Esc") && !game().is_game_over() {
             game().save(&settings().id);
             msg!("Game saved.");
         }
@@ -287,21 +288,4 @@ async fn aim(main: &Window) -> Option<IVec2> {
     }
 
     None
-}
-
-pub async fn ask(msg: impl Into<Cow<'_, str>>) -> bool {
-    let dialog = ConfirmationDialog::new(msg);
-    let mut win = Window::root().center(dialog.preferred_size().unwrap());
-    win.foreground_col = X::BROWN;
-
-    let _backdrop = Backdrop::from(win);
-    loop {
-        if game().draw().await.is_none() {
-            return false;
-        }
-
-        if let Some(ret) = dialog.render(&win) {
-            return ret;
-        }
-    }
 }
