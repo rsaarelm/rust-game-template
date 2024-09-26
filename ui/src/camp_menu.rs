@@ -7,7 +7,6 @@ use crate::{ask, prelude::*};
 
 #[derive(Clone, Debug)]
 pub enum CampAction {
-    Rest,
     LevelUp,
 
     // TODO Spell selection needs list of actually selected
@@ -16,6 +15,8 @@ pub enum CampAction {
 
     /// Bring permakilled enemies around camp back to life for grinding.
     ReviveSpirits,
+
+    Leave,
 }
 
 async fn render(win: &Window) -> Option<CampAction> {
@@ -26,11 +27,6 @@ async fn render(win: &Window) -> Option<CampAction> {
     let mut cur = Cursor::new(win);
 
     let key = navni::keypress();
-
-    if cur.print_button("R)est and heal") || key.is("r") {
-        return Some(Rest);
-    }
-    writeln!(cur);
 
     // TODO: Dim out out the level up option if you don't have enough cash for
     // next level.
@@ -53,26 +49,27 @@ async fn render(win: &Window) -> Option<CampAction> {
         }
     }
     writeln!(cur);
+    writeln!(cur);
+
+    if cur.print_button("Esc) Leave") || key.is("Esc") {
+        return Some(Leave);
+    }
+    writeln!(cur);
 
     None
 }
 
-pub async fn camp() -> Option<CampAction> {
+pub async fn camp() -> CampAction {
     let mut win = Window::root();
-    win.foreground_col = X::FOREGROUND;
+    win.foreground_col = X::BROWN;
 
     loop {
         if game().draw().await.is_none() {
-            return None;
+            return CampAction::Leave;
         }
 
         if let Some(ret) = render(&win).await {
-            return Some(ret);
-        }
-
-        if navni::keypress().is("Esc") {
-            break;
+            return ret;
         }
     }
-    None
 }

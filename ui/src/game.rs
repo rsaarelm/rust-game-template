@@ -212,9 +212,30 @@ impl Game {
                     }
                 }
                 ActivatedAltar(_loc) => {
+                    use crate::camp_menu::CampAction::*;
+
                     let op = camp().await;
-                    // TODO Do stuff based on action at altar.
-                    msg!("Altar op {op:?}");
+
+                    // TODO: Heal player and respawn enemies no matter which
+                    // option was selected
+                    match op {
+                        LevelUp => {
+                            // TODO: Leveling up
+                            msg!("The altar stays silent.");
+                        }
+                        SelectSpells => {
+                            // TODO: Spell selection
+                            msg!("You don't know magic.");
+                        }
+                        ReviveSpirits => {
+                            // TODO: Respawn permakilled enemies around this
+                            // altar
+                            msg!("You don't know this ritual.");
+                        }
+                        Leave => {
+                            msg!("You rest at the altar.");
+                        }
+                    }
                 }
             }
         }
