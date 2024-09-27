@@ -280,7 +280,7 @@ impl Runtime {
 
             p.fully_heal(self);
             p.place_near(self, self.previous_waypoint);
-            msg!("[One] awaken[s] in a familiar place."; p.noun(self));
+            msg!("[One] wake[s] up in a familiar place."; p.noun(self));
         }
     }
 
