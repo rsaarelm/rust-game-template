@@ -52,13 +52,17 @@ impl Entity {
                 let dir = modified_dir(dir);
                 let succeeded = self.attack_step(r, dir, is_direct);
 
-                if !succeeded && self.is_player(r) {
-                    // Player bumps into altar, request altar menu.
+                if !succeeded {
                     if let Some(loc) =
                         self.loc(r).map(|loc| loc + dir.extend(0))
                     {
+                        // Player bumps into altar, request altar menu.
                         if loc.voxel(r) == Some(Block::Altar) {
-                            send_msg(Msg::ActivatedAltar(loc));
+                            if self.is_player(r) {
+                                send_msg(Msg::ActivatedAltar(loc));
+                            } else if self.is_player_aligned(r) {
+                                msg!("The altar does not respond to your minion.");
+                            }
                         }
                     }
                 }
