@@ -3,7 +3,7 @@ use std::fmt::Write;
 use navni::X256Color as X;
 use util::writeln;
 
-use crate::{ask, prelude::*};
+use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub enum CampAction {
@@ -12,9 +12,6 @@ pub enum CampAction {
     // TODO Spell selection needs list of actually selected
     // spells...
     SelectSpells,
-
-    /// Bring permakilled enemies around camp back to life for grinding.
-    ReviveSpirits,
 
     Leave,
 }
@@ -40,13 +37,6 @@ async fn render(win: &Window) -> Option<CampAction> {
     if cur.print_button("Attune s)pells") || key.is("s") {
         // TODO: Submenu function to select spells.
         return Some(SelectSpells);
-    }
-    writeln!(cur);
-
-    if cur.print_button("Re(v)ive spirits") || key.is("v") {
-        if ask("Disturb the restless dead?").await {
-            return Some(ReviveSpirits);
-        }
     }
     writeln!(cur);
     writeln!(cur);

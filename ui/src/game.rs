@@ -227,11 +227,6 @@ impl Game {
                             // TODO: Spell selection
                             msg!("You don't know magic.");
                         }
-                        ReviveSpirits => {
-                            // TODO: Respawn permakilled enemies around this
-                            // altar
-                            msg!("You don't know this ritual.");
-                        }
                         Leave => {
                             msg!("You rest at the altar.");
                         }
