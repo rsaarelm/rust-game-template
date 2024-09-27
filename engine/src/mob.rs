@@ -1,4 +1,5 @@
 //! Entity logic for active creatures.
+use content::Block;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -252,6 +253,89 @@ impl Entity {
 
     pub fn is_confused(&self, r: &impl AsRef<Runtime>) -> bool {
         self.has_buff(r, Buff::Confusion)
+    }
+
+    pub fn max_wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
+        5 + self.get::<Stats>(r).might.max(0) * 5
+    }
+
+    pub fn wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
+        self.get::<Wounds>(r).0
+    }
+
+    pub fn damage(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        perp: Option<Entity>,
+        amount: i32,
+    ) {
+        let r = r.as_mut();
+
+        let mut wounds = self.wounds(r);
+        wounds += amount;
+        self.set(r, Wounds(wounds));
+        if amount > 0 {
+            send_msg(Msg::Hurt(*self));
+        }
+        if wounds >= self.max_wounds(r) {
+            self.die(r, perp);
+        }
+    }
+
+    pub fn die(&self, r: &mut impl AsMut<Runtime>, perp: Option<Entity>) {
+        let r = r.as_mut();
+        if let Some(loc) = self.loc(r) {
+            // Effects.
+            if let Some(perp) = perp {
+                msg!("[One] kill[s] [another]."; perp.noun(r), self.noun(r));
+            } else {
+                msg!("[One] die[s]."; self.noun(r));
+            }
+
+            send_msg(Msg::Death(loc));
+
+            // Ground splatter.
+            let splat: Vec<Location> =
+                r.perturbed_fill_positions(loc).take(6).collect();
+            for loc in splat {
+                if let Some(loc) = loc.ground_voxel(r) {
+                    loc.decorate_block(r, Block::SplatteredRock);
+                }
+            }
+        }
+
+        // TODO: Resolve respawning the whole party on TPK, otherwise zapping
+        // the dead character into limbo and switching to a surviving party
+        // member. The current simpler implementation just respawns the main
+        // player when they die and ignores the followers
+
+        // TODO: Support some sort of delayed animation that shows the player
+        // "dead" over multiple frames before respawning back at the save
+        // point to give proper feedback that the player just died.
+        if r.player == Some(*self) {
+            self.respawn(r);
+            return;
+        }
+
+        if let Some(loc) = self.loc(r) {
+            // Drop stuff on floor.
+            for e in self.contents(r).collect::<Vec<_>>() {
+                e.place_on_open_spot(r, loc);
+            }
+        }
+
+        self.destroy(r);
+
+        if r.player == Some(*self) {
+            // Player entity has died, try to field-promote a minion.
+            let npc = r.live_entities().find(|e| e.is_player_aligned(r));
+            if let Some(npc) = npc {
+                npc.become_player(r);
+            } else {
+                // No minions found, game over.
+                r.player = None;
+            }
+        }
     }
 
     pub fn fully_heal(&self, r: &mut impl AsMut<Runtime>) {
