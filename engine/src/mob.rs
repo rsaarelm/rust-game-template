@@ -3,10 +3,7 @@ use content::Block;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ecs::{
-        ActsNext, Buffs, IsEphemeral, IsMob, Momentum, NumDeaths, Speed, Stats,
-        Wounds,
-    },
+    ecs::{ActsNext, Buffs, IsMob, Momentum, Speed, Stats, Wounds},
     prelude::*,
     PHASES_IN_TURN,
 };
@@ -313,14 +310,14 @@ impl Entity {
         // "dead" over multiple frames before respawning back at the save
         // point to give proper feedback that the player just died.
         if r.player == Some(*self) {
-            self.respawn(r);
+            r.die_respawn();
             return;
         }
 
         if let Some(loc) = self.loc(r) {
             // Drop stuff on floor.
             for e in self.contents(r).collect::<Vec<_>>() {
-                e.place_on_open_spot(r, loc);
+                e.place_near(r, loc);
             }
         }
 
@@ -340,39 +337,6 @@ impl Entity {
 
     pub fn fully_heal(&self, r: &mut impl AsMut<Runtime>) {
         self.set(r, Wounds(0));
-    }
-
-    pub fn respawn(&self, r: &mut impl AsMut<Runtime>) {
-        let r = r.as_mut();
-
-        // Clear out all ephemeral items at respawn. This is the failed corpse
-        // run mechanic, if you can't get your stuff back without dying, it's
-        // gone forever.
-        let ephemerals: Vec<Entity> = r
-            .ecs
-            .query::<&IsEphemeral>()
-            .iter()
-            .map(|(e, _)| Entity(e))
-            .collect();
-
-        for e in ephemerals {
-            if e == *self {
-                log::warn!("Respawning an ephemeral entity.");
-                continue;
-            }
-            e.destroy(r);
-        }
-
-        let num_deaths = self.get::<NumDeaths>(r).0;
-        if num_deaths == 0 {
-            msg!("[One] [is] no longer mortal."; self.noun(r));
-        }
-        self.set(r, NumDeaths(num_deaths + 1));
-
-        self.fully_heal(r);
-
-        msg!("[One] awaken[s] in a familiar place."; self.noun(r));
-        self.place(r, r.world.player_entrance());
     }
 }
 

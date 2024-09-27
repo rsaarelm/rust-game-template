@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use anyhow::Result;
-use content::{Data, Environs, Voxel, World};
+use content::{Data, Environs, Pod, Voxel, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{GameRng, Silo};
@@ -14,9 +14,19 @@ use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 pub struct Runtime {
     now: Instant,
     pub(crate) player: Option<Entity>,
+    // NB. Not necessarily an altar, starts out as the entrance to the world.
+    /// The waypoint where the player last rested at.
+    pub(crate) previous_waypoint: Location,
     pub(crate) fov: Fov,
     pub(crate) ecs: Ecs,
     pub(crate) placement: Placement,
+
+    // NB. Samsara is somewhat redundant with the entity collection in ecs,
+    // but it also features killed entities that no longer exist in live ecs,
+    // so it's implemented as a separate structure.
+    /// Record of mobs that should be respawned indexed by their spawn
+    /// position.
+    pub(crate) samsara: IndexMap<Location, (Entity, Pod)>,
     pub(crate) rng: GameRng,
     pub(crate) world: World,
 }
@@ -39,11 +49,13 @@ impl Default for Runtime {
             // Start time from an above-zero value so that zero time values
             // can work as "unspecified time".
             now: Instant(3600),
-            rng: GameRng::seed_from_u64(0xdeadbeef),
             player: Default::default(),
+            previous_waypoint: Default::default(),
             fov: Default::default(),
             ecs: Default::default(),
             placement: Default::default(),
+            samsara: Default::default(),
+            rng: GameRng::seed_from_u64(0xdeadbeef),
             world: Default::default(),
         }
     }
@@ -57,8 +69,11 @@ impl Runtime {
         )?;
         let rng = util::srng(world.seed());
 
+        let previous_waypoint = world.player_entrance();
+
         let mut ret = Runtime {
             world,
+            previous_waypoint,
             rng,
             ..Default::default()
         };
@@ -203,7 +218,69 @@ impl Runtime {
 
     fn bump_cache_at(&mut self, loc: Location) {
         for (loc, spawn) in self.world.populate_around(loc) {
-            self.spawn_at(&spawn, loc);
+            let entity = self.spawn_at(&spawn, loc);
+
+            // Mobs will respawn when resting, insert them into the cycle of
+            // rebirth.
+            if entity.len() == 1 {
+                let entity = entity[0];
+                if entity.is_mob(self) {
+                    self.samsara.insert(loc, (entity, spawn));
+                }
+            }
+        }
+    }
+
+    /// Respawn enemies.
+    pub(crate) fn respawn_world(&mut self) {
+        for (loc, (e, spawn)) in std::mem::take(&mut self.samsara) {
+            // Destroy the old enemy wandering around.
+            e.destroy(self);
+
+            let entities = self.spawn_at(&spawn, loc);
+            assert!(entities.len() == 1);
+            self.samsara.insert(loc, (entities[0], spawn));
+        }
+    }
+
+    /// The player rests and the world respawns.
+    pub fn rest_respawn(&mut self, waypoint: Location) {
+        self.respawn_world();
+        if let Some(p) = self.player() {
+            p.fully_heal(self);
+        }
+
+        self.previous_waypoint = waypoint;
+    }
+
+    /// The player dies and the world respawns.
+    pub fn die_respawn(&mut self) {
+        // Clear out all ephemeral items at respawn. This is the failed corpse
+        // run mechanic, if you can't get your stuff back without dying, it's
+        // gone forever.
+        let ephemerals: Vec<Entity> = self
+            .ecs
+            .query::<&IsEphemeral>()
+            .iter()
+            .map(|(e, _)| Entity(e))
+            .collect();
+
+        for e in ephemerals {
+            e.destroy(self);
+        }
+
+        self.respawn_world();
+        if let Some(p) = self.player() {
+            // Remind the player of their inadequacy.
+            let num_deaths = p.get::<NumDeaths>(self).0;
+            if num_deaths == 0 {
+                msg!("[One] [is] no longer mortal."; p.noun(self));
+            }
+            p.set(self, NumDeaths(num_deaths + 1));
+
+            p.fully_heal(self);
+            p.place_near(self, self.previous_waypoint);
+            msg!("[One] awaken[s] in a familiar place."; p.noun(self));
         }
     }
 

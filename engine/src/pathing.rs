@@ -238,7 +238,7 @@ impl Entity {
     /// Place an item near `loc`, deviating to avoid similar entities.
     ///
     /// Items will avoid other items, mobs will avoid other mobs.
-    pub fn place_on_open_spot(
+    pub fn place_near(
         &self,
         r: &mut impl AsMut<Runtime>,
         place: impl Into<Place>,

@@ -211,7 +211,7 @@ impl Game {
                         ));
                     }
                 }
-                ActivatedAltar(_loc) => {
+                ActivatedAltar(loc) => {
                     use crate::camp_menu::CampAction::*;
 
                     let op = camp().await;
@@ -236,6 +236,8 @@ impl Game {
                             msg!("You rest at the altar.");
                         }
                     }
+
+                    self.r.rest_respawn(loc);
                 }
             }
         }
