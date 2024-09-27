@@ -47,6 +47,10 @@ extract-idm-map idm-map:
 inject-json-map json-map:
     cargo run --example tiled-export -- inject {{json-map}}
 
+# Display current saved game as plaintext
+show-save:
+    snunzip -ct raw ~/.local/share/gametemplate/saved.idm.sz
+
 # Update pinned nix flake programs.
 update-flake:
     rm -rf .direnv/
