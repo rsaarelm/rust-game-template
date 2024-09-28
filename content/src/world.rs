@@ -102,6 +102,13 @@ enum GenStatus {
 // only specify half of the potential connections, the other halves are found
 // on the opposing segment.
 
+// NB. You can't rely on the connected_ fields in segments for skeleton
+// connectivity analysis. They're there to inform procedural map generators,
+// but if the segment has a prefab map, the prefab can have open connections
+// that aren't reflected in the connection flags. (This may change in the
+// future.) For the time being we'll just assume that segments that are
+// adjacent in the skeleton are always connected.
+
 pub struct Segment {
     pub connected_north: bool,
     pub connected_west: bool,
