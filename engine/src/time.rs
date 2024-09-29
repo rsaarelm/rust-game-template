@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{Runtime, PHASES_IN_TURN};
@@ -37,6 +39,19 @@ impl Instant {
             phase * speed / PHASES_IN_TURN
                 != (phase + 1) * speed / PHASES_IN_TURN
         }
+    }
+}
+
+impl fmt::Display for Instant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.0 > 86400 {
+            write!(f, "{}:", (self.0 / 86400))?; // days
+        }
+        if self.0 > 3600 {
+            write!(f, "{:02}:", (self.0 / 3600) % 86400)?; // hours
+        }
+        // minutes and seconds
+        write!(f, "{:02}:{:02}", (self.0 / 60) % 60, self.0 % 60)
     }
 }
 

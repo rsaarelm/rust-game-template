@@ -175,8 +175,9 @@ impl Widget for StatusPanel {
         writeln!(cur);
         command_help(&mut cur, Cancel, "cancel");
 
-        cur.pos.y = win.height() - 1;
+        cur.pos.y = win.height() - 2;
         cur.pos.x = 0;
+        writeln!(cur, "{}", g.r.now());
         if cur.print_button("retire") {
             actions2.push(Retire);
         }
