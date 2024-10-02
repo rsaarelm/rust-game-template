@@ -34,7 +34,7 @@ impl Cursor {
         };
 
         // Move to next line if line would go past right edge.
-        if self.win.width() - self.pos.x < w {
+        if self.win.width() - self.pos.x < w && self.pos.x > 0 {
             self.pos.x = 0;
             self.pos.y += 1;
         }
