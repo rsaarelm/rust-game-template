@@ -388,11 +388,10 @@ impl Game {
                     if p.is_threatened(&self.r) {
                         // If player is threatened, see if it looks like
                         // you're trying to fight or flee.
-                        let Some(mut planned_path) = self.r.fog_exploring_path(
-                            current_loc,
+                        let Some(mut planned_path) = self.r.find_path(
+                            FogPathing::Explore,
                             current_loc,
                             &destination,
-                            true,
                         ) else {
                             return;
                         };
@@ -743,7 +742,7 @@ impl PlannedPath {
 
         self.posns.clear();
         if let Some(path) =
-            r.fog_exploring_path(orig, orig, &Cube::unit(dest), false)
+            r.find_path(FogPathing::Explore, orig, &Cube::unit(dest))
         {
             self.posns = path;
         }

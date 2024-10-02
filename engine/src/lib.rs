@@ -44,6 +44,7 @@ mod msg;
 pub use msg::{send_msg, Grammatize, Msg, Receiver};
 
 mod pathing;
+pub use pathing::FogPathing;
 
 mod placement;
 pub use placement::Placement;

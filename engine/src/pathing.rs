@@ -1,9 +1,24 @@
-use content::{Cube, Zone};
+use content::{Cube, Zone, LEVEL_BASIS};
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
 use util::{dijkstra_map, v3, Neighbors2D, Sdf};
 
 use crate::{placement::Place, prelude::*};
+
+#[derive(Copy, Clone, Debug)]
+pub enum FogPathing {
+    /// Pathing has perfect terrain knowledge regardless of fog of war.
+    ///
+    /// Use for enemy AIs.
+    Ignore,
+    /// Pathing assumes it can pass through fog of war areas and will explore
+    /// fogged areas in its path.
+    Explore,
+    /// Pathing treats areas under fog of war as impassable and sticks to
+    /// known terrain. Will fail to find valid paths that are partially
+    /// covered in fog.
+    Avoid,
+}
 
 impl Runtime {
     pub fn autoexplore_map(
@@ -42,94 +57,71 @@ impl Runtime {
         }
     }
 
-    /// Parametrizable pathfinding.
-    pub fn find_path_with<I>(
-        &self,
-        start: Location,
-        neighbors: impl Fn(&Location) -> I,
-        dest: &impl Sdf,
-    ) -> Option<Vec<Location>>
-    where
-        I: IntoIterator<Item = Location>,
-    {
-        if let Some(mut path) = astar(
-            &start,
-            |a| neighbors(a).into_iter().map(|c| (c, 1)),
-            |a| dest.sd(*a),
-            |a| dest.sd(*a) <= 0,
-        )
-        .map(|(a, _)| a)
-        {
-            path.reverse();
-            path.pop();
-            Some(path)
-        } else {
-            None
-        }
-    }
-
-    /// Pathfinding for player that approaches unexplored terrain
-    /// optimistically.
+    /// Find a path from a starting point to a target volume.
     ///
-    /// Paths within the fat slice of the current sector, can path to
-    /// locations that are immediately outside the sector but reachable by a
-    /// single step from the fat slice.
-    pub fn fog_exploring_path(
+    /// Intended for short-range pathfinding, not spanning multiple sectors.
+    pub fn find_path(
         &self,
-        origin: Location,
-        current: Location,
-        dest: &impl Sdf,
-        is_exploring: bool,
+        fog_behavior: FogPathing,
+        start: Location,
+        // Destination volume.
+        dest: &Cube,
     ) -> Option<Vec<Location>> {
-        // Only explore in the local sector slice. Make it wide so optimistic
-        // pathing to neighboring sectors works.
-        let explore_area = origin.sector().fat().wide();
+        // NB. This cannot navigate between sectors that aren't directly
+        // connected by moving off to the side. This is by design, if you need
+        // non-trivial (ie. not just for the case where the target stepped
+        // over the edge to the connected adjacent sector) multi-sector
+        // navigation, you probably want some kind of secondary sector-level
+        // pathing system.
+        let domain =
+            // Get the box containing both starting point and goal area.
+            dest.grow_to_contain(start)
+            // Expand it to the smallest enclosing box of level volumes.
+            .intersecting_lattice(LEVEL_BASIS).to_cells(LEVEL_BASIS);
 
-        // Follow known paths into nearby neighboring sectors too, except when
-        // this is targeting unknown territory (is_exploring is true), in
-        // which case stick to the local slice.
-        let range = if is_exploring {
-            explore_area
-        } else {
-            origin.sector().grow(
-                [SECTOR_WIDTH, SECTOR_HEIGHT, 2],
-                [SECTOR_WIDTH, SECTOR_HEIGHT, 2],
-            )
+        let in_domain = |loc| domain.contains(loc) || dest.sd(loc) <= 0;
+
+        let neighbors = |loc: &Location| {
+            let mut ret = Vec::new();
+
+            for (dir, a) in loc.walk_neighbors(self) {
+                // Going out of search range and not in goal, abort.
+                if !in_domain(a) {
+                    continue;
+                }
+
+                if !a.is_explored(self) {
+                    use FogPathing::*;
+                    match fog_behavior {
+                        Ignore => {}
+                        Explore => {
+                            for (loc, cost) in [
+                                (loc + dir.extend(0), 1),
+                                (loc + dir.extend(1), 1),
+                                (loc + dir.extend(-1), 1),
+                            ] {
+                                if !loc.is_explored(self) && in_domain(loc) {
+                                    ret.push((loc, cost));
+                                }
+                            }
+                            continue;
+                        }
+                        Avoid => continue,
+                    }
+                }
+
+                ret.push((a, 1));
+            }
+
+            ret
         };
 
-        self.find_path_with(
-            current,
-            |loc| {
-                loc.fog_exploring_walk_neighbors(self, explore_area)
-                    .filter(move |&loc| {
-                        range.contains(loc) || dest.sd(loc) <= 0
-                    })
-                    .collect::<Vec<_>>()
-            },
-            dest,
-        )
-    }
+        let (mut path, _) =
+            astar(&start, neighbors, |&a| dest.sd(a), |&a| dest.sd(a) <= 0)?;
 
-    /// Pathfind for enemies that know all terrain.
-    ///
-    /// Works like `fog_exploring_path` except always paths along actually
-    /// existing terrain.
-    pub fn enemy_path(
-        &self,
-        start: Location,
-        dest: &impl Sdf,
-    ) -> Option<Vec<Location>> {
-        let sec = start.sector().fat();
-        self.find_path_with(
-            start,
-            move |loc| {
-                loc.walk_neighbors(self)
-                    .map(|(_, loc)| loc)
-                    .filter(move |&loc| sec.contains(loc) || dest.sd(loc) <= 0)
-                    .collect::<Vec<_>>()
-            },
-            dest,
-        )
+        path.reverse();
+        path.pop();
+        Some(path)
     }
 
     pub fn fill_positions(

@@ -16,9 +16,7 @@ impl Entity {
         let r = r.as_ref();
 
         let loc = self.loc(r)?;
-        let mut path_origin = loc;
         let mut path_dest: Cube;
-        let mut path_exploring = false;
 
         match goal {
             Goal::None => return Some(Action::Pass),
@@ -79,14 +77,11 @@ impl Entity {
             }
 
             Goal::GoTo {
-                origin,
                 destination,
                 is_attack_move,
-                is_exploring,
+                ..
             } => {
-                path_origin = origin;
                 path_dest = destination;
-                path_exploring = is_exploring;
 
                 // Look for targets of opportunity, redirect towards them.
                 //
@@ -158,10 +153,16 @@ impl Entity {
         // Path towards target.
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.
-        if let Some(mut path) = if self.is_player_aligned(r) {
-            r.fog_exploring_path(path_origin, loc, &path_dest, path_exploring)
-        } else {
-            r.enemy_path(loc, &path_dest)
+        if let Some(mut path) = {
+            if self.is_player_aligned(r) {
+                // Try to path through only known areas first, then by
+                // exploring
+                r.find_path(FogPathing::Avoid, loc, &path_dest).or_else(|| {
+                    r.find_path(FogPathing::Explore, loc, &path_dest)
+                })
+            } else {
+                r.find_path(FogPathing::Ignore, loc, &path_dest)
+            }
         } {
             // Path should always have a good step after a successful
             // pathfind.
@@ -481,6 +482,8 @@ pub enum Goal {
     /// Option to attack anything encountered for player's NPCs.
     GoTo {
         /// Keep track of starting point to limit pathfinding queries.
+        // TODO: Do we still need the GoTo::origin field, current pathfinding logic
+        // shouldn't be able to stray out of the starting volume...
         origin: Location,
         /// Destination is a zone, use an unit cube for a point.
         destination: Cube,

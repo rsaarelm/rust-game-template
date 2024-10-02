@@ -3,6 +3,6 @@ pub use glam::{ivec2, IVec2};
 pub use util::{Error, HashMap, HashSet, IndexMap, IndexSet, Odds, VecExt};
 
 pub use crate::{
-    msg, send_msg, Action, Entity, Goal, Instant, Msg, Receiver, Runtime,
-    RuntimeCoordinates, ScenarioStatus,
+    msg, send_msg, Action, Entity, FogPathing, Goal, Instant, Msg, Receiver,
+    Runtime, RuntimeCoordinates, ScenarioStatus,
 };

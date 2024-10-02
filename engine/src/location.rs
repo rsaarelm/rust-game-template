@@ -17,6 +17,7 @@ pub trait RuntimeCoordinates: Coordinates {
     /// List steppable neighbors optimistically, any unexplored neighbor cell
     /// is listed as rising, falling and horizontal steps. Explored neighbors
     /// will only provide the actual step, if any.
+    #[deprecated]
     fn fog_exploring_walk_neighbors<'a>(
         &self,
         r: &'a impl AsRef<Runtime>,
