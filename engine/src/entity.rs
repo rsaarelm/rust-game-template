@@ -217,6 +217,11 @@ impl Entity {
         text::is_capitalized(&self.desc(r))
     }
 
+    /// Description without modifiers like count or nicknames.
+    pub fn base_desc(&self, r: &impl AsRef<Runtime>) -> String {
+        self.get::<Name>(r).0.to_string()
+    }
+
     /// Description string of the entity.
     pub fn desc(&self, r: &impl AsRef<Runtime>) -> String {
         let nickname = self.get::<Nickname>(r).0;
@@ -225,10 +230,10 @@ impl Entity {
         let name = if count > 1 {
             format!(
                 "{count} {}",
-                text::pluralize(&Data::get().plurals, &self.get::<Name>(r).0)
+                text::pluralize(&Data::get().plurals, &self.base_desc(r))
             )
         } else {
-            self.get::<Name>(r).0.to_string()
+            self.base_desc(r)
         };
 
         let is_proper = name.chars().next().map_or(false, |c| c.is_uppercase());

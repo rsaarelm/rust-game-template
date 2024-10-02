@@ -35,7 +35,9 @@ impl Entity {
         // the data designer to only designate things as stackable with the
         // 'count' component if items with that name cannot vary otherwise.
 
-        self.is_item(r) && other.is_item(r) && self.desc(r) == other.desc(r)
+        self.is_item(r)
+            && other.is_item(r)
+            && self.base_desc(r) == other.base_desc(r)
     }
 
     pub fn count(&self, r: &impl AsRef<Runtime>) -> i32 {
