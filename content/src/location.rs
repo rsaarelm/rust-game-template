@@ -202,6 +202,8 @@ pub trait Coordinates:
         r: &mut impl Environs,
         c: char,
     ) -> anyhow::Result<()>;
+
+    fn level_volume(&self) -> Cube;
 }
 
 impl Coordinates for Location {
@@ -399,6 +401,10 @@ impl Coordinates for Location {
         };
 
         Ok(())
+    }
+
+    fn level_volume(&self) -> Cube {
+        Cube::sector_from(*self).level()
     }
 }
 

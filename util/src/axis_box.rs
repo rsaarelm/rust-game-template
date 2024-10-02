@@ -743,6 +743,17 @@ impl<const N: usize> IntegerBox<N> {
 
         E::from(val)
     }
+
+    /// Turn a lattice cell coordinate box into a regular space box consisting
+    /// of the cells of the lattice.
+    pub fn to_cells<T>(&self, basis: impl Into<[T; N]>) -> AxisBox<T, N>
+    where
+        T: FromPrimitive + Element,
+    {
+        let basis = basis.into();
+        AxisBox::cell(basis, self.min())
+            .union(&AxisBox::cell(basis, self.max()))
+    }
 }
 
 impl IntegerBox<2> {
