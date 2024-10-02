@@ -97,7 +97,7 @@ fn main() -> anyhow::Result<()> {
                         // Otherwise sample from the system clock.
                         Silo::sample(
                             &mut util::srng(&navni::now().to_le_bytes()),
-                            10,
+                            9,
                         )
                     };
 
