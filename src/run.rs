@@ -103,6 +103,12 @@ pub async fn main_gameplay() {
             msg!("Game saved.");
         }
 
+        // Debug key to quit without saving so you can return to save.
+        if navni::keypress().is("C-z") {
+            // Use panic so the TTY cleanup hook will get tripped.
+            panic!("no-save emergency exit triggered");
+        }
+
         match input_press().or(side_action) {
             Some(InputAction::Inventory) if !side.is_zero() => {
                 match inventory_choice(&side).await {
