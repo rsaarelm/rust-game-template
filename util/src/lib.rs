@@ -80,3 +80,13 @@ pub type Error = Box<dyn std::error::Error>;
 
 /// Good default concrete rng.
 pub type GameRng = rand_xorshift::XorShiftRng;
+
+/// Function to check if the game is being run in wizard mode for in-game
+/// debugging. This is set by setting the environment variable
+/// `WIZARD_MODE=1`.
+#[memoize::memoize]
+pub fn wizard_mode() -> bool {
+    matches!(
+        std::env::var("WIZARD_MODE").ok().and_then(|a: String| a.parse::<i32>().ok()),
+        Some(val) if val > 0)
+}

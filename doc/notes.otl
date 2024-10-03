@@ -189,3 +189,6 @@ The modal monster is a pig, express intrinsic flags as "how it differs from a pi
 		has hands
 		has no head
 	A "generic creature spawn" could be a literal pig
+Wizard mode
+	Mode that activates various debug commands that spoil the regular game
+	Enable by setting environment variable WIZARD_MODE=1 before running the game

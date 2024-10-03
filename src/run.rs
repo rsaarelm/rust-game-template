@@ -4,7 +4,7 @@ use content::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use navni::X256Color as X;
 use ui::{ask, prelude::*};
-use util::writeln;
+use util::{wizard_mode, writeln};
 
 use crate::{
     map_view::{view_map, MapAction::*},
@@ -104,7 +104,7 @@ pub async fn main_gameplay() {
         }
 
         // Debug key to quit without saving so you can return to save.
-        if navni::keypress().is("C-z") {
+        if wizard_mode() && navni::keypress().is("C-z") {
             // Use panic so the TTY cleanup hook will get tripped.
             panic!("no-save emergency exit triggered");
         }
