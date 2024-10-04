@@ -1,11 +1,11 @@
 use content::{Cube, Zone, LEVEL_BASIS};
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
-use util::{dijkstra_map, v3, Neighbors2D, Sdf};
+use util::{dijkstra_map, s4, v3, Neighbors2D, Sdf};
 
 use crate::{placement::Place, prelude::*};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum FogPathing {
     /// Pathing has perfect terrain knowledge regardless of fog of war.
     ///
@@ -84,33 +84,31 @@ impl Runtime {
         let neighbors = |loc: &Location| {
             let mut ret = Vec::new();
 
-            for (dir, a) in loc.walk_neighbors(self) {
-                // Going out of search range and not in goal, abort.
-                if !in_domain(a) {
-                    continue;
-                }
+            for dir in s4::DIR {
+                use FogPathing::*;
 
-                if !a.is_explored(self) {
-                    use FogPathing::*;
-                    match fog_behavior {
-                        Ignore => {}
-                        Explore => {
-                            for (loc, cost) in [
-                                (loc + dir.extend(0), 1),
-                                (loc + dir.extend(1), 1),
-                                (loc + dir.extend(-1), 1),
-                            ] {
-                                if !loc.is_explored(self) && in_domain(loc) {
-                                    ret.push((loc, cost));
-                                }
-                            }
-                            continue;
+                let is_explored = (*loc + dir.extend(0)).is_explored(self);
+
+                if is_explored || fog_behavior == Ignore {
+                    // Walk normally when you know where you're going.
+                    if let Some(loc_2) = loc.walk_step(self, dir) {
+                        if in_domain(loc_2) {
+                            ret.push((loc_2, 1));
                         }
-                        Avoid => continue,
+                    }
+                } else if fog_behavior == Explore {
+                    // Assume you can walk through fog however you like when
+                    // exploring.
+                    for loc in [
+                        loc + dir.extend(0),
+                        loc + dir.extend(1),
+                        loc + dir.extend(-1),
+                    ] {
+                        if in_domain(loc) {
+                            ret.push((loc, 1));
+                        }
                     }
                 }
-
-                ret.push((a, 1));
             }
 
             ret
