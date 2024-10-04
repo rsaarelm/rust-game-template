@@ -186,7 +186,9 @@ impl RuntimeCoordinates for Location {
         // off the slice.
         let mut candidates = HashSet::default();
         for d in s4::DIR {
-            let loc_2 = (*self + d.extend(0)).snap_above_floor(r);
+            let Tile::Surface(loc_2, _) = (*self + d.extend(0)).tile(r) else {
+                continue;
+            };
             if let Some(loc) = loc_2.walk_step(r, -d) {
                 candidates.insert(loc);
             }

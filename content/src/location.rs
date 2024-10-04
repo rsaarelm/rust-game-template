@@ -48,6 +48,8 @@ pub trait Coordinates:
         }
     }
 
+    /// Neighboring floors you can step on, with walking up and down slopes
+    /// included in the step.
     fn walk_neighbors<'a>(
         self,
         r: &impl Environs,
