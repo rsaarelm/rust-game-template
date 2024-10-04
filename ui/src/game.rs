@@ -472,7 +472,54 @@ impl Game {
     pub fn travel(&mut self, dir: IVec3) {
         if let Some(p) = self.current_active() {
             let Some(origin) = p.loc(self) else { return };
-            let destination = Level::level_from(origin).offset(dir).floor();
+
+            let mut destination = Level::level_from(origin).offset(dir).floor();
+
+            // If the furthest point is far off to the side from the current
+            // movement line, don't start an unexpected sideways long move but
+            // look for a point that's a bit closer but at less of an angle.
+            const MAX_LONG_MOVE_SIDE_SLOPE: f32 = 0.25;
+
+            // Horizontal travel, figure out if we know it's blocked in the
+            // current sector and then do a within-sector long-move instead.
+            if dir.z == 0
+                && game()
+                    .r
+                    .find_path(FogPathing::Explore, origin, &destination)
+                    .is_none()
+            {
+                if let Some(long_move_target) =
+                    origin.sector_edge_search(dir.truncate()).find(|loc| {
+                        // Discard unexplored and invalid terrain.
+                        if !loc.is_explored(game())
+                            || !loc.can_be_stood_in(&game().r)
+                        {
+                            return false;
+                        }
+
+                        let vec = loc - origin;
+
+                        // Discard points whose slope is too high.
+                        let u = vec.truncate().dot(dir.truncate());
+                        let v = vec.truncate().perp_dot(dir.truncate());
+
+                        if u == 0 {
+                            return false;
+                        }
+
+                        let slope = v as f32 / u as f32;
+                        slope.abs() < MAX_LONG_MOVE_SIDE_SLOPE
+                    })
+                {
+                    if long_move_target == origin {
+                        // We're already there, don't spin around.
+                        return;
+                    }
+
+                    destination = Cube::unit(long_move_target);
+                }
+            }
+
             self.act(Goal::GoTo {
                 origin,
                 destination,

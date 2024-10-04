@@ -241,6 +241,7 @@ dependencies = [
  "glam",
  "idm",
  "indexmap 2.6.0",
+ "itertools",
  "log",
  "memoize",
  "pathfinding",

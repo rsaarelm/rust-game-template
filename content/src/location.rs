@@ -17,7 +17,12 @@ pub type Location = IVec3;
 
 /// Methods for points when treated as game world locations.
 pub trait Coordinates:
-    Copy + Sized + Add<IVec3, Output = Self> + AddAssign<IVec3>
+    Copy
+    + Sized
+    + Add<IVec3, Output = Self>
+    + AddAssign<IVec3>
+    + From<IVec3>
+    + Into<IVec3>
 {
     fn z(&self) -> i32;
 
@@ -206,6 +211,40 @@ pub trait Coordinates:
     ) -> anyhow::Result<()>;
 
     fn level_volume(&self) -> Cube;
+
+    /// Project a ray from self to the inner edge of the current sector and
+    /// start iterating points along the edge and then backwards along the
+    /// ray.
+    ///
+    /// Intended to find the furthest extent inside the current sector in the
+    /// given direction that lines up with the starting point.
+    fn sector_edge_search(&self, dir: IVec2) -> impl Iterator<Item = Self> {
+        let bounds = self.level_volume();
+        let mut pos: IVec3 = (*self).into();
+        let dir = dir.extend(0);
+        let side = ivec3(dir.y, dir.x, 0);
+        // XXX: Could be sped up into an oneshot with proper math around the
+        // bounds box dimensions.
+        while bounds.contains(pos + dir) {
+            pos += dir;
+        }
+
+        let valid = move |pos: &IVec3| bounds.contains(*pos);
+
+        // Sweep lines from the far extent back towards the other edge.
+        (0..)
+            .map(move |u| pos - u * dir)
+            .take_while(valid)
+            .flat_map(move |pos|
+                // Interleave points to one side and the other from the
+                // starting point so you get progressively farther from the
+                // point you initially want.
+                itertools::interleave(
+                (0..).map(move |v| pos + v * side).take_while(valid),
+                (1..).map(move |v| pos - v * side).take_while(valid)
+                ))
+            .map(|pos| Self::from(pos))
+    }
 }
 
 impl Coordinates for Location {
