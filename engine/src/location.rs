@@ -1,4 +1,4 @@
-use content::{Block, Cube, Environs, Tile};
+use content::{Block, Environs, Tile};
 use glam::ivec3;
 use util::{s4, s8, Neighbors2D};
 
@@ -13,16 +13,6 @@ pub trait RuntimeCoordinates: Coordinates {
 
     /// Location has been seen by an allied unit at some point.
     fn is_explored(&self, r: &impl AsRef<Runtime>) -> bool;
-
-    /// List steppable neighbors optimistically, any unexplored neighbor cell
-    /// is listed as rising, falling and horizontal steps. Explored neighbors
-    /// will only provide the actual step, if any.
-    #[deprecated]
-    fn fog_exploring_walk_neighbors<'a>(
-        &self,
-        r: &'a impl AsRef<Runtime>,
-        explore_area: Cube,
-    ) -> impl Iterator<Item = Self> + 'a;
 
     /// Destination for UI path selection, may dip outside the +/-1 slice if
     /// the point is a wall above/below a position reached from an adjacent
@@ -177,31 +167,6 @@ impl RuntimeCoordinates for Location {
         }
 
         false
-    }
-
-    fn fog_exploring_walk_neighbors<'a>(
-        &self,
-        r: &'a impl AsRef<Runtime>,
-        explore_area: Cube,
-    ) -> impl Iterator<Item = Self> + 'a {
-        let r = r.as_ref();
-        let origin = *self;
-
-        s4::DIR.iter().flat_map(move |&dir| {
-            let loc = origin + dir.extend(0);
-            if loc.is_explored(r) {
-                // Only step into the concrete location (if any) when target
-                // is explored.
-                origin.walk_step(r, dir).into_iter().collect::<Vec<_>>()
-            } else {
-                // Assume all possible steps are valid in unexplored space.
-
-                [loc, loc.above(), loc.below()]
-                    .into_iter()
-                    .filter(|&loc| explore_area.contains(loc))
-                    .collect()
-            }
-        })
     }
 
     fn ui_path_destination(&self, r: &impl AsRef<Runtime>) -> Self {
