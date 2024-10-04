@@ -39,7 +39,7 @@ pub use lazy_res::LazyRes;
 pub mod parse;
 
 mod path;
-pub use path::{dijkstra_map, within_range};
+pub use path::dijkstra_map;
 
 mod rng;
 pub use rng::{srng, Odds, RngExt};

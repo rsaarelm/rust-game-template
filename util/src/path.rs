@@ -2,6 +2,10 @@ use std::{collections::VecDeque, hash::Hash};
 
 use crate::HashSet;
 
+// I could pretty much use the Dijkstra stuff from crate pathfinding, but this
+// one has the one difference that it lets you do a start set of multiple
+// nodes, which is pretty useful when generating autoexploration pathing.
+
 /// Generate a shortest paths map on a grid according to a neighbors function.
 pub fn dijkstra_map<'a, T, I>(
     mut neighbors: impl FnMut(&T) -> I + 'a,
@@ -31,9 +35,4 @@ where
         }
         None
     })
-}
-
-/// Combinator for limiting flood fill to a given distance.
-pub fn within_range<T>(n: usize) -> impl FnMut(&(T, usize)) -> bool {
-    move |&(_, k)| k < n
 }
