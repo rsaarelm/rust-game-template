@@ -206,7 +206,7 @@ impl Entity {
 
     pub fn to_hit(&self, r: &impl AsRef<Runtime>) -> i32 {
         let stats = self.stats(r);
-        stats.might + stats.hit
+        stats.level + stats.hit
     }
 
     pub fn evasion(&self, r: &impl AsRef<Runtime>) -> i32 {
@@ -253,7 +253,7 @@ impl Entity {
     }
 
     pub fn max_wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
-        5 + self.get::<Stats>(r).might.max(0) * 5
+        5 + self.get::<Stats>(r).level.max(0) * 5
     }
 
     pub fn wounds(&self, r: &impl AsRef<Runtime>) -> i32 {
@@ -337,6 +337,13 @@ impl Entity {
 
     pub fn fully_heal(&self, r: &mut impl AsMut<Runtime>) {
         self.set(r, Wounds(0));
+    }
+
+    pub fn level_up(&self, r: &mut impl AsMut<Runtime>) -> i32 {
+        self.with_mut::<Stats, _>(r, |s| {
+            s.level += 1;
+            s.level
+        })
     }
 }
 

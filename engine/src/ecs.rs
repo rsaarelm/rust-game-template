@@ -118,7 +118,6 @@ components! {
     Powers,
     ItemPower,
     EquippedAt,
-    Level,
     Stats,
     Buffs,
     Speed,
@@ -183,11 +182,6 @@ pub struct IsMob(pub bool);
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct ItemPower(pub Option<Power>);
 
-#[derive(
-    Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
-)]
-pub struct Level(pub i32);
-
 /// Used by AI movement, moving sets momentum and you can't displace a mob
 /// that moved this turn against its momentum.
 #[derive(
@@ -217,12 +211,12 @@ pub struct Speed(pub i8);
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
 pub struct Stats {
-    /// General strength
-    pub might: i32,
+    /// General power
+    pub level: i32,
     /// Debican odds for landing an attack.
     ///
     /// This is a bonus field that can be left zero, the starting value is
-    /// `might` for mobs.
+    /// `level` for mobs.
     pub hit: i32,
     /// Deciban odds for evading an attack.
     pub ev: i32,
@@ -241,7 +235,7 @@ impl std::ops::Add for Stats {
 
 impl std::ops::AddAssign for Stats {
     fn add_assign(&mut self, rhs: Self) {
-        self.might += rhs.might;
+        self.level += rhs.level;
         self.hit += rhs.hit;
         self.ev += rhs.ev;
         self.dmg += rhs.dmg;

@@ -15,7 +15,7 @@ impl EntitySpec for Monster {
             Speed(3),
             IsMob(true),
             Stats {
-                might: self.might,
+                level: self.level,
                 hit: 0,
                 ev: self.evasion,
                 dmg: self.attack_damage,
@@ -31,7 +31,10 @@ impl EntitySpec for Item {
             Icon(self.kind.icon()),
             ItemPower(self.power.clone()),
             self.kind,
-            Level(self.might),
+            Stats {
+                level: self.level,
+                ..Default::default()
+            },
         )));
         if self.kind.is_stacking() {
             ret.set(r, Count(1));

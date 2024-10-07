@@ -1,4 +1,4 @@
---                    might  kind      rarity  power
+--                    level  kind      rarity  power
 dagger                    4  melee-weapon  10  -
 sword                     8  melee-weapon  20  -
 greatsword               12  melee-weapon  20  -

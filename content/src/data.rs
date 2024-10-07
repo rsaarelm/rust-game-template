@@ -379,7 +379,7 @@ pub enum GenericSector {
 #[serde(default, rename_all = "kebab-case")]
 pub struct Monster {
     pub icon: char,
-    pub might: i32,
+    pub level: i32,
     pub evasion: i32,
     pub attack_damage: i32,
     pub rarity: u32,
@@ -401,7 +401,7 @@ impl SpawnDist for Monster {
 )]
 #[serde(default, rename_all = "kebab-case")]
 pub struct Item {
-    pub might: i32,
+    pub level: i32,
     pub kind: ItemKind,
     pub rarity: u32,
 

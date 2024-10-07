@@ -103,10 +103,19 @@ pub async fn main_gameplay() {
             msg!("Game saved.");
         }
 
-        // Debug key to quit without saving so you can return to save.
-        if wizard_mode() && navni::keypress().is("C-z") {
-            // Use panic so the TTY cleanup hook will get tripped.
-            panic!("no-save emergency exit triggered");
+        // Debug keys, not for regular gameplay.
+        if wizard_mode() {
+            // Quit without saving so you can return to save.
+            if navni::keypress().is("C-z") {
+                // Use panic so the TTY cleanup hook will get tripped.
+                panic!("no-save emergency exit triggered");
+            }
+
+            if navni::keypress().is("!") {
+                if let Some(player) = game().r.player() {
+                    msg!("Powered up to level {}", player.level_up(game()));
+                }
+            }
         }
 
         match input_press().or(side_action) {
