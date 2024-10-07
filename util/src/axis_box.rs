@@ -751,8 +751,12 @@ impl<const N: usize> IntegerBox<N> {
         T: FromPrimitive + Element,
     {
         let basis = basis.into();
-        AxisBox::cell(basis, self.min())
-            .union(&AxisBox::cell(basis, self.max()))
+        let mut max = self.max();
+        for i in 0..N {
+            max[i] -= 1;
+        }
+
+        AxisBox::cell(basis, self.min()).union(&AxisBox::cell(basis, max))
     }
 }
 
