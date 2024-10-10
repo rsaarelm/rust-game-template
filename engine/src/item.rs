@@ -222,7 +222,7 @@ impl Entity {
         &self,
         r: &'a impl AsRef<Runtime>,
     ) -> impl Iterator<Item = Entity> + 'a {
-        self.contents(r).filter(|e| !e.is_equipped(r))
+        self.contents(r)
     }
 
     pub fn equipment_at(

@@ -22,8 +22,15 @@ pub fn item_list(
     let keypress = navni::keypress();
 
     for (k, e) in keys.chars().zip(items.into_iter()) {
-        if cur.print_button(&format!("{k}) {}", e.desc(&g.r)))
-            || keypress.key() == Key::Char(k)
+        if cur.print_button(&format!(
+            "{k}) {}{}",
+            e.desc(&g.r),
+            if e.is_equipped(&g.r) {
+                " (equipped)"
+            } else {
+                ""
+            }
+        )) || keypress.key() == Key::Char(k)
         {
             return Some(e);
         }
@@ -33,16 +40,8 @@ pub fn item_list(
     None
 }
 
-pub fn inventory_filter(e: &Entity) -> bool {
-    !e.is_equipped(game())
-}
-
 pub fn usable_filter(e: &Entity) -> bool {
     !e.is_equipped(game()) && e.can_be_used(game())
-}
-
-pub fn equipment_filter(e: &Entity) -> bool {
-    e.is_equipped(game())
 }
 
 pub struct StatusPanel(pub Entity);
@@ -140,7 +139,6 @@ impl Widget for StatusPanel {
 
         let has_inventory = player.inventory(&g.r).next().is_some();
         let has_usables = player.inventory(&g.r).any(|e| e.can_be_used(&g.r));
-        let has_equipment = player.equipment(&g.r).next().is_some();
 
         if !player.is_threatened(&g.r) {
             command_help(&mut cur, Roam, "roam");
@@ -155,10 +153,6 @@ impl Widget for StatusPanel {
 
         if has_inventory {
             command_help(&mut cur, Inventory, "inventory");
-        }
-        if has_equipment {
-            cur.pos.x = win.width() / 2;
-            command_help(&mut cur, Equipment, "equipment");
         }
         writeln!(cur);
 

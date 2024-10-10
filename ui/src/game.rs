@@ -570,7 +570,6 @@ impl Game {
             */
             Inventory => {}
             Powers => {}
-            Equipment => {}
             Drop => {}
             Throw => {}
             Use => {}

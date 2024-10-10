@@ -135,15 +135,14 @@ pub async fn main_gameplay() {
                         }
                     }
                     Some(e) if e.can_be_equipped(game()) => {
-                        game().act(Action::Equip(e));
+                        if e.is_equipped(game()) {
+                            game().act(Action::Unequip(e));
+                        } else {
+                            game().act(Action::Equip(e));
+                        }
                     }
                     Some(_) => {}
                     None => {}
-                }
-            }
-            Some(InputAction::Equipment) if !side.is_zero() => {
-                if let Some(e) = equipment_choice(&side).await {
-                    game().act(Action::Unequip(e));
                 }
             }
             Some(InputAction::Drop) if !side.is_zero() => {
@@ -222,7 +221,7 @@ async fn inventory_choice(panel: &Window) -> Option<Entity> {
         // Cancel if resized.
         game().draw().await?;
 
-        if let Some(e) = view::item_list(panel, p, view::inventory_filter) {
+        if let Some(e) = view::item_list(panel, p, |_| true) {
             return Some(e);
         }
 
@@ -249,30 +248,6 @@ async fn usable_choice(panel: &Window) -> Option<Entity> {
         game().draw().await?;
 
         if let Some(e) = view::item_list(panel, p, view::usable_filter) {
-            return Some(e);
-        }
-
-        if input_press() == Some(InputAction::Cancel) {
-            break;
-        }
-    }
-
-    None
-}
-
-async fn equipment_choice(panel: &Window) -> Option<Entity> {
-    let _backdrop = Backdrop::from(*panel);
-
-    if let Some(p) = game().current_active() {
-        if p.equipment(game()).next().is_none() {
-            msg!("[One] [has] nothing equipped."; p.noun(game()));
-        }
-    }
-
-    while let Some(p) = game().current_active() {
-        game().draw().await?;
-
-        if let Some(e) = view::item_list(panel, p, view::equipment_filter) {
             return Some(e);
         }
 
