@@ -465,12 +465,8 @@ impl World {
         self.inner.overlay.insert(loc, voxel);
     }
 
-    fn default_terrain(&self, loc: Location) -> Voxel {
-        if loc.z >= 0 {
-            None
-        } else {
-            Some(Block::Stone)
-        }
+    fn default_terrain(&self, _loc: Location) -> Voxel {
+        Some(Block::Stone)
     }
 }
 
