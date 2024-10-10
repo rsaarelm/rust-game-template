@@ -212,6 +212,11 @@ impl Runtime {
     ) {
         let mobs = self.spawn_at(&Pod::from(monster.as_ref().clone()), from);
 
+        for mob in &mobs {
+            // Summons don't stick around forever.
+            mob.set(self, ecs::IsEphemeral(true));
+        }
+
         if let Some(perp) = perp {
             // Player and allies make friendly summons.
             if perp.is_player_aligned(self) {

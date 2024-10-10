@@ -154,6 +154,13 @@ impl Noun {
                     "are".into()
                 }
             }
+            "was" | "were" => {
+                if self.third_person_singular() {
+                    "was".into()
+                } else {
+                    "were".into()
+                }
+            }
             "has" | "have" => {
                 if self.third_person_singular() {
                     "has".into()

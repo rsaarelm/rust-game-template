@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use util::{s4, RngExt};
 
 use crate::{
-    ecs::{Count, ItemPower},
+    ecs::{Cash, Count, IsEphemeral, ItemPower},
     prelude::*,
     THROW_RANGE,
 };
@@ -241,7 +241,16 @@ impl Entity {
     pub(crate) fn take(&self, r: &mut impl AsMut<Runtime>, item: &Entity) {
         let r = r.as_mut();
 
-        item.place(r, *self);
+        if self.is_player(r) && item.is_cash(r) {
+            // Cash items get deleted and added to cash component.
+            let n = item.count(r);
+            self.with_mut::<Cash, _>(r, |Cash(c)| *c += n);
+            item.destroy(r);
+        } else {
+            // Regular pick-up.
+            item.place(r, *self);
+        }
+
         msg!("[One] pick[s] up [another]."; self.noun(r), item.noun(r));
     }
 
@@ -324,5 +333,35 @@ impl Entity {
             }
             item.place(r, target);
         }
+    }
+
+    pub fn carried_cash(&self, r: &impl AsRef<Runtime>) -> i32 {
+        self.get::<Cash>(r).0
+    }
+
+    pub(crate) fn is_cash(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.base_desc(r) == "silver coin"
+    }
+
+    /// If the mob is carrying cash, drop all of it into a pile and return the
+    /// pile entity.
+    pub(crate) fn drop_wallet(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+    ) -> Option<Entity> {
+        let r = r.as_mut();
+
+        let Cash(cash) = self.get(r);
+        if cash <= 0 {
+            return None;
+        }
+
+        self.set(r, Cash(0));
+
+        let loc = self.loc(r)?;
+        let pile = r.spawn_cash_at(cash, loc);
+        pile.set(r, IsEphemeral(true));
+
+        Some(pile)
     }
 }

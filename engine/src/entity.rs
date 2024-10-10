@@ -217,6 +217,10 @@ impl Entity {
         text::is_capitalized(&self.desc(r))
     }
 
+    pub fn is_ephemeral(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.get::<IsEphemeral>(r).0
+    }
+
     /// Description without modifiers like count or nicknames.
     pub fn base_desc(&self, r: &impl AsRef<Runtime>) -> String {
         self.get::<Name>(r).0.to_string()

@@ -99,7 +99,14 @@ impl Widget for StatusPanel {
         writeln!(cur, "{}", player.desc(g));
         let max_hp = player.max_wounds(g);
         let hp = max_hp - player.wounds(&g.r).min(max_hp);
-        writeln!(cur, "{hp} / {max_hp}");
+        writeln!(cur, "Health: {hp} / {max_hp}");
+
+        let cash = player.carried_cash(&g.r);
+        if cash > 0 {
+            writeln!(cur, "Wealth: {}$", cash);
+        } else {
+            writeln!(cur);
+        }
 
         writeln!(cur);
         writeln!(cur, "------- Controls -------");

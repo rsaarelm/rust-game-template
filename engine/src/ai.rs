@@ -4,7 +4,11 @@ use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::{s4, Sdf};
 
-use crate::{ecs::IsFriendly, prelude::*, FOV_RADIUS, THROW_RANGE};
+use crate::{
+    ecs::{IsEphemeral, IsFriendly},
+    prelude::*,
+    FOV_RADIUS, THROW_RANGE,
+};
 
 impl Entity {
     /// Decide on the next action given a goal.
@@ -269,6 +273,11 @@ impl Entity {
 
     pub fn is_player_aligned(&self, r: &impl AsRef<Runtime>) -> bool {
         self.get::<IsFriendly>(r).0
+    }
+
+    pub fn can_become_player(&self, r: &impl AsRef<Runtime>) -> bool {
+        // Allied
+        self.is_player_aligned(r) && !self.get::<IsEphemeral>(r).0
     }
 
     pub fn is_enemy(&self, r: &impl AsRef<Runtime>, other: &Entity) -> bool {

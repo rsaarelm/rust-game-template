@@ -191,6 +191,19 @@ impl Runtime {
         }
     }
 
+    pub(crate) fn spawn_cash_at(
+        &mut self,
+        amount: i32,
+        place: impl Into<Place>,
+    ) -> Entity {
+        let pod = "silver coin"
+            .parse::<Pod>()
+            .expect("Cash object not specified");
+        let pile = self.spawn_at(&pod, place)[0];
+        pile.set(self, Count(amount));
+        pile
+    }
+
     pub fn player(&self) -> Option<Entity> {
         self.player
     }

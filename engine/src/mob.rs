@@ -1,9 +1,12 @@
 //! Entity logic for active creatures.
 use content::Block;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ecs::{ActsNext, Buffs, IsMob, Momentum, Speed, Stats, Wounds},
+    ecs::{
+        ActsNext, Buffs, IsEphemeral, IsMob, Momentum, Speed, Stats, Wounds,
+    },
     prelude::*,
     PHASES_IN_TURN,
 };
@@ -301,16 +304,32 @@ impl Entity {
             }
         }
 
-        // TODO: Resolve respawning the whole party on TPK, otherwise zapping
-        // the dead character into limbo and switching to a surviving party
-        // member. The current simpler implementation just respawns the main
-        // player when they die and ignores the followers
+        // TODO: Support character death with multiple non-summon player
+        // characters. While other party members remain, the dead character
+        // entity is pushed into some sort of limbo (not destroyed), and the
+        // next player character is field-promoted into active player. Last
+        // player character dying triggers full respawn and everyone being
+        // restored from limbo
 
         // TODO: Support some sort of delayed animation that shows the player
         // "dead" over multiple frames before respawning back at the save
         // point to give proper feedback that the player just died.
         if r.player == Some(*self) {
+            let loc = self.loc(r);
             r.die_respawn();
+
+            // AFTER we've done the respawn thing (and cleared out previous
+            // transient objects), spawn the new cash drop and set it to be
+            // transient.
+            if let Some(loc) = loc {
+                if let Some(pile) = self.drop_wallet(r) {
+                    pile.set(r, IsEphemeral(true));
+                    msg!("[One] dropped {} coins where [they] [were] struck down.",
+                        pile.count(r) ; self.noun(r));
+                    pile.place(r, loc);
+                }
+            }
+
             return;
         }
 
@@ -319,20 +338,24 @@ impl Entity {
             for e in self.contents(r).collect::<Vec<_>>() {
                 e.place_near(r, loc);
             }
+
+            if !self.is_player_aligned(r) && !self.is_ephemeral(r) {
+                let level = self.get::<Stats>(r).level;
+                if level > 0 {
+                    // XXX: Formula for cash dropped per enemy prolly needs
+                    // tweaking.
+                    let avg = 20 + level * 5;
+
+                    let amount =
+                        r.rng().gen_range(avg - avg / 2..=avg + avg / 2);
+
+                    let pile = r.spawn_cash_at(amount, loc);
+                    pile.set(r, IsEphemeral(true));
+                }
+            }
         }
 
         self.destroy(r);
-
-        if r.player == Some(*self) {
-            // Player entity has died, try to field-promote a minion.
-            let npc = r.live_entities().find(|e| e.is_player_aligned(r));
-            if let Some(npc) = npc {
-                npc.become_player(r);
-            } else {
-                // No minions found, game over.
-                r.player = None;
-            }
-        }
     }
 
     pub fn fully_heal(&self, r: &mut impl AsMut<Runtime>) {

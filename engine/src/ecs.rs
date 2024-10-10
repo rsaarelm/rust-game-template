@@ -122,6 +122,7 @@ components! {
     Buffs,
     Speed,
     Wounds,
+    Cash,
     NumDeaths,
     IsMob,
     Voice,
@@ -268,6 +269,13 @@ pub enum Voice {
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
 pub struct Wounds(pub i32);
+
+/// Fungible money carried by the mob (generally just the player). Treated
+/// differently from a regular item so it gets its own component.
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
+)]
+pub struct Cash(pub i32);
 
 ////////////////////////////////
 
