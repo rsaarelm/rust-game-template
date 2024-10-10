@@ -7,7 +7,7 @@ use util::v2;
 use crate::Window;
 
 pub struct Cursor {
-    win: Window,
+    pub win: Window,
     pub pos: IVec2,
 }
 

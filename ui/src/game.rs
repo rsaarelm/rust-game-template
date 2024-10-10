@@ -220,8 +220,7 @@ impl Game {
                     // option was selected
                     match op {
                         LevelUp => {
-                            // TODO: Leveling up
-                            msg!("The altar stays silent.");
+                            game().act(Action::LevelUp);
                         }
                         SelectSpells => {
                             // TODO: Spell selection

@@ -82,6 +82,7 @@ impl Entity {
             Throw(item, dir) => self.throw(r, &item, modified_dir(dir)),
             Equip(item) => self.equip(r, &item),
             Unequip(item) => self.unequip(r, &item),
+            LevelUp => self.player_level_up(r),
         }
     }
 
@@ -298,4 +299,5 @@ pub enum Action {
     Throw(Entity, IVec2),
     Equip(Entity),
     Unequip(Entity),
+    LevelUp,
 }

@@ -339,6 +339,22 @@ impl Entity {
         self.get::<Cash>(r).0
     }
 
+    pub(crate) fn subtract_cash(
+        &self,
+        r: &mut impl AsMut<Runtime>,
+        amount: i32,
+    ) -> bool {
+        let r = r.as_mut();
+
+        let balance = self.carried_cash(r);
+        if balance >= amount {
+            self.set(r, Cash(balance - amount));
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn is_cash(&self, r: &impl AsRef<Runtime>) -> bool {
         self.base_desc(r) == "silver coin"
     }

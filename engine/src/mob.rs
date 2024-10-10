@@ -368,6 +368,27 @@ impl Entity {
             s.level
         })
     }
+
+    pub fn level_up_cost(&self, r: &impl AsRef<Runtime>) -> i32 {
+        let level = self.get::<Stats>(r).level;
+        (100.0 * 1.05f32.powi(level)) as i32
+    }
+
+    pub fn can_afford_level_up(&self, r: &impl AsRef<Runtime>) -> bool {
+        self.carried_cash(r) >= self.level_up_cost(r)
+    }
+
+    /// The level up action, must have enough cash to do it.
+    pub fn player_level_up(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
+        if self.subtract_cash(r, self.level_up_cost(r)) {
+            msg!("[One] offer[s] a sacrifice and feel[s] stronger."; self.noun(r));
+            self.level_up(r);
+        } else {
+            msg!("A larger sacrifice is needed.");
+        }
+    }
 }
 
 /// Status effects.

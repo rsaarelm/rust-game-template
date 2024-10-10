@@ -24,14 +24,25 @@ async fn render(win: &Window) -> Option<CampAction> {
     let mut cur = Cursor::new(win);
 
     let key = navni::keypress();
+    let Some(player) = game().r.player() else {
+        return None;
+    };
 
-    // TODO: Dim out out the level up option if you don't have enough cash for
-    // next level.
-    if cur.print_button("Raise e)ssence") || key.is("e") {
+    // Dim out the level-up when you don't have enough cash
+    if !player.can_afford_level_up(game()) {
+        cur.win.foreground_col = X::GRAY;
+    }
+
+    if cur.print_button(&format!(
+        "Raise e)ssence ({}$)",
+        player.level_up_cost(game())
+    )) || key.is("e")
+    {
         // There needs to be a level-up menu here if there's stat or perk
         // selections involved.
         return Some(LevelUp);
     }
+    cur.win.foreground_col = X::BROWN;
     writeln!(cur);
 
     if cur.print_button("Attune s)pells") || key.is("s") {
