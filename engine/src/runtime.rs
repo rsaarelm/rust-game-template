@@ -282,7 +282,15 @@ impl Runtime {
             e.destroy(self);
         }
 
+        if let Some(p) = self.player() {
+            // Remove player from the world for the duration of the respawn,
+            // otherwise enemies respawning near the player can have their AI
+            // lock on it.
+            self.placement.remove(&p);
+        }
+
         self.respawn_world();
+
         if let Some(p) = self.player() {
             // Remind the player of their inadequacy.
             let num_deaths = p.get::<NumDeaths>(self).0;
