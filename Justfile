@@ -40,7 +40,7 @@ profile-release *ARGS:
     hotspot ./perf.data
 
 # Extract Tiled JSON map from IDM map.
-extract-idm-map idm-map:
+extract-json-map idm-map:
     cargo run --example tiled-export -- extract {{idm-map}}
 
 # Inject changes from JSON map back into IDM map.
