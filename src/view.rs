@@ -161,6 +161,8 @@ impl Widget for StatusPanel {
         if has_inventory {
             command_help(&mut cur, Inventory, "inventory");
         }
+        cur.pos.x = win.width() / 2;
+        command_help(&mut cur, Pass, "wait");
         writeln!(cur);
 
         if has_inventory {
@@ -172,9 +174,8 @@ impl Widget for StatusPanel {
 
         command_help(&mut cur, Cycle, "cycle");
         cur.pos.x = win.width() / 2;
-        command_help(&mut cur, Pass, "wait");
-        writeln!(cur);
         command_help(&mut cur, Cancel, "cancel");
+        writeln!(cur);
 
         cur.pos.y = win.height() - 2;
         cur.pos.x = 0;
