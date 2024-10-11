@@ -113,6 +113,7 @@ pub async fn main_gameplay() {
 
             if navni::keypress().is("!") {
                 if let Some(player) = game().r.player() {
+                    player.fully_heal(game());
                     msg!("Powered up to level {}", player.level_up(game()));
                 }
             }
