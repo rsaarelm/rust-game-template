@@ -1,7 +1,7 @@
-use content::{Cube, Zone, LEVEL_BASIS};
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
 use util::{dijkstra_map, s4, v3, Neighbors2D, Sdf};
+use world::{Cube, Zone, LEVEL_BASIS};
 
 use crate::{placement::Place, prelude::*};
 

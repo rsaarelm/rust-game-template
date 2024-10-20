@@ -1,8 +1,8 @@
 [package]
-name = "content"
+name = "world"
 version = "0.1.0"
 edition = "2021"
-description = "Game content datatypes and generation"
+description = "Game world datatypes and generation"
 
 [dependencies]
 anyhow = "1"

@@ -3,11 +3,11 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use content::settings;
 use engine::prelude::*;
 use ui::{ask, game};
 use util::{IncrementalOutline, Outline, Silo};
 use version::VERSION;
+use world::settings;
 
 mod map_view;
 mod run;
@@ -71,7 +71,7 @@ fn main() -> anyhow::Result<()> {
         data += md;
     }
 
-    content::register_data(idm::transmute(&data)?);
+    world::register_data(idm::transmute(&data)?);
 
     navni::logger::start(&settings().id);
 

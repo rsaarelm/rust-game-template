@@ -1,9 +1,9 @@
 //! Entity logic for usable items.
 
-use content::{EquippedAt, ItemKind};
 use rand::seq::SliceRandom;
 use strum::IntoEnumIterator;
 use util::{s4, RngExt};
+use world::{EquippedAt, ItemKind};
 
 use crate::{
     ecs::{Cash, Count, IsEphemeral, ItemPower},

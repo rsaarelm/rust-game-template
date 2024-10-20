@@ -1,10 +1,10 @@
 use std::fmt::Write;
 
-use content::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use navni::X256Color as X;
 use ui::{ask, prelude::*};
 use util::{wizard_mode, writeln};
+use world::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 
 use crate::{
     map_view::{view_map, MapAction::*},

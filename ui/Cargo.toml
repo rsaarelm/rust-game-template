@@ -6,7 +6,6 @@ description = "Game display and user interface"
 
 [dependencies]
 anyhow = "1"
-content = { path = "../content" }
 derive_more = "1"
 engine = { path = "../engine" }
 gfx = { path = "../gfx" }
@@ -18,3 +17,4 @@ rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 snap = "1"
 util = { path = "../util" }
+world = { path = "../world" }

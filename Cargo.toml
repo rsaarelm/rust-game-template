@@ -26,12 +26,11 @@ panic = 'abort'
 codegen-units = 1
 
 [workspace]
-members = ["content", "fov", "engine", "gfx", "ui", "util"]
+members = ["fov", "engine", "gfx", "ui", "util", "world"]
 
 [dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-content = { path = "content" }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }
@@ -43,6 +42,7 @@ rand = "0.8"
 snap = "1"
 ui = { path = "ui" }
 util = { path = "util" }
+world = { path = "world" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["custom"] }

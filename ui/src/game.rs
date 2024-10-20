@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
-use content::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use util::{s4, s8, Layout, SameThread};
+use world::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 
 use crate::{anim, camp_menu::camp, prelude::*, Command, InputMap, SectorView};
 

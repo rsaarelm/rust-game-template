@@ -6,7 +6,6 @@ description = "Core game logic"
 
 [dependencies]
 anyhow = "1"
-content = { path = "../content" }
 derive_more = "1"
 fdeflate = "0.3"
 fov = { path = "../fov" }
@@ -20,6 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_with = "3"
 strum = { version = "0.26", features = ["derive"] }
 util = { path = "../util" }
+world = { path = "../world" }
 
 [dev-dependencies]
 pretty_assertions = "1"

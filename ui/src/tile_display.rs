@@ -1,9 +1,9 @@
-use content::{Block, Tile, Zone};
 use derive_more::Deref;
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::prelude::*;
 use rand::Rng;
+use world::{Block, Tile, Zone};
 
 use navni::X256Color as X;
 use util::reverse_dir_mask_4;

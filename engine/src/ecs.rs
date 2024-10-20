@@ -2,7 +2,6 @@
 
 use std::{cell::RefCell, collections::BTreeMap, fmt};
 
-use content::{EquippedAt, ItemKind, Power};
 use derive_more::{Deref, DerefMut};
 use hecs::{
     serialize::row::{self, SerializeContext},
@@ -14,6 +13,7 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use util::InString;
+use world::{EquippedAt, ItemKind, Power};
 
 use crate::{power::PowerState, prelude::*, Buff};
 

@@ -1,9 +1,9 @@
 //! Logic for revealing unexplored game terrain
 
-use content::BitAtlas;
 use derive_more::{Deref, DerefMut};
 use glam::IVec3;
 use serde::{Deserialize, Serialize};
+use world::BitAtlas;
 
 use crate::prelude::*;
 

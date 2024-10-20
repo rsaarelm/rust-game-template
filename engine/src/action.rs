@@ -1,9 +1,9 @@
 //! Entities doing things
 
-use content::{Block, EquippedAt, Power};
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 use util::{s4, RngExt};
+use world::{Block, EquippedAt, Power};
 
 use crate::{
     ecs::{ActsNext, Momentum, Voice},

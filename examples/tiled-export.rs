@@ -8,8 +8,8 @@ use clap::Parser;
 use glam::{ivec2, ivec3, IVec3};
 use serde::{Deserialize, Serialize};
 
-use content::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
 use util::{text, HashMap, HashSet};
+use world::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 // NB. This thing is sort of weird and janky, the actual spatial positions of
 // prefab maps aren't stable with the presence of procgen segments and

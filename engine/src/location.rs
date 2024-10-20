@@ -1,6 +1,6 @@
-use content::{Block, Environs, Tile};
 use glam::ivec3;
 use util::{s4, s8, Neighbors2D};
+use world::{Block, Environs, Tile};
 
 use crate::{prelude::*, Grammatize};
 

@@ -1,10 +1,10 @@
 use std::fmt::Write;
 
-use content::EquippedAt;
 use engine::prelude::*;
 use navni::Key;
 use ui::prelude::*;
 use util::{text, write, writeln};
+use world::EquippedAt;
 
 pub fn item_list(
     win: &Window,

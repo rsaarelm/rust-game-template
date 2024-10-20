@@ -1,8 +1,8 @@
 //! Special powers entities can use
 
-use content::{Pod, PodObject, Power, Rect, Zone};
 use serde::{Deserialize, Serialize};
 use util::{v2, Neighbors2D};
+use world::{Pod, PodObject, Power, Rect, Zone};
 
 use crate::{
     ecs::{self, Powers, Wounds},

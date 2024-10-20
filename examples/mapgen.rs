@@ -1,7 +1,7 @@
 use clap::Parser;
 
-use content::{mapgen, Block, Lot, Patch, SectorMap, Zone};
 use util::{GameRng, Silo};
+use world::{mapgen, Block, Lot, Patch, SectorMap, Zone};
 
 #[derive(Parser, Debug)]
 #[command(about = "Test map generators")]

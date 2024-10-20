@@ -1,4 +1,4 @@
-use content::{Item, Monster};
+use world::{Item, Monster};
 
 use crate::{ecs::*, prelude::*};
 

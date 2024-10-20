@@ -1,9 +1,9 @@
-use content::{Level, Zone};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
 use ui::{prelude::*, render_fog, DisplayTile, SectorView};
 use util::{v2, PolyLineIter};
+use world::{Level, Zone};
 
 #[derive(Clone, Debug)]
 pub enum MapAction {

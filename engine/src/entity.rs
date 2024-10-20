@@ -1,11 +1,11 @@
 //! Generic entity logic.
 use std::{fmt, str::FromStr};
 
-use content::{Block, Data};
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use util::{text, Noun, Silo};
+use world::{Block, Data};
 
 use crate::{ecs::*, placement::Place, prelude::*};
 

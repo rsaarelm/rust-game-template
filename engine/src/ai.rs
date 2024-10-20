@@ -1,8 +1,8 @@
 //! Mobs figuring out what to do on their own.
-use content::{Cube, EquippedAt};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::{s4, Sdf};
+use world::{Cube, EquippedAt};
 
 use crate::{
     ecs::{IsEphemeral, IsFriendly},

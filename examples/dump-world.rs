@@ -1,8 +1,8 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use clap::Parser;
-use content::{AtlasKey, Location, Scenario, SectorMap, World};
 use util::{IndexMap, Silo};
+use world::{AtlasKey, Location, Scenario, SectorMap, World};
 
 #[derive(Parser, Debug)]
 struct Args {

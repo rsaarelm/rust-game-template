@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
 use anyhow::Result;
-use content::{Data, Environs, Pod, Voxel, World};
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{GameRng, Silo};
+use world::{Data, Environs, Pod, Voxel, World};
 
 use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 
@@ -109,11 +109,11 @@ impl Runtime {
     /// Since objects specify counts but the entity type might not be
     /// stackable, this can still produce multiple entities, so it returns a
     /// vector.
-    fn spawn_object(&mut self, object: &content::PodObject) -> Vec<Entity> {
+    fn spawn_object(&mut self, object: &world::PodObject) -> Vec<Entity> {
         // Build the base entity before multiplication.
         let entity = match &object.kind {
-            content::PodKind::Monster(data) => data.build(self, &object.name),
-            content::PodKind::Item(data) => data.build(self, &object.name),
+            world::PodKind::Monster(data) => data.build(self, &object.name),
+            world::PodKind::Item(data) => data.build(self, &object.name),
         };
 
         let mut ret = vec![entity];
@@ -135,7 +135,7 @@ impl Runtime {
 
     pub fn spawn_at(
         &mut self,
-        pod: &content::Pod,
+        pod: &world::Pod,
         place: impl Into<Place>,
     ) -> Vec<Entity> {
         let place = place.into();
@@ -400,7 +400,7 @@ mod tests {
 
     #[test]
     fn build_world() {
-        content::register_data_from("../data").unwrap();
+        world::register_data_from("../data").unwrap();
 
         let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         assert!(runtime.player().is_some());
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn saving_and_loading() {
-        content::register_data_from("../data").unwrap();
+        world::register_data_from("../data").unwrap();
 
         let runtime = Runtime::new(Silo::new("rand0m")).unwrap();
         let save = idm::to_string(&runtime).expect("Save failed");

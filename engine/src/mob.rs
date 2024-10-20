@@ -1,7 +1,7 @@
 //! Entity logic for active creatures.
-use content::Block;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use world::Block;
 
 use crate::{
     ecs::{

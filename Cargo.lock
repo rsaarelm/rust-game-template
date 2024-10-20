@@ -233,27 +233,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
 
 [[package]]
-name = "content"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "derive_more",
- "glam",
- "idm",
- "indexmap 2.6.0",
- "itertools",
- "log",
- "memoize",
- "pathfinding",
- "rand",
- "serde",
- "serde_with",
- "static_assertions",
- "strum",
- "util",
-]
-
-[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -408,7 +387,6 @@ name = "engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "content",
  "derive_more",
  "fdeflate",
  "fov",
@@ -425,6 +403,7 @@ dependencies = [
  "serde_with",
  "strum",
  "util",
+ "world",
 ]
 
 [[package]]
@@ -521,7 +500,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "content",
  "engine",
  "fov",
  "getrandom",
@@ -536,6 +514,7 @@ dependencies = [
  "snap",
  "ui",
  "util",
+ "world",
 ]
 
 [[package]]
@@ -1585,7 +1564,6 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "content",
  "derive_more",
  "engine",
  "gfx",
@@ -1597,6 +1575,7 @@ dependencies = [
  "serde",
  "snap",
  "util",
+ "world",
 ]
 
 [[package]]
@@ -1911,6 +1890,27 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "world"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "derive_more",
+ "glam",
+ "idm",
+ "indexmap 2.6.0",
+ "itertools",
+ "log",
+ "memoize",
+ "pathfinding",
+ "rand",
+ "serde",
+ "serde_with",
+ "static_assertions",
+ "strum",
+ "util",
+]
 
 [[package]]
 name = "yansi"
