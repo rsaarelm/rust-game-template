@@ -1,11 +1,32 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
-use util::{GameRng, Silo};
+use util::{GameRng, IncrementalOutline, Outline, Silo};
 use world::{mapgen, Block, Lot, Patch, SectorMap, Zone};
 
 #[derive(Parser, Debug)]
 #[command(about = "Test map generators")]
-enum Args {
+struct Args {
+    /// Load game data from a given path instead of using default data.
+    #[arg(long, value_name = "PATH")]
+    data_dir: Option<PathBuf>,
+
+    /// Comma-separarted list of mod files to apply
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Comma-separarted list of mod files to apply"
+    )]
+    mods: Vec<PathBuf>,
+
+    #[command(subcommand)]
+    command: Cmds,
+}
+
+#[derive(Parser, Debug)]
+#[command(about = "Test map generators")]
+enum Cmds {
     /// Generate a rooms and corridors map.
     Corridors(CorridorsArgs),
 }
@@ -69,9 +90,31 @@ impl CorridorsArgs {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
+    let mut mods: Vec<IncrementalOutline> = Default::default();
+    for path in args.mods {
+        let md = util::dir_to_idm(path)?;
+        mods.push(md);
+    }
+
+    let mut data: Outline = if let Some(data_dir) = args.data_dir.as_ref() {
+        let data = util::dir_to_idm(data_dir)?.to_string();
+        idm::from_str(&data)?
+    } else {
+        let data = snap::raw::Decoder::new()
+            .decompress_vec(include_bytes!("../target/data.idm.sz"))?;
+        let data = std::str::from_utf8(&data)?;
+        idm::from_str(data)?
+    };
+
+    for md in &mods {
+        data += md;
+    }
+
+    world::register_data(idm::transmute(&data)?);
+
     let now = std::time::Instant::now();
-    let mut map = match args {
-        Args::Corridors(args) => args.gen(),
+    let mut map = match args.command {
+        Cmds::Corridors(args) => args.gen(),
     };
     let elapsed = now.elapsed();
 
