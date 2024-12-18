@@ -39,7 +39,14 @@ impl MapGenerator for GenericSector {
         use GenericSector::*;
 
         match self {
-            Water => todo!(),
+            Water => {
+                let ground = lot.ground();
+                Ok(lot
+                    .volume
+                    .into_iter()
+                    .map(|p| (p, ground.contains(p).then_some(Block::Water)))
+                    .collect())
+            }
             Grassland => todo!(),
             Forest => todo!(),
             Mountains => todo!(),
@@ -139,6 +146,10 @@ impl Lot {
             _ => panic!("Bad exit dir {idx}"),
         }
     }
+
+    pub fn ground(&self) -> Cube {
+        self.volume.split([0, 0, -1])[0]
+    }
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
@@ -158,6 +169,18 @@ impl Patch {
             terrain: value.terrain(origin)?,
             spawns: value.spawns(origin)?.into_iter().collect(),
         })
+    }
+}
+
+impl<P: Into<Location>> FromIterator<(P, Voxel)> for Patch {
+    fn from_iter<I: IntoIterator<Item = (P, Voxel)>>(iter: I) -> Self {
+        let mut ret = Patch::default();
+
+        for (loc, voxel) in iter.into_iter() {
+            ret.terrain.insert(loc.into(), voxel);
+        }
+
+        ret
     }
 }
 
