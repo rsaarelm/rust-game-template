@@ -10,7 +10,10 @@ use crate::game;
 /// Convenience method, get input action from current navni keypress if you
 /// can make one.
 pub fn input_press() -> Option<InputAction> {
-    game().input_map.get(&navni::keypress()).copied()
+    game()
+        .input_map
+        .get(&navni::keypress().ignore_repeat_flag())
+        .copied()
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -123,6 +126,7 @@ impl InputMap {
                     KeyTyped::new(
                         Key::Char(layout.remap_from_qwerty(c)),
                         k.mods(),
+                        false,
                     ),
                     a,
                 );

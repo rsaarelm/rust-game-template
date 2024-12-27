@@ -16,6 +16,8 @@ const HEIGHT: u32 = 45;
 pub struct Game {
     same_thread: SameThread,
 
+    frame_counter: FrameCounter,
+
     /// Logic level data.
     pub r: Runtime,
     /// Display buffer.
@@ -89,6 +91,7 @@ impl Default for Game {
 
         Game {
             same_thread: Default::default(),
+            frame_counter: FrameCounter::new(1.0 / 60.0),
             r: Default::default(),
             s: Buffer::new(WIDTH, HEIGHT),
             viewpoint: Default::default(),
@@ -310,6 +313,8 @@ impl Game {
         // Check for window resize
         let (w, h) = navni::char_resolution(WIDTH, HEIGHT);
         let mut was_resized = false;
+
+        self.frame_counter.tick();
 
         if w != 0
             && h != 0
@@ -747,7 +752,8 @@ fn draw_anims(
     view: SectorView,
     set: &mut Vec<Box<dyn Anim>>,
 ) {
-    let n_updates = navni::logical_frames_elapsed();
+    let n_updates = 1 + game().frame_counter.missed_frames() as u32;
+    game().frame_counter.catch_up();
     let r = r.as_ref();
     for i in (0..set.len()).rev() {
         // Iterate anims backwards so when we swap-remove expired
