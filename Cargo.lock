@@ -1598,6 +1598,7 @@ name = "util"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitflags 2.6.0",
  "derive_more",
  "fraction",
  "glam",
@@ -1907,6 +1908,7 @@ name = "world"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitflags 2.6.0",
  "derive_more",
  "glam",
  "idm",

@@ -5,6 +5,34 @@ use regex::Regex;
 
 use crate::HashMap;
 
+pub trait StrExt {
+    fn to_kebab_case(&self) -> String;
+}
+
+impl StrExt for &str {
+    fn to_kebab_case(&self) -> String {
+        // Convert an uppercase letter following a lowercase letter to a
+        // hyphen followed by the uppercase letter in lowecase.
+        // Otherwise convert uppercase letters to lowercase.
+        // Convert underscores to hyphens.
+        let mut result = String::with_capacity(self.len());
+        let mut prev = '_';
+        for c in self.chars() {
+            match c {
+                '_' => result.push('-'),
+                c if c.is_uppercase() && prev.is_lowercase() => {
+                    result.push('-');
+                    result.push(c.to_ascii_lowercase());
+                }
+                c => result.push(c.to_ascii_lowercase()),
+            }
+            prev = c;
+        }
+
+        result
+    }
+}
+
 /// Split text at whitespace so it fits within `max_width`.
 ///
 /// Words that are longer than `max_width` will be sliced into `max_width`

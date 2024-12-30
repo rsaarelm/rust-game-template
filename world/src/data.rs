@@ -384,6 +384,22 @@ pub struct Monster {
     pub attack_damage: i32,
     pub rarity: u32,
     pub min_depth: u32,
+
+    #[serde(with = "util::idm_bitflags")]
+    pub flags: MonsterFlags,
+}
+
+// Add the bitflags crate macro MonsterFlags that includes flag 'boss'.
+bitflags::bitflags! {
+    #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Ord, PartialOrd)]
+    pub struct MonsterFlags: u32 {
+        /// Monster is one of the unique bosses you must defeat to win the
+        /// game.
+        const BOSS = 1 << 0;
+
+        /// Monster explodes when killed.
+        const EXPLODES = 1 << 1;
+    }
 }
 
 impl SpawnDist for Monster {

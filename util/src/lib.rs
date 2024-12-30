@@ -25,7 +25,9 @@ mod grid;
 pub use grid::Grid;
 
 mod idm;
-pub use idm::{_String, dash_option, dir_to_idm, IncrementalOutline, Outline};
+pub use idm::{
+    _String, dash_option, dir_to_idm, idm_bitflags, IncrementalOutline, Outline,
+};
 
 mod interned_string;
 pub use interned_string::InString;
@@ -54,6 +56,7 @@ mod sys;
 pub use sys::{can_quit_program, panic_handler, user_name, KeyboardLayout};
 
 pub mod text;
+pub use text::StrExt;
 
 mod unchecked_write;
 

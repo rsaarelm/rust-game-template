@@ -286,11 +286,67 @@ pub mod dash_option {
         let s = String::deserialize(deserializer)?;
 
         if s == "-" {
-            Ok(None)
-        } else {
-            idm::from_str::<T>(&s)
-                .map_err(serde::de::Error::custom)
-                .map(Some)
+            return Ok(None);
         }
+
+        idm::from_str::<T>(&s)
+            .map_err(serde::de::Error::custom)
+            .map(Some)
+    }
+}
+
+/// Functions to deserialize bitflags.
+pub mod idm_bitflags {
+    use crate::{HashMap, StrExt};
+
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S, T, B>(val: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: bitflags::Flags<Bits = B>,
+        B: bitflags::Bits,
+    {
+        // Use '-' to signify zero flags set.
+        let flags = val.bits();
+        if flags == B::EMPTY {
+            return "-".serialize(serializer);
+        }
+
+        val.iter_names()
+            .map(|(s, _)| s.to_kebab_case())
+            .collect::<Vec<_>>()
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D, T, B>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: bitflags::Flags<Bits = B>,
+        B: bitflags::Bits,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        if s == "-" {
+            return Ok(T::from_bits_truncate(B::EMPTY));
+        }
+
+        let lookup = HashMap::from_iter(
+            T::FLAGS
+                .iter()
+                .map(|f| (f.name().to_kebab_case(), f.value().bits())),
+        );
+
+        let mut bits = B::EMPTY;
+
+        for name in s.split_whitespace() {
+            let bit: B = *lookup.get(name).ok_or_else(|| {
+                serde::de::Error::custom(format!("unknown flag {name}"))
+            })?;
+
+            bits = bits | bit;
+        }
+
+        Ok(T::from_bits_truncate(bits))
     }
 }
