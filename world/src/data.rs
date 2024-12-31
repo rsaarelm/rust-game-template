@@ -4,6 +4,7 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use derive_more::{Deref, From};
+use derives::{DeserializeFlags, SerializeFlags};
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -385,13 +386,12 @@ pub struct Monster {
     pub rarity: u32,
     pub min_depth: u32,
 
-    #[serde(with = "util::idm_bitflags")]
     pub flags: MonsterFlags,
 }
 
 // Add the bitflags crate macro MonsterFlags that includes flag 'boss'.
 bitflags::bitflags! {
-    #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Ord, PartialOrd)]
+    #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Ord, PartialOrd, SerializeFlags, DeserializeFlags)]
     pub struct MonsterFlags: u32 {
         /// Monster is one of the unique bosses you must defeat to win the
         /// game.

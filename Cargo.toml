@@ -26,7 +26,7 @@ panic = 'abort'
 codegen-units = 1
 
 [workspace]
-members = ["fov", "engine", "gfx", "ui", "util", "world"]
+members = ["derives", "fov", "engine", "gfx", "ui", "util", "world"]
 
 [dependencies]
 anyhow = "1"
