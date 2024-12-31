@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use engine::prelude::*;
 use glam::{ivec3, IVec3};
 use navni::{prelude::*, X256Color as X};
-use util::{s4, s8, Layout, SameThread};
+use util::{s4, s8, Layout, SameThread, StrExt};
 use world::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
 
 use crate::{anim, camp_menu::camp, prelude::*, Command, InputMap, SectorView};
@@ -147,7 +147,16 @@ impl Game {
             use Msg::*;
             match msg {
                 Message(text) => {
-                    self.msg.push(text);
+                    if let Some(repeat) = self
+                        .msg
+                        .last()
+                        .and_then(|prev| prev.deduplicate_message(&text))
+                    {
+                        self.msg.pop();
+                        self.msg.push(repeat);
+                    } else {
+                        self.msg.push(text);
+                    }
                 }
                 Fire(e, dir) => {
                     self.add_anim(Box::new(
