@@ -60,7 +60,8 @@ pub struct World {
     //
     // This means that skeleton construction needs access to the whole
     // SerWorld type.
-    /// Built from scenario.
+    /// Complete description for how to instantiate parts of the game world,
+    /// built from `Scenario` data.
     skeleton: HashMap<Level, Segment>,
 
     /// Memory of which sectors have been generated.
@@ -102,7 +103,7 @@ enum GenStatus {
 // only specify half of the potential connections, the other halves are found
 // on the opposing segment.
 
-// NB. You can't rely on the connected_ fields in segments for skeleton
+// NB. You can't rely on the `connected_*` fields in segments for skeleton
 // connectivity analysis. They're there to inform procedural map generators,
 // but if the segment has a prefab map, the prefab can have open connections
 // that aren't reflected in the connection flags. (This may change in the
