@@ -3,7 +3,7 @@ use std::fmt::Write;
 use engine::prelude::*;
 use navni::Key;
 use ui::prelude::*;
-use util::{text, write, writeln};
+use util::{write, writeln, StrExt};
 use world::EquippedAt;
 
 pub fn item_list(
@@ -87,7 +87,7 @@ impl Widget for StatusPanel {
         // Print a named command for key, also have the text act as a button.
         let mut command_help = |cur: &mut Cursor, action, name| {
             let s = if let Some(k) = g.input_map.key_for(action) {
-                text::input_help_string(&k.to_string(), name)
+                k.to_string().input_help_string(name)
             } else {
                 format!("--: {name}")
             };

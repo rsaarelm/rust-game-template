@@ -6,15 +6,111 @@ use regex::Regex;
 use crate::HashMap;
 
 pub trait StrExt {
+    /// Convert identifiers to lowercase kebab-case. Adds hyphens between
+    /// connected lowercase and uppercase characters for CamelCase
+    /// identifiers.
     fn to_kebab_case(&self) -> String;
+
+    /// Split text at whitespace so it fits within `max_width`.
+    ///
+    /// Words that are longer than `max_width` will be sliced into `max_width`
+    /// sized segments.
+    fn split_fitting(&self, max_width: usize) -> (&str, &str);
+
+    /// Iterate over lines of text that fit within `max_width`.
+    fn lines_of(&self, max_width: usize) -> impl Iterator<Item = &str>;
+
+    /// Pack repeating message lines into a single message with a multiplier
+    /// count.
+    ///
+    /// If the function returns a value, the previous message in the message queue
+    /// is intended to be replaced with the value string and the redundant new
+    /// message discarded. Otherwise the new message is appended to the queue.
+    ///
+    /// ```
+    /// # use util::StrExt;
+    /// assert_eq!("Bump.".deduplicate_message("Jump."), None);
+    ///
+    /// assert_eq!("Bump.".deduplicate_message("Bump."),
+    ///     Some("Bump. (x2)".to_string()));
+    /// assert_eq!("Bump. (x2)".deduplicate_message("Bump."),
+    ///     Some("Bump. (x3)".to_string()));
+    ///
+    /// // Refuse to parse stupidly large numbers.
+    /// assert_eq!("Bump. (x131236197263917263)".deduplicate_message("Bump."),
+    ///     None);
+    /// ```
+    fn deduplicate_message(&self, next: &str) -> Option<String>;
+
+    /// Create formatted help strings given a keyboard shortcut and a command name
+    /// that try to embed the shortcut in the name as a mnemonic.
+    ///
+    /// ```
+    /// # use util::StrExt;
+    /// assert_eq!("z".input_help_string("stats"), "z) stats");
+    /// assert_eq!("i".input_help_string("inventory"), "i)nventory");
+    /// assert_eq!("V".input_help_string("travel"), "tra(V)el");
+    /// assert_eq!("z".input_help_string("xyzzy"), "xy(z)zy");
+    /// ```
+    fn input_help_string(&self, command: &str) -> String;
+
+    fn is_capitalized(&self) -> bool;
+
+    fn capitalize(&self) -> String;
+
+    fn uncapitalize(&self) -> String;
+
+    /// Get the smallest common indentation depth of nonempty lines of text.
+    ///
+    /// Both tabs and spaces are treated as a single unit of indentation.
+    fn indentation(&self) -> usize;
+
+    /// Return non-whitespace chars from a block of text mapped to their
+    /// coordinates.
+    ///
+    /// The text is trimmed so that the result set will have a minimum x
+    /// coordinate and a minimum y coordinate at 0.
+    fn char_grid(&self) -> impl Iterator<Item = (IVec2, char)> + '_;
+
+    /// Try to do English noun pluralization, using the given list of irregular
+    /// words.
+    fn pluralize(&self, irregular_words: &HashMap<String, String>) -> String;
+
+    /// Translate segments in square brackets in string with the given function.
+    ///
+    /// Square brackets can be escaped by doubling them, `[[` becomes a literal
+    /// `[` and `]]` becomes a literal `]`.
+    ///
+    /// If your opening and closing brackets don't match, the formatting behavior
+    /// is unspecified.
+    ///
+    /// If the template parameter starts with a capital letter, the result from
+    /// the converter is capitalized. The converter always gets lowercase values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use util::StrExt;
+    ///
+    /// fn mapping(word: &str) -> Result<String, ()> {
+    ///     match word {
+    ///         "foo" => Ok("bar"),
+    ///         _ => Err(())
+    ///     }.map(|x| x.to_string())
+    /// }
+    ///
+    /// assert_eq!(Ok("Foo bar baz".into()), "Foo [foo] baz".templatize(mapping));
+    /// assert_eq!(Ok("Bar foo baz".to_string()), "[Foo] foo baz".templatize(mapping));
+    /// assert_eq!(Err(()), "foo [bar] baz".templatize(mapping));
+    /// assert_eq!(Ok("foo [foo] baz".to_string()), "foo [[foo]] baz".templatize(mapping));
+    /// ```
+    fn templatize<F, E>(&self, mapper: F) -> Result<String, E>
+    where
+        F: FnMut(&str) -> Result<String, E>;
 }
 
-impl StrExt for &str {
+impl StrExt for str {
     fn to_kebab_case(&self) -> String {
-        // Convert an uppercase letter following a lowercase letter to a
-        // hyphen followed by the uppercase letter in lowecase.
-        // Otherwise convert uppercase letters to lowercase.
-        // Convert underscores to hyphens.
         let mut result = String::with_capacity(self.len());
         let mut prev = '_';
         for c in self.chars() {
@@ -31,339 +127,279 @@ impl StrExt for &str {
 
         result
     }
-}
 
-/// Split text at whitespace so it fits within `max_width`.
-///
-/// Words that are longer than `max_width` will be sliced into `max_width`
-/// sized segments.
-fn split_fitting(max_width: usize, text: &str) -> (&str, &str) {
-    // Can't consume anything if width is zero.
-    assert!(max_width > 0);
+    fn split_fitting(&self, max_width: usize) -> (&str, &str) {
+        // Can't consume anything if width is zero.
+        assert!(max_width > 0);
 
-    // Text fits in a single line and has no newlines, return as is.
-    if text.chars().count() <= max_width && !text.chars().any(|c| c == '\n') {
-        return (text, "");
-    }
-
-    // Position of end of text that fits in split-off line.
-    let mut line_end = None;
-
-    // Set to true in case line starts with whitespace
-    let mut traversing_whitespace = true;
-    for (i, (pos, c)) in text.char_indices().enumerate() {
-        // Always break when you see newline.
-        if c == '\n' {
-            line_end = Some(pos);
-            break;
+        // Text fits in a single line and has no newlines, return as is.
+        if self.chars().count() <= max_width && !self.chars().any(|c| c == '\n')
+        {
+            return (self, "");
         }
 
-        if i >= max_width && !c.is_whitespace() {
-            if line_end.is_none() {
-                // We hit max width but have no candidate prefix.
-                // No choice but to cut the string mid-word.
+        // Position of end of text that fits in split-off line.
+        let mut line_end = None;
+
+        // Set to true in case line starts with whitespace
+        let mut traversing_whitespace = true;
+        for (i, (pos, c)) in self.char_indices().enumerate() {
+            // Always break when you see newline.
+            if c == '\n' {
                 line_end = Some(pos);
+                break;
             }
-            break;
+
+            if i >= max_width && !c.is_whitespace() {
+                if line_end.is_none() {
+                    // We hit max width but have no candidate prefix.
+                    // No choice but to cut the string mid-word.
+                    line_end = Some(pos);
+                }
+                break;
+            }
+
+            if i > 0 && c.is_whitespace() && !traversing_whitespace {
+                // Mark the point where we first enter whitespace. (Use
+                // traversing_whitespace flag to not update line_end at subsequent
+                // whitespace chars.)
+                line_end = Some(pos);
+                traversing_whitespace = true;
+            }
+            if !c.is_whitespace() {
+                traversing_whitespace = false;
+            }
         }
 
-        if i > 0 && c.is_whitespace() && !traversing_whitespace {
-            // Mark the point where we first enter whitespace. (Use
-            // traversing_whitespace flag to not update line_end at subsequent
-            // whitespace chars.)
-            line_end = Some(pos);
-            traversing_whitespace = true;
+        let line_end = match line_end {
+            None => self.len(),
+            Some(n) => n,
+        };
+
+        // Cut off the whitespace in between split lines.
+        // Start with the assumption that the whole remaining string is
+        // whitespace, truncate in the loop.
+        let mut whitespace_span = self[line_end..].len();
+        for (i, c) in self[line_end..].char_indices() {
+            // Stop cutting right past first newline you see.
+            if c == '\n' {
+                whitespace_span = i + 1;
+                break;
+            }
+            // Otherwise cut when you see non-whitespace again
+            if !c.is_whitespace() {
+                whitespace_span = i;
+                break;
+            }
         }
-        if !c.is_whitespace() {
-            traversing_whitespace = false;
-        }
+
+        (&self[..line_end], &self[(line_end + whitespace_span)..])
     }
 
-    let line_end = match line_end {
-        None => text.len(),
-        Some(n) => n,
-    };
-
-    // Cut off the whitespace in between split lines.
-    // Start with the assumption that the whole remaining string is
-    // whitespace, truncate in the loop.
-    let mut whitespace_span = text[line_end..].len();
-    for (i, c) in text[line_end..].char_indices() {
-        // Stop cutting right past first newline you see.
-        if c == '\n' {
-            whitespace_span = i + 1;
-            break;
-        }
-        // Otherwise cut when you see non-whitespace again
-        if !c.is_whitespace() {
-            whitespace_span = i;
-            break;
-        }
-    }
-
-    (&text[..line_end], &text[(line_end + whitespace_span)..])
-}
-
-pub fn split(max_width: usize, mut text: &str) -> impl Iterator<Item = &str> {
-    iter::from_fn(move || {
-        if text.is_empty() {
-            None
-        } else {
-            let (line, rest) = split_fitting(max_width, text);
-            text = rest;
-            Some(line)
-        }
-    })
-}
-
-/// Pack repeating message lines into a single message with a multiplier
-/// count.
-///
-/// If the function returns a value, the previous message in the message queue
-/// is intended to be replaced with the value string and the redundant new
-/// message discarded. Otherwise the new message is appended to the queue.
-///
-/// ```
-/// # use util::text::deduplicate_message;
-/// assert_eq!(deduplicate_message("Bump.", "Jump."), None);
-///
-/// assert_eq!(deduplicate_message("Bump.", "Bump."),
-///     Some("Bump. (x2)".to_string()));
-/// assert_eq!(deduplicate_message("Bump. (x2)", "Bump."),
-///     Some("Bump. (x3)".to_string()));
-///
-/// // Refuse to parse stupidly large numbers.
-/// assert_eq!(deduplicate_message("Bump. (x131236197263917263)", "Bump."),
-///     None);
-/// ```
-pub fn deduplicate_message(prev: &str, current: &str) -> Option<String> {
-    static RE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^(.*) \(x(\d{1,8})\)$").unwrap());
-
-    let mut base = prev;
-    let mut count: usize = 1;
-
-    if let Some(caps) = RE.captures(prev) {
-        base = caps.get(1).expect("Invalid regex").as_str();
-        count = caps
-            .get(2)
-            .expect("Invalid regex")
-            .as_str()
-            .parse()
-            .expect("Invalid regex");
-    }
-
-    if base == current {
-        Some(format!("{current} (x{})", count + 1))
-    } else {
-        None
-    }
-}
-
-/// Create formatted help strings given a keyboard shortcut and a command name
-/// that try to embed the shortcut in the name as a mnemonic.
-///
-/// ```
-/// # use util::text::input_help_string;
-/// assert_eq!(input_help_string("z", "stats"), "z) stats");
-/// assert_eq!(input_help_string("i", "inventory"), "i)nventory");
-/// assert_eq!(input_help_string("V", "travel"), "tra(V)el");
-/// assert_eq!(input_help_string("z", "xyzzy"), "xy(z)zy");
-/// ```
-pub fn input_help_string(key: &str, command: &str) -> String {
-    // XXX: Assumes strings are ASCII-7.
-    if key.len() <= 1 {
-        if let Some(p) = command.to_lowercase().find(&key.to_lowercase()) {
-            if p == 0 {
-                return format!("{}){}", key, &command[1..]);
+    fn lines_of(&self, max_width: usize) -> impl Iterator<Item = &str> {
+        let mut text = self;
+        iter::from_fn(move || {
+            if text.is_empty() {
+                None
             } else {
-                return format!(
-                    "{}({}){}",
-                    &command[..p],
-                    key,
-                    &command[(p + 1)..]
-                );
+                let (line, rest) = text.split_fitting(max_width);
+                text = rest;
+                Some(line)
             }
-        }
-    }
-    format!("{}) {}", key, command)
-}
-
-pub fn is_vowel(c: char) -> bool {
-    // If accented chars are used, they need to be added here...
-    matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'i' | 'o' | 'u')
-}
-
-pub fn is_capitalized(s: &str) -> bool {
-    s.chars().next().map(|c| c.is_uppercase()).unwrap_or(false)
-}
-
-pub fn capitalize(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(c) => c.to_uppercase().chain(chars).collect(),
-    }
-}
-
-pub fn uncapitalize(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(c) => c.to_lowercase().chain(chars).collect(),
-    }
-}
-
-/// Translate segments in square brackets in string with the given function.
-///
-/// Square brackets can be escaped by doubling them, `[[` becomes a literal
-/// `[` and `]]` becomes a literal `]`.
-///
-/// If your opening and closing brackets don't match, the formatting behavior
-/// is unspecified.
-///
-/// If the template parameter starts with a capital letter, the result from
-/// the converter is capitalized. The converter always gets lowercase values.
-///
-/// # Examples
-///
-/// ```
-/// use util::text::templatize;
-///
-/// fn translate(word: &str) -> Result<String, ()> {
-///     match word {
-///         "foo" => Ok("bar"),
-///         _ => Err(())
-///     }.map(|x| x.to_string())
-/// }
-///
-/// assert_eq!(Ok("Foo bar baz".into()), templatize(translate, "Foo [foo] baz"));
-/// assert_eq!(Ok("Bar foo baz".to_string()), templatize(translate, "[Foo] foo baz"));
-/// assert_eq!(Err(()), templatize(translate, "foo [bar] baz"));
-/// assert_eq!(Ok("foo [foo] baz".to_string()), templatize(translate, "foo [[foo]] baz"));
-/// ```
-pub fn templatize<F, E>(mut mapper: F, mut text: &str) -> Result<String, E>
-where
-    F: FnMut(&str) -> Result<String, E>,
-{
-    // I'm going to do some fun corner-cutting here.
-    //
-    // Instead of being all proper-like with the opening and closing bracket, I'll just treat them
-    // both as a generic separator char, so the string will start in verbatim mode and a lone
-    // bracket in either direction will toggle modes between verbatim and templatize.
-
-    fn next_chunk(text: &str) -> (String, &str) {
-        let mut acc = String::new();
-        let mut prev = '\0';
-        for (i, c) in text.char_indices() {
-            // Escaped bracket, emit one.
-            if (c == '[' || c == ']') && prev == c {
-                acc.push(c);
-                prev = '\0';
-                continue;
-            }
-            // Actual bracket, end chunk here and return remain.
-            if prev == '[' || prev == ']' {
-                return (acc, &text[i..]);
-            }
-            if c != '[' && c != ']' {
-                acc.push(c);
-            }
-            prev = c;
-        }
-        (acc, &text[text.len()..])
-    }
-
-    let mut ret = String::new();
-    let mut templating = false;
-    while !text.is_empty() {
-        let (mut chunk, remain) = next_chunk(text);
-        text = remain;
-
-        if templating {
-            if is_capitalized(&chunk) {
-                chunk = mapper(&uncapitalize(&chunk))?;
-                chunk = capitalize(&chunk);
-            } else {
-                chunk = mapper(&chunk)?;
-            }
-        }
-
-        ret += &chunk;
-        templating = !templating;
-    }
-    Ok(ret)
-}
-
-pub fn pluralize(
-    irregular_words: &HashMap<String, String>,
-    input: &str,
-) -> String {
-    if input.trim().is_empty() {
-        return input.to_string();
-    }
-
-    // Pluralize before the " of whatever" part, if there is one.
-    let (input, suffix) = if let Some(idx) = input.find(" of ") {
-        (&input[..idx], &input[idx..input.len()])
-    } else {
-        (input, "")
-    };
-    let word = input.split(&[' ', '-'][..]).last().unwrap_or("");
-    let prefix = &input[0..(input.len() - word.len())];
-
-    if let Some(plural) = irregular_words.get(word) {
-        let mut parts = plural.rsplitn(2, ' ');
-        let plural = parts.next().unwrap_or("");
-
-        if let Some(head) = parts.next() {
-            return format!("{head} {prefix}{plural}{suffix}");
-        } else {
-            return format!("{prefix}{plural}{suffix}");
-        }
-    }
-
-    if word.ends_with("ch")
-        || word.ends_with('s')
-        || word.ends_with("sh")
-        || word.ends_with('x')
-        || word.ends_with('z')
-    {
-        return format!("{prefix}{word}es{suffix}");
-    }
-
-    format!("{prefix}{word}s{suffix}")
-}
-
-/// Get the smallest common indentation depth of nonempty lines of text.
-///
-/// Both tabs and spaces are treated as a single unit of indentation.
-pub fn indentation(text: &str) -> usize {
-    text.lines()
-        .filter(|a| !a.trim().is_empty())
-        .map(|a| a.chars().take_while(|c| c.is_whitespace()).count())
-        .min()
-        .unwrap_or(0)
-}
-
-/// Return non-whitespace chars from a block of text mapped to their
-/// coordinates.
-///
-/// The text is trimmed so that the result set will have a minimum x
-/// coordinate and a minimum y coordinate at 0.
-pub fn char_grid(text: &str) -> impl Iterator<Item = (IVec2, char)> + '_ {
-    let x_skip = indentation(text);
-
-    text.lines()
-        .skip_while(|a| a.trim().is_empty())
-        .enumerate()
-        .flat_map(move |(y, line)| {
-            line.chars()
-                .skip(x_skip)
-                .enumerate()
-                .filter(|(_, c)| !c.is_whitespace())
-                .map(move |(x, c)| (ivec2(x as i32, y as i32), c))
         })
+    }
+
+    fn deduplicate_message(&self, next: &str) -> Option<String> {
+        static RE: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"^(.*) \(x(\d{1,8})\)$").unwrap());
+
+        let mut base = self;
+        let mut count: usize = 1;
+
+        if let Some(caps) = RE.captures(self) {
+            base = caps.get(1).expect("Invalid regex").as_str();
+            count = caps
+                .get(2)
+                .expect("Invalid regex")
+                .as_str()
+                .parse()
+                .expect("Invalid regex");
+        }
+
+        if base == next {
+            Some(format!("{next} (x{})", count + 1))
+        } else {
+            None
+        }
+    }
+
+    fn input_help_string(&self, command: &str) -> String {
+        // XXX: Assumes strings are ASCII-7.
+        if self.len() <= 1 {
+            if let Some(p) = command.to_lowercase().find(&self.to_lowercase()) {
+                if p == 0 {
+                    return format!("{}){}", self, &command[1..]);
+                } else {
+                    return format!(
+                        "{}({}){}",
+                        &command[..p],
+                        self,
+                        &command[(p + 1)..]
+                    );
+                }
+            }
+        }
+        format!("{}) {}", self, command)
+    }
+
+    fn is_capitalized(&self) -> bool {
+        self.chars()
+            .next()
+            .map(|c| c.is_uppercase())
+            .unwrap_or(false)
+    }
+
+    fn capitalize(&self) -> String {
+        let mut chars = self.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(c) => c.to_uppercase().chain(chars).collect(),
+        }
+    }
+
+    fn uncapitalize(&self) -> String {
+        let mut chars = self.chars();
+        match chars.next() {
+            None => String::new(),
+            Some(c) => c.to_lowercase().chain(chars).collect(),
+        }
+    }
+
+    fn indentation(&self) -> usize {
+        self.lines()
+            .filter(|a| !a.trim().is_empty())
+            .map(|a| a.chars().take_while(|c| c.is_whitespace()).count())
+            .min()
+            .unwrap_or(0)
+    }
+
+    fn char_grid(&self) -> impl Iterator<Item = (IVec2, char)> + '_ {
+        let x_skip = self.indentation();
+
+        self.lines()
+            .skip_while(|a| a.trim().is_empty())
+            .enumerate()
+            .flat_map(move |(y, line)| {
+                line.chars()
+                    .skip(x_skip)
+                    .enumerate()
+                    .filter(|(_, c)| !c.is_whitespace())
+                    .map(move |(x, c)| (ivec2(x as i32, y as i32), c))
+            })
+    }
+
+    fn pluralize(&self, irregular_words: &HashMap<String, String>) -> String {
+        if self.trim().is_empty() {
+            return self.to_string();
+        }
+
+        // Pluralize before the " of whatever" part, if there is one.
+        let (input, suffix) = if let Some(idx) = self.find(" of ") {
+            (&self[..idx], &self[idx..self.len()])
+        } else {
+            (self, "")
+        };
+        let word = input.split(&[' ', '-'][..]).last().unwrap_or("");
+        let prefix = &input[0..(input.len() - word.len())];
+
+        if let Some(plural) = irregular_words.get(word) {
+            let mut parts = plural.rsplitn(2, ' ');
+            let plural = parts.next().unwrap_or("");
+
+            if let Some(head) = parts.next() {
+                return format!("{head} {prefix}{plural}{suffix}");
+            } else {
+                return format!("{prefix}{plural}{suffix}");
+            }
+        }
+
+        if word.ends_with("ch")
+            || word.ends_with('s')
+            || word.ends_with("sh")
+            || word.ends_with('x')
+            || word.ends_with('z')
+        {
+            return format!("{prefix}{word}es{suffix}");
+        }
+
+        format!("{prefix}{word}s{suffix}")
+    }
+
+    fn templatize<F, E>(&self, mut mapper: F) -> Result<String, E>
+    where
+        F: FnMut(&str) -> Result<String, E>,
+    {
+        // I'm going to do some fun corner-cutting here.
+        //
+        // Instead of being all proper-like with the opening and closing bracket, I'll just treat them
+        // both as a generic separator char, so the string will start in verbatim mode and a lone
+        // bracket in either direction will toggle modes between verbatim and templatize.
+
+        fn next_chunk(text: &str) -> (String, &str) {
+            let mut acc = String::new();
+            let mut prev = '\0';
+            for (i, c) in text.char_indices() {
+                // Escaped bracket, emit one.
+                if (c == '[' || c == ']') && prev == c {
+                    acc.push(c);
+                    prev = '\0';
+                    continue;
+                }
+                // Actual bracket, end chunk here and return remain.
+                if prev == '[' || prev == ']' {
+                    return (acc, &text[i..]);
+                }
+                if c != '[' && c != ']' {
+                    acc.push(c);
+                }
+                prev = c;
+            }
+            (acc, &text[text.len()..])
+        }
+
+        let mut text = self;
+
+        let mut ret = String::new();
+        let mut templating = false;
+        while !text.is_empty() {
+            let (mut chunk, remain) = next_chunk(text);
+            text = remain;
+
+            if templating {
+                if chunk.is_capitalized() {
+                    chunk = mapper(&chunk.uncapitalize())?;
+                    chunk = chunk.capitalize();
+                } else {
+                    chunk = mapper(&chunk)?;
+                }
+            }
+
+            ret += &chunk;
+            templating = !templating;
+        }
+        Ok(ret)
+    }
+}
+
+pub trait CharExt {
+    fn is_vowel(&self) -> bool;
+}
+
+impl CharExt for char {
+    fn is_vowel(&self) -> bool {
+        // If accented chars are used, they need to be added here...
+        matches!(self.to_ascii_lowercase(), 'a' | 'e' | 'i' | 'o' | 'u')
+    }
 }
 
 #[cfg(test)]
@@ -373,14 +409,12 @@ mod tests {
     #[test]
     fn split_text() {
         assert_eq!(
-            split(
-                24,
-                "’Twas brillig, and the slithy toves
+            "’Twas brillig, and the slithy toves
       Did gyre and gimble in the wabe:
 All mimsy were the borogoves,
       And the mome raths outgrabe."
-            )
-            .collect::<Vec<_>>(),
+                .lines_of(24,)
+                .collect::<Vec<_>>(),
             vec![
                 "’Twas brillig, and the",
                 "slithy toves",
@@ -394,7 +428,8 @@ All mimsy were the borogoves,
         );
 
         assert_eq!(
-            split(28, "Really cancel the quitting of the stopping?",)
+            "Really cancel the quitting of the stopping?"
+                .lines_of(28)
                 .collect::<Vec<_>>(),
             vec!["Really cancel the quitting", "of the stopping?"]
         );
@@ -402,7 +437,6 @@ All mimsy were the borogoves,
 
     #[test]
     fn capitalizers() {
-        use super::{capitalize, is_capitalized};
         for &(text, cap) in &[
             ("", ""),
             ("a", "A"),
@@ -414,10 +448,10 @@ All mimsy were the borogoves,
             ("æ", "Æ"),
             ("æìë", "Æìë"),
         ] {
-            assert_eq!(&capitalize(text), cap);
+            assert_eq!(&text.capitalize(), cap);
             assert_eq!(
-                is_capitalized(text),
-                !text.is_empty() && capitalize(text) == text
+                text.is_capitalized(),
+                !text.is_empty() && text.capitalize() == text
             );
         }
     }
@@ -447,14 +481,14 @@ All mimsy were the borogoves,
                 "pairs of uranium gauntlets of smiting",
             ),
         ] {
-            assert_eq!(&pluralize(&irregulars, a), b);
+            assert_eq!(&a.pluralize(&irregulars), b);
         }
     }
 
     #[test]
     fn grids() {
         fn g(text: &str) -> Vec<(IVec2, char)> {
-            char_grid(text).collect()
+            text.char_grid().collect()
         }
 
         assert_eq!(g(""), vec![]);

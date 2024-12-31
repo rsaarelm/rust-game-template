@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use glam::{ivec2, IVec2};
 use navni::prelude::*;
-use util::text;
+use util::StrExt;
 
 use crate::prelude::*;
 
@@ -25,7 +25,7 @@ impl Widget for str {
     type Output = ();
 
     fn render(&self, win: &Window) -> Option<Self::Output> {
-        for (y, line) in text::split(win.width() as usize, self).enumerate() {
+        for (y, line) in self.lines_of(win.width() as usize).enumerate() {
             win.write([0, y as i32], line);
         }
 
@@ -41,7 +41,7 @@ impl Widget for Centered {
 
     fn render(&self, win: &Window) -> Option<Self::Output> {
         let w = win.width() as usize;
-        for (y, line) in text::split(w, &self.0).enumerate() {
+        for (y, line) in self.0.lines_of(w).enumerate() {
             let x = w - line.chars().count().min(w) / 2;
             win.write([x as i32, y as i32], line);
         }

@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fmt, str::FromStr};
 
 use derive_more::Deref;
 
-use crate::{text, IntegerBox};
+use crate::{IntegerBox, StrExt};
 
 #[derive(Clone, Eq, PartialEq, Debug, Deref)]
 pub struct Cloud<const N: usize, V> {
@@ -137,7 +137,7 @@ impl FromStr for Cloud<2, char> {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(text::char_grid(s).collect())
+        Ok(s.char_grid().collect())
     }
 }
 

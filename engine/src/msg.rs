@@ -7,7 +7,7 @@ use std::sync::{
 
 use anyhow::bail;
 use derive_more::Deref;
-use util::{text, Noun, Sentence};
+use util::{Noun, Sentence, StrExt};
 
 use crate::prelude::*;
 
@@ -70,19 +70,19 @@ pub trait Grammatize {
 
 impl Grammatize for () {
     fn format(&self, s: &str) -> String {
-        text::templatize(|_| bail!("no nouns"), s).unwrap()
+        s.templatize(|_| bail!("no nouns")).unwrap()
     }
 }
 
 impl Grammatize for (Noun,) {
     fn format(&self, s: &str) -> String {
-        text::templatize(|e| self.0.convert(e), s).unwrap()
+        s.templatize(|e| self.0.convert(e)).unwrap()
     }
 }
 
 impl Grammatize for (Noun, Noun) {
     fn format(&self, s: &str) -> String {
-        text::templatize(|e| Sentence::new(&self.0, &self.1).convert(e), s)
+        s.templatize(|e| Sentence::new(&self.0, &self.1).convert(e))
             .unwrap()
     }
 }

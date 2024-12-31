@@ -8,7 +8,7 @@ use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::EnumIter;
-use util::{HashMap, IndexMap, LazyRes, _String, text};
+use util::{HashMap, IndexMap, LazyRes, StrExt, _String};
 
 use crate::SectorMap;
 
@@ -280,7 +280,7 @@ impl Scenario {
 
         // Keep track of how many times a letter was seen in map.
         let mut letter_counts: HashMap<char, usize> = Default::default();
-        for (p, c) in text::char_grid(&self.map) {
+        for (p, c) in self.map.char_grid() {
             let indices = letter_indices
                 .get(&c)
                 .ok_or_else(|| anyhow!("Char {c} not in legend"))?;

@@ -4,7 +4,7 @@ use std::{fmt, str::FromStr};
 use derive_more::Deref;
 use hecs::Component;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-use util::{text, Noun, Silo};
+use util::{Noun, Silo, StrExt};
 use world::{Block, Data};
 
 use crate::{ecs::*, placement::Place, prelude::*};
@@ -214,7 +214,7 @@ impl Entity {
         // Add more cases here as needed. Currently we're using the convention
         // that unique items have Proper Nouns and non-uniques have a generic
         // name.
-        text::is_capitalized(&self.desc(r))
+        self.desc(r).is_capitalized()
     }
 
     pub fn is_ephemeral(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -234,7 +234,7 @@ impl Entity {
         let name = if count > 1 {
             format!(
                 "{count} {}",
-                text::pluralize(&Data::get().plurals, &self.base_desc(r))
+                self.base_desc(r).pluralize(&Data::get().plurals)
             )
         } else {
             self.base_desc(r)

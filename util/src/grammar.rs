@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::text;
+use crate::{CharExt, StrExt};
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Noun {
@@ -31,7 +31,7 @@ impl Noun {
     }
 
     pub fn is_proper_noun(&self) -> bool {
-        text::is_capitalized(self.name())
+        self.name().is_capitalized()
     }
 
     pub fn the_name(&self) -> String {
@@ -53,7 +53,7 @@ impl Noun {
             // TODO: Add look-up table of irregular words ('honor', 'unit') as they show up in game
             // text.
             let article =
-                if self.name().chars().next().map_or(false, text::is_vowel) {
+                if self.name().chars().next().map_or(false, |c| c.is_vowel()) {
                     "an"
                 } else {
                     "a"
@@ -209,7 +209,7 @@ mod test {
         Noun::{self, *},
         Sentence,
     };
-    use crate::text::templatize;
+    use crate::StrExt;
 
     fn make_noun(name: &str) -> Noun {
         match name {
@@ -305,10 +305,7 @@ mod test {
         .into_iter()
         {
             let t = make_noun(subject);
-            assert_eq!(
-                templatize(|e| t.convert(e), template).unwrap(),
-                message
-            );
+            assert_eq!(template.templatize(|e| t.convert(e)).unwrap(), message);
         }
     }
 
@@ -381,7 +378,7 @@ mod test {
             let a = make_noun(subject);
             let b = make_noun(object);
             assert_eq!(
-                templatize(|e| Sentence::new(&a, &b).convert(e), template).unwrap(),
+                template.templatize(|e| Sentence::new(&a, &b).convert(e)).unwrap(),
                 message
             );
         }
@@ -406,7 +403,8 @@ mod test {
             let a = make_noun(subject);
             let b = make_noun(object);
             assert_eq!(
-                templatize(|e| Sentence::new(&a, &b).convert(e), template)
+                template
+                    .templatize(|e| Sentence::new(&a, &b).convert(e))
                     .unwrap(),
                 message
             );

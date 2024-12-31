@@ -8,7 +8,7 @@ use clap::Parser;
 use glam::{ivec2, ivec3, IVec3};
 use serde::{Deserialize, Serialize};
 
-use util::{text, HashMap, HashSet};
+use util::{HashMap, HashSet, StrExt};
 use world::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 // NB. This thing is sort of weird and janky, the actual spatial positions of
@@ -83,7 +83,7 @@ fn extract(path: &Path) -> Result<()> {
             .map(|(i, m)| (overground.len() as i32 - 1 - i as i32, m))
         {
             let p = p.extend(z);
-            for (q, c) in text::char_grid(&map.map) {
+            for (q, c) in map.map.char_grid() {
                 // XXX: Special case, '_' is used to represent holes in maps,
                 // Tiled version does transparency instead so just no-op here.
                 if c == '_' {
@@ -98,7 +98,7 @@ fn extract(path: &Path) -> Result<()> {
             .map(|(i, m)| (-1 - i as i32, m))
         {
             let p = p.extend(z);
-            for (q, c) in text::char_grid(&map.map) {
+            for (q, c) in map.map.char_grid() {
                 if c == '_' {
                     continue;
                 }

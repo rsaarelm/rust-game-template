@@ -3,7 +3,7 @@ use std::ops::Deref;
 use glam::{ivec2, ivec3, IVec2};
 use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
-use util::{text, Cloud, HashMap, IndexMap, LazyRes, Neighbors2D};
+use util::{Cloud, HashMap, IndexMap, LazyRes, Neighbors2D, StrExt};
 
 use crate::{Block, Coordinates, Cube, Environs, Location, Pod, Voxel};
 
@@ -130,19 +130,26 @@ impl SectorMap {
     }
 
     pub fn entrances(&self) -> impl Iterator<Item = IVec2> + '_ {
-        text::char_grid(&self.map).filter_map(|(p, c)| (c == '@').then_some(p))
+        self.map
+            .char_grid()
+            .filter_map(|(p, c)| (c == '@').then_some(p))
     }
 
     pub fn find_downstairs(&self) -> Option<IVec2> {
-        text::char_grid(&self.map).find_map(|(p, c)| (c == '>').then_some(p))
+        self.map
+            .char_grid()
+            .find_map(|(p, c)| (c == '>').then_some(p))
     }
 
     pub fn find_upstairs(&self) -> Option<IVec2> {
-        text::char_grid(&self.map).find_map(|(p, c)| (c == '<').then_some(p))
+        self.map
+            .char_grid()
+            .find_map(|(p, c)| (c == '<').then_some(p))
     }
 
     pub fn dim(&self) -> IVec2 {
-        text::char_grid(&self.map)
+        self.map
+            .char_grid()
             .map(|(p, _)| p)
             .fold(IVec2::ZERO, |a, x| a.max(x + ivec2(1, 1)))
     }
@@ -153,7 +160,7 @@ impl SectorMap {
     ) -> anyhow::Result<Vec<(Location, Pod)>> {
         let mut ret = Vec::default();
 
-        for (p, c) in text::char_grid(&self.map) {
+        for (p, c) in self.map.char_grid() {
             if let Some(name) = self.legend.get(&c) {
                 ret.push((origin + p.extend(0), name.deref().clone()));
             }
@@ -165,7 +172,7 @@ impl SectorMap {
     pub fn border_and_inside(
         &self,
     ) -> (IndexMap<IVec2, char>, IndexMap<IVec2, char>) {
-        let map: IndexMap<IVec2, char> = text::char_grid(&self.map).collect();
+        let map: IndexMap<IVec2, char> = self.map.char_grid().collect();
 
         let mut border = IndexMap::default();
         let mut inside = IndexMap::default();
@@ -184,7 +191,7 @@ impl SectorMap {
     pub fn terrain(&self, origin: Location) -> anyhow::Result<Cloud<3, Voxel>> {
         let mut ret = Cloud::default();
 
-        for (p, c) in text::char_grid(&self.map) {
+        for (p, c) in self.map.char_grid() {
             let p = origin + p.extend(0);
 
             let c = match c {
