@@ -385,7 +385,6 @@ pub struct Monster {
     pub attack_damage: i32,
     pub rarity: u32,
     pub min_depth: u32,
-
     pub flags: MonsterFlags,
 }
 

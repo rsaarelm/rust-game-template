@@ -13,7 +13,7 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use util::InString;
-use world::{EquippedAt, ItemKind, Power};
+use world::{EquippedAt, ItemKind, MonsterFlags, Power};
 
 use crate::{power::PowerState, prelude::*, Buff};
 
@@ -119,6 +119,7 @@ components! {
     ItemPower,
     EquippedAt,
     Stats,
+    MonsterFlags,
     Buffs,
     Speed,
     Wounds,

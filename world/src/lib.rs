@@ -7,8 +7,8 @@ pub use block::{Block, Terrain, Tile, Voxel};
 mod data;
 pub use data::{
     register_data, register_data_from, settings, Data, EquippedAt, Item,
-    ItemKind, Monster, Pod, PodKind, PodObject, Power, Region, Scenario,
-    Settings, SpawnDist,
+    ItemKind, Monster, MonsterFlags, Pod, PodKind, PodObject, Power, Region,
+    Scenario, Settings, SpawnDist,
 };
 
 mod location;

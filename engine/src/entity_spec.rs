@@ -9,7 +9,7 @@ pub trait EntitySpec {
 
 impl EntitySpec for Monster {
     fn build(&self, r: &mut Runtime, name: &str) -> Entity {
-        Entity(r.ecs.spawn((
+        let ret = Entity(r.ecs.spawn((
             Name(name.into()),
             Icon(self.icon),
             Speed(3),
@@ -20,7 +20,15 @@ impl EntitySpec for Monster {
                 ev: self.evasion,
                 dmg: self.attack_damage,
             },
-        )))
+        )));
+
+        // If we indiscriminately set flags in the build expression, empty
+        // flag sets will show up as values in ECS.
+        if !self.flags.is_empty() {
+            ret.set(r, self.flags);
+        }
+
+        ret
     }
 }
 
