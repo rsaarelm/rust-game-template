@@ -160,7 +160,6 @@
             # Utils
             grafx2
             just
-            neovim-qt
             optipng
             snzip
             tiled

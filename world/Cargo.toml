@@ -11,7 +11,7 @@ derive_more = { version = "1", features = ["deref_mut", "from"] }
 glam = { version = "0.29", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
-itertools = "0.13"
+itertools = "0.14"
 log = "0.4"
 memoize = "0.4"
 pathfinding = "4"
