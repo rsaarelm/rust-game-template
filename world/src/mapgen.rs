@@ -17,20 +17,42 @@ use crate::{
 
 pub trait MapGenerator {
     fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch>;
-}
 
-impl<F> MapGenerator for F
-where
-    F: Fn(&mut dyn RngCore, &Lot) -> anyhow::Result<Patch>,
-{
-    fn run(&self, rng: &mut dyn RngCore, lot: &Lot) -> anyhow::Result<Patch> {
-        self(rng, lot)
+    /// Query if the generator will produce an altar that serves as a respawn
+    /// waypoint. We need to know about altars early so that world generation
+    /// can build a structure that tells which sectors are close to which
+    /// altars.
+    ///
+    /// Must also return true if an altar will show up in this sector after
+    /// some game event, usually defeating a dungeon boss enemy.
+    fn has_altar(&self) -> bool {
+        false
     }
 }
 
 impl MapGenerator for Patch {
     fn run(&self, _rng: &mut dyn RngCore, _lot: &Lot) -> anyhow::Result<Patch> {
         Ok(self.clone())
+    }
+
+    fn has_altar(&self) -> bool {
+        // If any terrain voxel is an altar, return true.
+        if self.terrain.values().any(|v| v == &Some(Block::Altar)) {
+            return true;
+        }
+
+        // Defeated bosses will spawn an altar, so if this sector contains a
+        // boss, mark it as having an altar.
+        if self
+            .spawns
+            .values()
+            .flat_map(|pod| pod.objects())
+            .any(|obj| obj.is_boss())
+        {
+            return true;
+        }
+
+        false
     }
 }
 

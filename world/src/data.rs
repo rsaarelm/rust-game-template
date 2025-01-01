@@ -131,6 +131,20 @@ impl<T: Into<PodObject>> From<T> for Pod {
     }
 }
 
+impl Pod {
+    pub fn objects(&self) -> impl Iterator<Item = &PodObject> + '_ {
+        let mut stack = vec![self.0.iter()];
+        std::iter::from_fn(move || loop {
+            if let Some(((obj,), pod)) = stack.last_mut()?.next() {
+                stack.push(pod.0.iter());
+                return Some(obj);
+            } else {
+                stack.pop();
+            }
+        })
+    }
+}
+
 /// A single element in a hatch specification, object contents are not stored
 /// in eggs.
 #[derive(
@@ -180,6 +194,11 @@ impl PodObject {
         assert!(count > 0);
         self.count = count;
         self
+    }
+
+    pub fn is_boss(&self) -> bool {
+        matches!(self.kind,
+            PodKind::Monster(m) if m.flags.contains(MonsterFlags::BOSS))
     }
 }
 
