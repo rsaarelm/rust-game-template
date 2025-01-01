@@ -684,7 +684,7 @@ pub fn rooms_and_corridors(
             .keys()
             .find(|p| ret.terrain.get(*p) == Some(&None))
         {
-            let valid_area = util::dijkstra_map(
+            let valid_area = util::bfs(
                 |p| {
                     p.ns_8().filter(|p| {
                         matches!(

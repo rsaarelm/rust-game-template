@@ -1,6 +1,6 @@
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
-use util::{dijkstra_map, s4, v3, Neighbors2D, Sdf};
+use util::{bfs, s4, v3, Neighbors2D, Sdf};
 use world::{Cube, Zone, LEVEL_BASIS};
 
 use crate::{placement::Place, prelude::*};
@@ -27,7 +27,7 @@ impl Runtime {
         start: Location,
     ) -> HashMap<Location, usize> {
         let travel_zone = zone.fat();
-        let ret: HashMap<Location, usize> = dijkstra_map(
+        let ret: HashMap<Location, usize> = bfs(
             &|loc: &Location| {
                 loc.walk_neighbors(self)
                     .map(|(_, x)| x)
@@ -126,7 +126,7 @@ impl Runtime {
         &self,
         start: Location,
     ) -> impl Iterator<Item = Location> + '_ {
-        util::dijkstra_map(
+        util::bfs(
             move |loc| {
                 let loc = *loc;
                 loc.walk_neighbors(self)
@@ -144,7 +144,7 @@ impl Runtime {
         &self,
         start: Location,
     ) -> impl Iterator<Item = Location> + '_ {
-        util::dijkstra_map(
+        util::bfs(
             move |&loc| {
                 let mut elts = loc
                     .walk_neighbors(self)

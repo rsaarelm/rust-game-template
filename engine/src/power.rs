@@ -160,7 +160,7 @@ impl Runtime {
 
         let zone = from.sector().fat();
 
-        let mut revealed: Vec<(Location, usize)> = util::dijkstra_map(
+        let mut revealed: Vec<(Location, usize)> = util::bfs(
             |&loc| {
                 loc.hover_neighbors(self)
                     .map(|(_, loc)| loc)

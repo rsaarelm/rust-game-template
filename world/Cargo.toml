@@ -7,8 +7,8 @@ description = "Game world datatypes and generation"
 [dependencies]
 anyhow = "1"
 bitflags = "2"
-derives = { path = "../derives" }
 derive_more = { version = "1", features = ["deref_mut", "from"] }
+derives = { path = "../derives" }
 glam = { version = "0.29", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
