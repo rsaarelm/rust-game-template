@@ -5,12 +5,15 @@ use glam::{ivec2, ivec3, IVec2, IVec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
-use util::{a3, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo};
+use util::{
+    a3, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo, AXIS_DIRS,
+};
 
 use crate::{
-    data::Region, Block, Coordinates, Cube, Environs, Location, Lot,
-    MapGenerator, Patch, Pod, Rect, Scenario, Terrain, Voxel, Zone, DOWN,
-    LEVEL_DEPTH, NORTH, SECTOR_HEIGHT, SECTOR_WIDTH, UP, WEST,
+    data::Region, waypoints::WaypointPair, Block, Coordinates, Cube, Environs,
+    Location, Lot, MapGenerator, Patch, Pod, Rect, Scenario, Terrain, Voxel,
+    Zone, DOWN, LEVEL_BASIS, LEVEL_DEPTH, NORTH, SECTOR_HEIGHT, SECTOR_WIDTH,
+    UP, WEST,
 };
 
 /// Non-cached world data that goes in a save file.
@@ -62,13 +65,17 @@ pub struct World {
     // SerWorld type.
     /// Complete description for how to instantiate parts of the game world,
     /// built from `Scenario` data.
-    skeleton: HashMap<Level, Segment>,
+    pub(crate) skeleton: HashMap<Level, Segment>,
 
     /// Memory of which sectors have been generated.
     gen_status: HashMap<Level, GenStatus>,
 
     /// Where the player enters the world.
     player_entrance: Location,
+
+    /// List of levels which are covered by pairs of adjacent waypoints.
+    pub(crate) segment_cover: HashMap<WaypointPair, Vec<Level>>,
+    pub(crate) waypoint_graph: HashMap<Level, Vec<Level>>,
 }
 
 // Do this manually because otherwise I get complaints about no Clone impl
@@ -115,6 +122,23 @@ pub struct Segment {
     pub connected_west: bool,
     pub connected_down: Option<Location>,
     pub generator: Box<dyn MapGenerator>,
+}
+
+impl<T: MapGenerator + 'static> From<T> for Segment {
+    fn from(generator: T) -> Self {
+        Segment {
+            connected_north: false,
+            connected_west: false,
+            connected_down: None,
+            generator: Box::new(generator),
+        }
+    }
+}
+
+impl Segment {
+    pub fn has_waypoint(&self) -> bool {
+        self.generator.has_waypoint()
+    }
 }
 
 impl From<World> for SerWorld {
@@ -327,7 +351,7 @@ impl World {
     pub fn new(seed: Silo, scenario: Scenario) -> anyhow::Result<Self> {
         let (player_entrance, skeleton) = build_skeleton(&seed, &scenario)?;
 
-        Ok(World {
+        let mut ret = World {
             inner: SerWorld {
                 seed,
                 scenario,
@@ -336,7 +360,11 @@ impl World {
             skeleton,
             player_entrance,
             ..Default::default()
-        })
+        };
+
+        ret.construct_waypoint_geometry();
+
+        Ok(ret)
     }
 
     pub fn seed(&self) -> &Silo {
@@ -468,6 +496,18 @@ impl World {
 
     fn default_terrain(&self, _loc: Location) -> Voxel {
         Some(Block::Stone)
+    }
+
+    pub fn level_neighbors(
+        &self,
+        level: Level,
+    ) -> impl Iterator<Item = Level> + '_ {
+        // NB. Assumes there are no adjacent but unconnected sectors in the
+        // skeleton.
+        AXIS_DIRS
+            .iter()
+            .map(move |&dir| level + dir * LEVEL_BASIS)
+            .filter(|&s| self.skeleton.contains_key(&s))
     }
 }
 

@@ -25,7 +25,7 @@ pub trait MapGenerator {
     ///
     /// Must also return true if an altar will show up in this sector after
     /// some game event, usually defeating a dungeon boss enemy.
-    fn has_altar(&self) -> bool {
+    fn has_waypoint(&self) -> bool {
         false
     }
 }
@@ -35,7 +35,7 @@ impl MapGenerator for Patch {
         Ok(self.clone())
     }
 
-    fn has_altar(&self) -> bool {
+    fn has_waypoint(&self) -> bool {
         // If any terrain voxel is an altar, return true.
         if self.terrain.values().any(|v| v == &Some(Block::Altar)) {
             return true;

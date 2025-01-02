@@ -1930,6 +1930,7 @@ dependencies = [
  "log",
  "memoize",
  "pathfinding",
+ "pretty_assertions",
  "rand",
  "serde",
  "serde_with",

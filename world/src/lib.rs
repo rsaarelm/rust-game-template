@@ -21,6 +21,8 @@ pub use mapgen::{Lot, MapGenerator, Patch};
 pub mod sector_map;
 pub use sector_map::SectorMap;
 
+mod waypoints;
+
 mod world;
 pub use world::{Level, World};
 
