@@ -47,14 +47,14 @@ pub use rng::{srng, Odds, RngExt};
 mod silo;
 pub use silo::Silo;
 
+mod str_ext;
+pub use str_ext::{CharExt, StrExt};
+
 mod sync;
 pub use sync::SameThread;
 
 mod sys;
 pub use sys::{can_quit_program, panic_handler, user_name, KeyboardLayout};
-
-mod text;
-pub use text::{CharExt, StrExt};
 
 mod unchecked_write;
 
