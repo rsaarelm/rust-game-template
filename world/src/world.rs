@@ -74,7 +74,7 @@ pub struct World {
     player_entrance: Location,
 
     /// List of levels which are covered by pairs of adjacent waypoints.
-    pub(crate) segment_cover: HashMap<WaypointPair, Vec<Level>>,
+    pub(crate) segment_cover: HashMap<WaypointPair, HashSet<Level>>,
     pub(crate) waypoint_graph: HashMap<Level, Vec<Level>>,
 }
 

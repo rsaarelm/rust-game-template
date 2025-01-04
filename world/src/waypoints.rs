@@ -21,12 +21,13 @@
 //! This module is about the logic to figure out just how the "area between
 //! two waypoints" is determined.
 
-use std::collections::BinaryHeap;
+use std::{cmp::Reverse, collections::BinaryHeap};
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use util::{HashMap, HashSet};
+use util::{v3, HashMap, HashSet};
 
-use crate::{Level, World, LEVEL_BASIS};
+use crate::{Level, World};
 
 impl World {
     /// Return a list of sectors that will have changes permanently applied to
@@ -34,12 +35,11 @@ impl World {
     /// `b`. The waypoints must correspond to valid altars and be different,
     /// or the result will be empty.
     ///
-    /// If the set of sectors where both waypoints are within the
-    /// second-closest distance to that sector is non-empty, the waypoints are
-    /// considered to be connected and this set is returned as the result.
-    /// Otherwise, the result will be the union of the affected areas of all
-    /// pairs of connected waypoints that form the shortest paths between `a`
-    /// and `b`.
+    /// If there is a nonempty set of levels directly covered by the two
+    /// waypoints given, the two waypoints are considered connected and this
+    /// set will be returned as the result. Otherwise the result will the the
+    /// union of the level sets of all the of connected waypoint pairs that
+    /// form every shortest path between `a` and `b`.
     pub fn area_between_waypoints(&self, a: Level, b: Level) -> HashSet<Level> {
         self.shortest_paths_between_waypoints(a, b)
             .into_iter()
@@ -48,8 +48,8 @@ impl World {
             .collect()
     }
 
-    /// Return all the adjacent waypoint to waypoint connections that for
-    /// every shortest path between waypoints a and b.
+    /// Return all the adjacent waypoint to waypoint connections for every
+    /// shortest path between waypoints a and b.
     fn shortest_paths_between_waypoints(
         &self,
         a: Level,
@@ -96,128 +96,116 @@ impl World {
         ret
     }
 
-    fn compute_segment_cover(&self) -> HashMap<WaypointPair, Vec<Level>> {
-        /// Special structure for iterating neighbors of each waypoint only up
-        /// until they get blocked by other waypoints' domains. The cover
-        /// areas will get collected in the structure.
-        #[derive(Default)]
-        struct CoverMap {
-            // XXX: Can't use Level type as BinaryHeap value since it isn't
-            // Ord. Use the min corner array instead.
-            //
-            // Store negative distance values (sign-flipped) so that the top
-            // of the heap will have the smallest distances.
-            cover: HashMap<Level, BinaryHeap<(isize, [i32; 3])>>,
-            // XXX: Need to replicate distances here since bfs won't pass them
-            // to the neighbors function.
-            distances: HashMap<(Level, Level), isize>,
+    /// Compute the closest waypoints covering individual levels.
+    ///
+    /// This is the trickiest part of the system. It tries to find the two
+    /// nearest waypoints (along traversable level paths, not direct distance)
+    /// to each level and pick these as the waypoints affecting this level. If
+    /// there are more than two waypoints at equal distances, they must all be
+    /// picked. Also, waypoints that are behind other waypoints are avoided in
+    /// favor of unoccluded waypoints, even if the unoccluded waypoints are
+    /// much further away.
+    fn compute_segment_cover(&self) -> HashMap<WaypointPair, HashSet<Level>> {
+        // Return whether waypoint a occludes waypoint b when viewed from the
+        // view position `pos`.
+        fn occludes(a: Level, b: Level, pos: Level) -> bool {
+            // Convert to float vectors.
+            let (a, b, pos) = (
+                v3(a.min()).as_vec3(),
+                v3(b.min()).as_vec3(),
+                v3(pos.min()).as_vec3(),
+            );
+
+            // a occludes b if b is behind a plane that goes through a and
+            // whose normal points from a to viewpoint.
+            (pos - a).dot(b - a) < 0.0
         }
 
-        impl CoverMap {
-            /// Return the maximum distance from which a node can reach the
-            /// given position.
-            fn max_dist(&self, pos: Level) -> isize {
-                // The heap must have at least two items and the maximum
-                // distance for adding new items is always the distance of the
-                // second item. Either it has two items at the same distance
-                // or it has one at the minimum distance and one or more at
-                // the second closest distance.
-                if let Some(&(dist, _)) =
-                    self.cover.get(&pos).and_then(|elts| elts.iter().nth(1))
-                {
-                    -dist
-                } else {
-                    isize::MAX
-                }
-            }
-
-            pub fn neighbors(
-                &mut self,
-                world: &World,
-                origin: Level,
-                pos: Level,
-            ) -> Vec<(Level, Level)> {
-                let my_dist = *self.distances.get(&(origin, pos)).unwrap_or(&0);
-                let mut ret = Vec::new();
-
-                // Thing that can be inserted into BinaryHeap.
-                let origin_key = origin.min();
-
-                // Get the neighbors to current node.
-                for lev in world.level_neighbors(pos) {
-                    if self.distances.contains_key(&(origin, lev)) {
-                        // Skip nodes we've already visited.
-                        continue;
-                    }
-
-                    let dist = my_dist + 1;
-                    // How distant nodes can affect this waypoint?
-                    let max_dist = self.max_dist(lev);
-
-                    if dist <= max_dist {
-                        // We're close enough to make a difference, add origin
-                        // to the node.
-                        self.cover
-                            .entry(lev)
-                            .or_default()
-                            .push((-dist, origin_key));
-                        self.distances.insert((origin, lev), dist);
-                        // Progress wasn't blocked, so this counts as a
-                        // neighbor.
-                        ret.push((origin, lev));
-                    }
-                }
-                ret
-            }
-        }
-
-        let waypoints: Vec<Level> = self
+        let mut waypoints: Vec<Level> = self
             .skeleton
             .iter()
             .filter_map(|(lev, seg)| seg.has_waypoint().then_some(lev))
             .copied()
             .collect();
+        // Remove randomness from iterating the skeleton HashMap just in case.
+        waypoints.sort_by_key(|a| a.min());
 
-        let mut cover = CoverMap::default();
-
-        for _ in util::bfs(
-            |&(origin, pos)| cover.neighbors(self, origin, pos),
-            waypoints.iter().map(|&lev| (lev, lev)),
+        // Compute Dijkstra map for distance from each waypoint.
+        let mut distance_maps: HashMap<Level, Vec<usize>> = HashMap::default();
+        for ((idx, lev), n) in util::bfs(
+            |&(idx, lev)| self.level_neighbors(lev).map(move |n| (idx, n)),
+            waypoints.iter().copied().enumerate(),
         ) {
-            // Do nothing, just run the bfs. The data we want will be
-            // collected as a side effect of the neighbors function in cover.
+            distance_maps
+                .entry(lev)
+                .or_insert_with(|| vec![usize::MAX; waypoints.len()])[idx] = n;
         }
 
-        // Strip out distances in cover.cover that are further out than the
-        // second-shortest one. (I'm not sure if this can actually happen
-        // because of the node expansion order, but let's be paranoid and
-        // cover it anyway.)
-        for heap in cover.cover.values_mut() {
-            let min_dist = heap
-                .iter()
-                .nth(1)
-                .map(|&(dist, _)| dist)
-                .unwrap_or(isize::MIN);
-            heap.retain(|&(dist, _)| dist >= min_dist);
-        }
+        let mut cover: HashMap<Level, Vec<WaypointPair>> = HashMap::default();
 
-        let mut ret: HashMap<WaypointPair, Vec<Level>> = HashMap::default();
+        // Determine most relevant waypoints for every level.
+        for &lev in self.skeleton.keys() {
+            // Find the closest waypoints to current level, preferring
+            // unoccluded ones. A far-away unoccluded waypoint is better than
+            // a nearby occluded one.
+            let mut closest = BinaryHeap::new();
+            for (idx, &a) in waypoints.iter().enumerate() {
+                let dist = distance_maps[&lev][idx];
+                let is_occluded = a != lev
+                    && waypoints.iter().enumerate().any(|(j, &b)| {
+                        // Extra check, because we're measuring path distance
+                        // instead of direct distance to nodes, a node can
+                        // show as occluding even if the path to it is longer
+                        // than the node it occludes. Reject the occluder as
+                        // irrelevant in this case.
+                        distance_maps[&lev][j] < dist && occludes(b, a, lev)
+                    });
+                closest.push((Reverse(is_occluded), Reverse(dist), idx));
+            }
 
-        for (level, waypoints) in cover.cover {
-            let waypoints = waypoints.into_vec();
-            for i in 0..waypoints.len() {
-                for j in i + 1..waypoints.len() {
-                    // Reconstruct the level values we had to mangle into
-                    // arrays to make them Ord.
-                    let a = Level::sized(LEVEL_BASIS) + waypoints[i].1;
-                    let b = Level::sized(LEVEL_BASIS) + waypoints[j].1;
+            // Get two or more valid waypoints from the closest list. Always
+            // take the first one, then keep taking more as long as you keep
+            // getting non-occluded ones that are not further than the second
+            // one one you got.
 
-                    ret.entry(WaypointPair::new(a, b)).or_default().push(level);
+            let mut connected_waypoints =
+                vec![waypoints[closest.pop().unwrap().2]];
+            let mut dist = usize::MAX;
+            while let Some((Reverse(occluded), Reverse(d), idx)) = closest.pop()
+            {
+                if d <= dist && (connected_waypoints.len() < 2 || !occluded) {
+                    connected_waypoints.push(waypoints[idx]);
+                    dist = d;
+                } else {
+                    break;
                 }
+            }
+
+            // Use Itertools to iterate all pairs fron connected_waypoints
+            // and insert them into the cover map as WaypointPair values.
+            for (a, b) in connected_waypoints.iter().tuple_combinations() {
+                cover
+                    .entry(lev)
+                    .or_default()
+                    .push(WaypointPair::new(*a, *b));
             }
         }
 
-        ret
+        let mut result: HashMap<WaypointPair, HashSet<Level>> =
+            HashMap::default();
+        for (lev, ps) in cover {
+            for pair in ps {
+                result.entry(pair).or_default().insert(lev);
+            }
+        }
+
+        // Make sure are pairs cover the corresponding waypoint levels.
+        for (pair, levs) in result.iter_mut() {
+            levs.insert(pair.0);
+            levs.insert(pair.1);
+        }
+
+        result
     }
 
     /// Construct the cached segment cover and waypoint graph from current
@@ -312,40 +300,31 @@ mod test {
 
         for (z, layer) in [
             "\
-.....
-...*.
-.....
-.#...
-.....",
-            "\
-.....
-..##.
-.....
-.#...
-.....",
-            "\
-..##.
-#####
-*##*#
-*###.
-.##..",
+*.*#.
+#.##*
+#.###
+#.###
+*.##.
+*##..",
             "\
 .....
 #..#.
 .....
 .....
+.....
 .....",
             "\
-..*#*
+...#*
 #.###
-#.*#*
+#.*#.
+#....
 *....
 .....",
         ]
         .iter()
         .enumerate()
         {
-            let z = -(z as i32) + 2;
+            let z = -(z as i32);
             for (p, c) in layer.char_grid() {
                 let lev = Level::level_at(p.extend(z));
                 match c {
@@ -391,9 +370,9 @@ mod test {
         }
 
         let mut s = String::new();
-        for z in (-2..=2).rev() {
+        for z in (-2..=0).rev() {
             writeln!(s, "{z}");
-            for y in 0..5 {
+            for y in 0..6 {
                 for x in 0..5 {
                     let lev = Level::level_at([x, y, z]).min();
 
@@ -401,7 +380,13 @@ mod test {
                         .get(&lev)
                         .unwrap_or(&BTreeSet::default())
                         .iter()
-                        .map(|w| chars[&w])
+                        .map(|w| {
+                            if w == &lev {
+                                chars[&w]
+                            } else {
+                                chars[&w].to_ascii_lowercase()
+                            }
+                        })
                         .collect();
 
                     if connected_to.is_empty() {
@@ -415,42 +400,33 @@ mod test {
             writeln!(s);
         }
 
+        eprintln!("{s}");
+
         assert_eq!(
             s.trim(),
             "\
-2
-       -       -       -       -       -
-       -       -       -      FG       -
-       -       -       -       -       -
-       -      AC       -       -       -
-       -       -       -       -       -
-
-1
-       -       -       -       -       -
-       -       -      FG      FG       -
-       -       -       -       -       -
-       -      AC       -       -       -
-       -       -       -       -       -
-
 0
-       -       -     AFG      FG       -
-      AC     ACG     AFG      FG      FG
-      AC     ACG      AG     AFG     AFG
-      AC      AC      CG      CG       -
-       -      AC      CG       -       -
+     Abc       -  cdEfgh      eh       -
+      ac       -      eh      eh   defgH
+      ac       -      eh      eh      fh
+      ac       -     deh      eh      dh
+   abCde       -     cde      dh       -
+    cDeh      cd      cd       -       -
 
 -1
        -       -       -       -       -
-     ABC       -       -  DEFGHI       -
+     abc       -       -    efgh       -
+       -       -       -       -       -
        -       -       -       -       -
        -       -       -       -       -
        -       -       -       -       -
 
 -2
-       -       -     DEH      DH     DHI
-      AB       -      DE    DEHI      HI
-      AB       -     DEI      EI     EHI
-      AB       -       -       -       -
+       -       -       -      fg    efGh
+      ab       -      fg      fg      fg
+      ab       -    eFgh      fg       -
+      ab       -       -       -       -
+     aBc       -       -       -       -
        -       -       -       -       -"
         );
     }
