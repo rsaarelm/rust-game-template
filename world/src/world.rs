@@ -158,12 +158,16 @@ impl TryFrom<SerWorld> for World {
         let (player_entrance, skeleton) =
             build_skeleton(&value.seed, &value.scenario)?;
 
-        Ok(World {
+        let mut ret = World {
             inner: value,
             skeleton,
             player_entrance,
             ..Default::default()
-        })
+        };
+
+        ret.construct_waypoint_geometry();
+
+        Ok(ret)
     }
 }
 
@@ -349,6 +353,9 @@ fn build_skeleton(
 
 impl World {
     pub fn new(seed: Silo, scenario: Scenario) -> anyhow::Result<Self> {
+        // XXX: Repeating the (somewhat complex, you need to call
+        // construct_waypoint_geometry) set-up logic here and in
+        // TryFrom<SerWorld> for World. Should find one place for both.
         let (player_entrance, skeleton) = build_skeleton(&seed, &scenario)?;
 
         let mut ret = World {

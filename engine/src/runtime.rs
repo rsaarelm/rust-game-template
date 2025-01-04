@@ -4,7 +4,7 @@ use anyhow::Result;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use util::{GameRng, Silo};
-use world::{Data, Environs, Pod, Voxel, World};
+use world::{Data, Environs, Level, Pod, Voxel, World, Zone};
 
 use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
 
@@ -246,24 +246,56 @@ impl Runtime {
 
     /// Respawn enemies.
     pub(crate) fn respawn_world(&mut self) {
+        let mut respawns = 0;
         for (loc, (e, spawn)) in std::mem::take(&mut self.samsara) {
             // Destroy the old enemy wandering around.
+            if !e.is_alive(self) {
+                respawns += 1;
+            }
             e.destroy(self);
 
             let entities = self.spawn_at(&spawn, loc);
             assert!(entities.len() == 1);
             self.samsara.insert(loc, (entities[0], spawn));
         }
+
+        if respawns > 0 {
+            log::info!("Respawned {respawns} dead entities.");
+        }
     }
 
     /// The player rests and the world respawns.
     pub fn rest_respawn(&mut self, waypoint: Location) {
+        if self.previous_waypoint != waypoint {
+            let traversed_area = self.world.area_between_waypoints(
+                Level::level_from(self.previous_waypoint),
+                Level::level_from(waypoint),
+            );
+
+            self.make_changes_permanent(&traversed_area);
+        }
+
         self.respawn_world();
         if let Some(p) = self.player() {
             p.fully_heal(self);
         }
 
         self.previous_waypoint = waypoint;
+    }
+
+    pub fn make_changes_permanent(&mut self, area: &HashSet<Level>) {
+        // Remove killed entities from samsara in the affected areas.
+        let mut removes = 0;
+        for i in (0..self.samsara.len()).rev() {
+            let (loc, (e, _)) = self.samsara.get_index(i).unwrap();
+            if area.iter().any(|l| l.contains(*loc)) && !e.is_alive(self) {
+                removes += 1;
+                self.samsara.swap_remove_index(i);
+            }
+        }
+        if removes > 0 {
+            log::info!("Permanently removed {removes} dead entities");
+        }
     }
 
     /// The player dies and the world respawns.

@@ -233,6 +233,35 @@ impl World {
             self.waypoint_graph.entry(k.0).or_default().push(k.1);
             self.waypoint_graph.entry(k.1).or_default().push(k.0);
         }
+
+        // Print some diagnostics.
+        let total_segments = self.skeleton.len();
+        let total_waypoints = self
+            .segment_cover
+            .keys()
+            .flat_map(|p| [p.0, p.1])
+            .collect::<HashSet<_>>()
+            .len();
+        let covered_segments = self
+            .segment_cover
+            .values()
+            .flatten()
+            .collect::<HashSet<_>>()
+            .len();
+
+        log::info!("Constructed waypoint geometry, {total_waypoints} waypoints covering {covered_segments} / {total_segments} segments.");
+
+        // Print more detailed diagnostics.
+        if log::log_enabled!(log::Level::Debug) {
+            for (pair, levs) in &self.segment_cover {
+                log::debug!(
+                    "{:?} x {:?} covers {:?}",
+                    pair.0.lattice_point(),
+                    pair.1.lattice_point(),
+                    levs.iter().map(|a| a.lattice_point()).collect::<Vec<_>>()
+                );
+            }
+        }
     }
 }
 
