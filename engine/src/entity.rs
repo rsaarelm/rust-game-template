@@ -142,6 +142,13 @@ impl Entity {
         }
     }
 
+    pub fn spawn_origin(&self, r: &impl AsRef<Runtime>) -> Option<Location> {
+        r.as_ref()
+            .samsara
+            .iter()
+            .find_map(|(&loc, &(e2, _))| (*self == e2).then_some(loc))
+    }
+
     /// Look for an entity at target place to merge into.
     ///
     /// If merging was succesful, destroy this entity, grow the target by this

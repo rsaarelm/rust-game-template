@@ -407,7 +407,6 @@ pub struct Monster {
     pub flags: MonsterFlags,
 }
 
-// Add the bitflags crate macro MonsterFlags that includes flag 'boss'.
 bitflags::bitflags! {
     #[derive(Copy, Clone, Default, Debug, Eq, PartialEq, Ord, PartialOrd, SerializeFlags, DeserializeFlags)]
     pub struct MonsterFlags: u32 {

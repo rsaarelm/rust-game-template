@@ -1,11 +1,13 @@
 //! Entity logic for active creatures.
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use world::Block;
+use util::v2;
+use world::{Block, Environs, MonsterFlags, Rect};
 
 use crate::{
     ecs::{
-        ActsNext, Buffs, IsEphemeral, IsMob, Momentum, Speed, Stats, Wounds,
+        ActsNext, Buffs, IsDying, IsEphemeral, IsMob, Momentum, Speed, Stats,
+        Wounds,
     },
     prelude::*,
     PHASES_IN_TURN,
@@ -42,6 +44,14 @@ impl Entity {
 
     pub fn is_mob(&self, r: &impl AsRef<Runtime>) -> bool {
         self.get::<IsMob>(r).0
+    }
+
+    pub fn has_monster_flag(
+        &self,
+        r: &impl AsRef<Runtime>,
+        flag: MonsterFlags,
+    ) -> bool {
+        self.get::<MonsterFlags>(r).contains(flag)
     }
 
     pub fn is_npc(&self, r: &impl AsRef<Runtime>) -> bool {
@@ -284,12 +294,28 @@ impl Entity {
 
     pub fn die(&self, r: &mut impl AsMut<Runtime>, perp: Option<Entity>) {
         let r = r.as_mut();
+
+        // Make sure mobs only die once.
+        if self.get::<IsDying>(r).0 {
+            return;
+        }
+        self.set(r, IsDying(true));
+
         if let Some(loc) = self.loc(r) {
             // Effects.
             if let Some(perp) = perp {
                 msg!("[One] kill[s] [another]."; perp.noun(r), self.noun(r));
             } else {
-                msg!("[One] die[s]."; self.noun(r));
+                // Exploding mobs go "the ooze explodes" instead later in the
+                // function, so avoid the redundant message here.
+                //
+                // We still want to say "Something kills the ooze" separately
+                // when the perp is known, because that's more significant
+                // extra information, so this condition only exists in this
+                // branch.
+                if !self.has_monster_flag(r, MonsterFlags::EXPLODES) {
+                    msg!("[One] die[s]."; self.noun(r));
+                }
             }
 
             send_msg(Msg::Death(loc));
@@ -351,6 +377,40 @@ impl Entity {
 
                     let pile = r.spawn_cash_at(amount, loc);
                     pile.set(r, IsEphemeral(true));
+                }
+            }
+        }
+
+        // Boss death
+        if self.has_monster_flag(r, MonsterFlags::BOSS) {
+            // Find the spawn position of self in samsara
+            if let Some(origin) = self.spawn_origin(r) {
+                // Bosses are immediately removed from samsara when killed.
+                r.samsara.swap_remove(&origin);
+
+                // Create an altar at the point where the boss spawned.
+                r.set_voxel(origin, Some(Block::Altar));
+
+                // Displace any items that were at the former open space.
+                while let Some(e) = origin.item_at(r) {
+                    let new_pos = e.open_placement_spot(r, origin);
+                    e.place(r, new_pos);
+                }
+            }
+        }
+
+        // Explodey enemy. Do a similar effect to a fireball spell.
+        if self.has_monster_flag(r, MonsterFlags::EXPLODES) {
+            let explode_damage = self.stats(r).level;
+            msg!("[One] explode[s]."; self.noun(r));
+            if let Some(loc) = self.loc(r) {
+                send_msg(Msg::Explosion(loc));
+                for p in Rect::new([-1, -1], [2, 2]) {
+                    (loc + v2(p).extend(0)).damage(
+                        r,
+                        Some(*self),
+                        explode_damage,
+                    );
                 }
             }
         }

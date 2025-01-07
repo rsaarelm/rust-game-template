@@ -132,6 +132,7 @@ components! {
     ActsNext,
     Momentum,
     IsEphemeral,
+    IsDying,
 }
 
 /// Time when the mob can act next.
@@ -164,6 +165,13 @@ pub struct Count(pub i32);
     Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
 )]
 pub struct Icon(pub char);
+
+/// Entity has started dying and should not start it again even if it is
+/// damaged more.
+#[derive(
+    Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize,
+)]
+pub struct IsDying(pub bool);
 
 /// Entities with this flag will be destroyed when the player respawns.
 #[derive(

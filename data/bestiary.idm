@@ -4,5 +4,6 @@ bat          b   0  5  2  10  0  -
 snake        s   0  3  4  20  0  -
 goblin       g   1  0  4  10  1  -
 orc          o   2  2  5  10  3  -
+red_ooze     j   3  0  3  10  3  explodes
 troll        T   8  2  8  30  6  -
-Goblin_King  G   4  3  6   0  0  boss explodes
+goblin_king  G   4  3  6   0  0  boss

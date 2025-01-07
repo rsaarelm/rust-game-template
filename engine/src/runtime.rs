@@ -330,7 +330,7 @@ impl Runtime {
                 msg!("[One] [is] no longer mortal."; p.noun(self));
             }
             p.set(self, NumDeaths(num_deaths + 1));
-
+            p.set(self, IsDying(false));
             p.fully_heal(self);
             p.place_near(self, self.previous_waypoint);
             msg!("[One] wake[s] up in a familiar place."; p.noun(self));
