@@ -322,8 +322,8 @@ impl Entity {
                     // TODO Figure out throw damage based on item (and thrower strength?)
                     // TODO Throw to-hit determination should be different than melee, wielded weapon doesn't matter for one thing
                     // TODO Mulch items when they are used as weapons
-                    mob.damage(r, Some(*self), 4);
                     msg!("[One] hit[s] [another]."; item.noun(r), mob.noun(r));
+                    mob.damage(r, Some(*self), 4);
                 } else {
                     // TODO The projectile should keep flying past the mobs it misses
                     msg!("[One] miss[es] [another]."; item.noun(r), mob.noun(r));
