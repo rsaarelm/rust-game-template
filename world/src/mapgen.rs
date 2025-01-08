@@ -72,7 +72,7 @@ impl MapGenerator for GenericSector {
             Grassland => todo!(),
             Forest => todo!(),
             Mountains => todo!(),
-            Dungeon => rooms_and_corridors(rng, lot, 0.2, 0.1, 0.4, 0.0),
+            Dungeon => rooms_and_corridors(rng, lot, 0.1, 0.1, 0.1, 0.0),
         }
     }
 }
