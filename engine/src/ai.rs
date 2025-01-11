@@ -179,7 +179,7 @@ impl Entity {
             assert_eq!(
                 dir.length_squared(),
                 1,
-                "Invaild pathfind: Bad step distance"
+                "Invalid pathfind: Bad step distance"
             );
 
             if self.can_step(r, dir) {
