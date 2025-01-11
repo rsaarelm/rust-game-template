@@ -11,6 +11,9 @@ pub use bits::{
 mod cloud;
 pub use cloud::Cloud;
 
+mod distribution;
+pub use distribution::{PlottedDistribution, RangeDistribution};
+
 mod geom;
 pub use geom::{
     a3, bresenham_line, reverse_dir_mask_4, s4, s8, s_hex, v2, v3,

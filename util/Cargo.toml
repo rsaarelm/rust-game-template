@@ -14,6 +14,7 @@ idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
 itertools = "0.14"
 memoize = "0.4"
+nom = "7"
 num-traits = "0.2"
 pathfinding = "4"
 rand = "0.8"
