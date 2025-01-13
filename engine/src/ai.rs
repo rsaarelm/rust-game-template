@@ -1,4 +1,6 @@
 //! Mobs figuring out what to do on their own.
+use std::collections::BTreeSet;
+
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::{s4, Sdf};
@@ -347,6 +349,17 @@ impl Entity {
         self.set(r, Goal::default());
     }
 
+    /// If mob is player and doing an autopiloted long move, stop.
+    pub fn stop_player_autopilot(&self, r: &mut impl AsMut<Runtime>) {
+        let r = r.as_mut();
+
+        if !self.is_player(r) {
+            return;
+        }
+
+        self.clear_goal(r);
+    }
+
     pub(crate) fn target_for_attack(
         &self,
         r: &impl AsRef<Runtime>,
@@ -431,6 +444,8 @@ impl Entity {
         // Should we look for a fight while doing the scan?
         let mut looking_for_target = self.is_looking_for_fight(r);
 
+        let mut revealed = Vec::new();
+
         for loc in cells {
             if let Some(mob) = loc.mob_at(r) {
                 if self.is_enemy(r, &mob) {
@@ -450,9 +465,41 @@ impl Entity {
                 }
             }
 
-            if self.is_player_aligned(r) {
+            if self.is_player_aligned(r) && !r.fov.contains(&loc) {
+                revealed.push(loc);
                 r.fov.insert(loc);
             }
+        }
+
+        // See what to do with new stuff that was revealed.
+
+        // Collect stuff into intermediate containers so that similar things
+        // will get grouped together in display.
+        let mut items = BTreeSet::default();
+        let mut mobs = BTreeSet::default();
+        for loc in &revealed {
+            // If found an item, emit a message "You found (item name)." using
+            // the templating system and stop the mob's autoexplore if it's
+            // autoexploring.
+            if let Some(item) = loc.item_at(r) {
+                items.insert(item.noun(r));
+                self.stop_player_autopilot(r);
+            }
+
+            if let Some(creature) = loc.mob_at(r) {
+                if self.is_enemy(r, &creature) {
+                    mobs.insert(creature.noun(r));
+                    self.stop_player_autopilot(r);
+                }
+            }
+        }
+
+        for n in mobs {
+            msg!("[One] spot[s] [a thing]."; self.noun(r), n);
+        }
+
+        for n in items {
+            msg!("[One] found [a thing]."; self.noun(r), n);
         }
     }
 }

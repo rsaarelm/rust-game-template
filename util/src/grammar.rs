@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CharExt, StrExt};
 
-#[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(
+    Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Serialize, Deserialize,
+)]
 pub enum Noun {
     You,
     He(String),
