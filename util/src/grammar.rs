@@ -46,6 +46,14 @@ impl Noun {
         }
     }
 
+    pub fn one_of(&self) -> String {
+        if matches!(self, Plural(_)) {
+            format!("one of {}", self.name())
+        } else {
+            self.the_name()
+        }
+    }
+
     pub fn a_name(&self) -> String {
         if matches!(self, You) {
             "you".into()

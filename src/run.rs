@@ -124,7 +124,7 @@ pub async fn main_gameplay() {
             Some(InputAction::Inventory) if !side.is_zero() => {
                 match inventory_choice(&side).await {
                     Some(e) if e.can_be_used(game()) => {
-                        if ask(format!("Use {}?", e.noun(game()).the_name()))
+                        if ask(format!("Use {}?", e.noun(game()).one_of()))
                             .await
                         {
                             if let Some(dir) = if e.use_needs_aim(game()) {
