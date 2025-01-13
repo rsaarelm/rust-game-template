@@ -323,7 +323,7 @@ fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
             }
         }
         Stone | Glass | Altar | Door | Grass | Rubble => CharCell::c(' '),
-        SplatteredRock => CharCell::c(match rng.gen_range(0..=10) {
+        SplatteredStone => CharCell::c(match rng.gen_range(0..=10) {
             d if d < 4 => ',',
             d if d < 7 => '\'',
             8 => ';',

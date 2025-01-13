@@ -36,7 +36,7 @@ pub enum Block {
     #[default]
     /// Smooth, worked walls, shown as shaped walls.
     Stone,
-    SplatteredRock,
+    SplatteredStone,
     Grass,
     Glass,
     /// Rough, unworked mass, drawn as undifferentiated blob.
@@ -54,11 +54,14 @@ use Block::*;
 impl Block {
     /// Block is solid matter that can be stood on top of.
     pub fn is_support(self) -> bool {
-        matches!(self, Stone | SplatteredRock | Rubble | Grass | Glass)
+        matches!(self, Stone | SplatteredStone | Rubble | Grass | Glass)
     }
 
     pub fn blocks_sight(self) -> bool {
-        matches!(self, Stone | SplatteredRock | Rubble | Grass | Magma | Door)
+        matches!(
+            self,
+            Stone | SplatteredStone | Rubble | Grass | Magma | Door
+        )
     }
 }
 
@@ -70,7 +73,7 @@ impl TryFrom<char> for Block {
     fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             '*' => Ok(Stone),
-            '§' => Ok(SplatteredRock),
+            '§' => Ok(SplatteredStone),
             ';' => Ok(Grass),
             '|' => Ok(Glass),
             '%' => Ok(Rubble),
@@ -90,7 +93,7 @@ impl From<Block> for char {
         // This must match the mapping in Block::try_from.
         match value {
             Stone => '*',
-            SplatteredRock => '§',
+            SplatteredStone => '§',
             Grass => ';',
             Glass => '|',
             Rubble => '%',

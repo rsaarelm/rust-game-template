@@ -325,7 +325,7 @@ impl Entity {
                 r.perturbed_fill_positions(loc).take(6).collect();
             for loc in splat {
                 if let Some(loc) = loc.ground_voxel(r) {
-                    loc.decorate_block(r, Block::SplatteredRock);
+                    loc.decorate_block(r, Block::SplatteredStone);
                 }
             }
         }

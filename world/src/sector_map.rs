@@ -81,7 +81,7 @@ impl SectorMap {
                     crate::Tile::Surface(_, Water) => '~',
                     crate::Tile::Surface(_, Magma) => '&',
                     crate::Tile::Surface(_, Grass) => ',',
-                    crate::Tile::Surface(_, SplatteredRock) => '§',
+                    crate::Tile::Surface(_, SplatteredStone) => '§',
                     crate::Tile::Surface(_, _) => '.',
                     crate::Tile::Wall(Door) => '+',
                     crate::Tile::Wall(Glass) => '|',
