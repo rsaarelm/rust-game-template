@@ -55,6 +55,8 @@ pub fn init_game() {
 
 pub fn game() -> &'static mut Game {
     let ret = unsafe { GAME.as_mut().expect("game not initialized") };
+    // Try to make the dodgy toplevel singleton a bit safer by insisting that
+    // it's only accessed from the same thread it was created on.
     ret.same_thread.assert();
     ret
 }

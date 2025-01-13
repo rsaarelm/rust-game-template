@@ -111,6 +111,7 @@ pub async fn main_gameplay() {
                 panic!("no-save emergency exit triggered");
             }
 
+            // Immediately level up.
             if navni::keypress().is("!") {
                 if let Some(player) = game().r.player() {
                     player.fully_heal(game());
