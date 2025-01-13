@@ -87,6 +87,8 @@ pub trait Coordinates:
     /// Location is a wall tile and has wall tiles as all 8 neighbors.
     fn is_interior_wall(&self, r: &impl Environs) -> bool;
 
+    fn is_edge(&self, r: &impl Environs) -> bool;
+
     /// If the location has a surface, snap to the space above the surface.
     /// This may be offset above or below self.
     ///
@@ -290,10 +292,14 @@ impl Coordinates for Location {
         match (self.above().voxel(r), self.voxel(r), self.below().voxel(r)) {
             // Solid three block stack, makes a proper wall.
             (Some(a), Some(b), c) => {
-                // HACK Doors change traversability of the tile, so snap to
-                // the door block even if it's found off-center.
                 if a == Door || c == Some(Door) {
+                    // HACK Doors change traversability of the tile, so snap to
+                    // the door block even if it's found off-center.
                     Tile::Wall(Door)
+                } else if self.above().is_edge(r) && !self.is_edge(r) {
+                    // When we're walking below an edge tile, keep showing the
+                    // tile on top of the stack.
+                    Tile::Wall(a)
                 } else {
                     Tile::Wall(b)
                 }
@@ -315,6 +321,10 @@ impl Coordinates for Location {
 
     fn is_interior_wall(&self, r: &impl Environs) -> bool {
         self.tile(r).is_wall() && self.ns_8().all(|loc| loc.tile(r).is_wall())
+    }
+
+    fn is_edge(&self, r: &impl Environs) -> bool {
+        self.voxel(r).is_some() && self.ns_8().any(|loc| loc.voxel(r).is_none())
     }
 
     fn snap_above_floor(&self, r: &impl Environs) -> Self {

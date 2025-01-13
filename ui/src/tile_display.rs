@@ -163,6 +163,8 @@ impl DisplayTile {
 
         // Do c1 here, overwrite later if needed...
 
+        // Display tiles in-between two central tiles, simpler than the
+        // central tiles that have complex shaping.
         match (left, right) {
             // Merge same.
             (Surface(loc, a), Surface(_, b)) if a == b => {
@@ -189,6 +191,7 @@ impl DisplayTile {
             _ => {}
         }
 
+        // Central display tiles, correspond to actual logical tiles.
         match left {
             Surface(loc_2, block) => {
                 if let Some(mask) = loc.cliff_form(r) {
