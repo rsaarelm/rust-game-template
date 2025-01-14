@@ -165,6 +165,11 @@ impl Entity {
             if matches!(goal, Goal::Escort(_)) {
                 return Some(Action::Pass);
             }
+
+            // Finish with a bump action to pick up items.
+            if self.can_step(r, dir) {
+                return Some(Action::Bump(dir));
+            }
         }
 
         // Path towards target.
@@ -196,7 +201,7 @@ impl Entity {
             );
 
             if self.can_step(r, dir) {
-                return Some(Action::Bump(dir));
+                return Some(Action::Step(dir));
             }
 
             // Blocked by an undisplaceable mob, try to go around.
@@ -205,7 +210,7 @@ impl Entity {
             other_dirs.shuffle(&mut util::srng(&loc));
             for d in other_dirs {
                 if self.can_step(r, d) {
-                    return Some(Action::Bump(d));
+                    return Some(Action::Step(d));
                 }
             }
 
