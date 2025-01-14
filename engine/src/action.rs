@@ -50,7 +50,7 @@ impl Entity {
             Pass => self.pass(r, is_direct),
             Bump(dir) => {
                 let dir = modified_dir(dir);
-                let succeeded = self.attack_step(r, dir, is_direct);
+                let succeeded = self.smart_step(r, dir, is_direct);
 
                 if !succeeded {
                     if let Some(loc) =
@@ -70,6 +70,10 @@ impl Entity {
                         }
                     }
                 }
+            }
+            Step(dir) => {
+                let dir = modified_dir(dir);
+                self.step(r, dir, is_direct);
             }
             Shoot(dir) => {
                 self.shoot(r, modified_dir(dir));
@@ -126,13 +130,6 @@ impl Entity {
                 r.placement.insert(loc, mob);
             }
 
-            // Pick up items when moving with a direct command.
-            if is_direct {
-                if let Some(item) = self.loc(r).and_then(|loc| loc.item_at(r)) {
-                    self.take(r, &item);
-                }
-            }
-
             // This is walking, so we only complete a phase, not a full turn.
             self.complete_phase(r);
 
@@ -146,8 +143,8 @@ impl Entity {
         }
     }
 
-    /// Attack if running into enemy.
-    fn attack_step(
+    /// Step that also attacks enemies and picks up items.
+    fn smart_step(
         &self,
         r: &mut impl AsMut<Runtime>,
         dir: IVec2,
@@ -160,7 +157,15 @@ impl Entity {
             return true;
         }
 
-        self.step(r, dir, is_direct)
+        let ret = self.step(r, dir, is_direct);
+
+        if ret {
+            // Pick up items when moving with a direct command.
+            if let Some(item) = self.loc(r).and_then(|loc| loc.item_at(r)) {
+                self.take(r, &item);
+            }
+        }
+        ret
     }
 
     fn shoot(&self, r: &mut impl AsMut<Runtime>, dir: IVec2) {
@@ -293,9 +298,12 @@ impl Entity {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Action {
     Pass,
-    // Mixed step and melee attack. Split to separate "Step" and "Attack"
-    // actions later if there's need.
+    // "Smart step", attack enemies if running into them, pick up items you
+    // walk over.
     Bump(IVec2),
+    // "Dumb step", only do movement, do not pick up items, do not attack.
+    // Mostly used when a goal AI is driving behavior.
+    Step(IVec2),
     Shoot(IVec2),
     Drop(Entity),
     Cast(Power, IVec2),

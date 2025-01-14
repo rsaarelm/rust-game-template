@@ -61,7 +61,8 @@ impl Entity {
                     }
                 }
 
-                let explore_map = r.autoexplore_map(&zone, loc);
+                let explore_map =
+                    r.autoexplore_map(&zone, loc, self.is_player(r));
                 if explore_map.is_empty() {
                     return None;
                 }
@@ -73,10 +74,20 @@ impl Entity {
                     return None;
                 }
 
-                if let Some(step) =
+                if let Some((n, step)) =
                     self.dijkstra_map_direction(r, &explore_map, loc)
                 {
-                    return Some(Action::Bump(step));
+                    if n == 0 {
+                        // We're hitting a target point in the map. Assume
+                        // this is an autopickup item (the shroud edge targets
+                        // recede as we approach them so they shouldn't be
+                        // reachable) and use Bump action that picks things
+                        // up.
+                        return Some(Action::Bump(step));
+                    } else {
+                        // Otherwise use the non-picking-up step.
+                        return Some(Action::Step(step));
+                    }
                 } else {
                     return None;
                 }

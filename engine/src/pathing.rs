@@ -25,6 +25,7 @@ impl Runtime {
         &self,
         zone: &Cube,
         start: Location,
+        include_pickups: bool,
     ) -> HashMap<Location, usize> {
         let travel_zone = zone.fat();
         let ret: HashMap<Location, usize> = bfs(
@@ -39,12 +40,28 @@ impl Runtime {
                 }
 
                 let loc2 = loc.snap_above_floor(self);
-                !loc2.is_explored(self)
+
+                // Set edge of the shroud to be explored.
+                if !loc2.is_explored(self)
                     || (loc2.is_explored(self)
                         && travel_zone.contains(*loc)
                         && loc.ns_8().any(|loc| {
                             !loc.snap_above_floor(self).is_explored(self)
                         }))
+                {
+                    return true;
+                }
+
+                if include_pickups
+                    && loc2.is_explored(self)
+                    && loc2
+                        .item_at(self)
+                        .map_or(false, |i| i.is_autopickup_item(self))
+                {
+                    return true;
+                }
+
+                false
             }),
         )
         .collect();
@@ -163,12 +180,14 @@ impl Runtime {
 impl Entity {
     /// Movement direction along a given Dijkstra map for given location, if
     /// the map provides any valid steps.
+    ///
+    /// Also return the Dijksrta map distance value at the target position.
     pub fn dijkstra_map_direction(
         &self,
         r: &impl AsRef<Runtime>,
         map: &HashMap<Location, usize>,
         loc: Location,
-    ) -> Option<IVec2> {
+    ) -> Option<(usize, IVec2)> {
         let r = r.as_ref();
 
         // Default to max, always prefer stepping from non-map to map.
@@ -188,16 +207,9 @@ impl Entity {
             })
             .min_by_key(|(_, u)| *u)
         {
-            // Allow neutral steps in case of something like
-            //
-            //     12
-            //     22 <-
-            //
-            // Hope that a better gradient is found. This can cause endless
-            // back-and-forth if caught in a pocket of flat cells with no way
-            // out.
+            // Step towards the low map values.
             if *n < start {
-                return Some(dir);
+                return Some((*n, dir));
             }
         }
         None

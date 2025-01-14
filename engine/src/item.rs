@@ -57,6 +57,12 @@ impl Entity {
         self.get::<ItemPower>(r).0.is_some()
     }
 
+    /// This item should be picked up even when exploring on autopilot.
+    pub fn is_autopickup_item(&self, r: &impl AsRef<Runtime>) -> bool {
+        use ItemKind::*;
+        matches!(self.get::<ItemKind>(r), Ring | Scroll | Potion | Treasure)
+    }
+
     pub fn is_equipped(&self, r: &impl AsRef<Runtime>) -> bool {
         self.equipped_at(r).is_some()
     }
