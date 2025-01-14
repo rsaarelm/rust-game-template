@@ -59,7 +59,11 @@ impl Entity {
                         // Player bumps into altar, request altar menu.
                         if loc.voxel(r) == Some(Block::Altar) {
                             if self.is_player(r) {
-                                send_msg(Msg::ActivatedAltar(loc));
+                                if self.is_threatened(r) {
+                                    msg!("The altar has no power in the presence of enemies.");
+                                } else {
+                                    send_msg(Msg::ActivatedAltar(loc));
+                                }
                             } else if self.is_player_aligned(r) {
                                 msg!("The altar does not respond to your minion.");
                             }
