@@ -2,11 +2,11 @@
 dagger                    4  melee-weapon  10  -
 sword                     8  melee-weapon  20  -
 greatsword               12  melee-weapon  20  -
-goremaul                 20  melee-weapon  30  -
+heavy_maul               20  melee-weapon  30  -
 leather_armor             2  armor         10  -
 chain_mail                5  armor         20  -
 plate_armor               8  armor         30  -
-full_plate_armor         13  armor         40  -
+rune_armor               13  armor         40  -
 scroll_of_lightning      10  scroll        20  call-lightning
 magic_map                 0  scroll        15  magic-mapping
 scroll_of_confusion       4  scroll        10  confusion
