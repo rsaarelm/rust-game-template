@@ -59,6 +59,13 @@ pub trait RuntimeCoordinates: Coordinates {
         self.entities_at(r).find(|e| e.is_item(r))
     }
 
+    /// Location has interactable terrain that can be bumped into, like an
+    /// altar.
+    fn is_interactable(&self, r: &impl AsRef<Runtime>) -> bool {
+        let r = r.as_ref();
+        self.voxel(r) == Some(Block::Altar)
+    }
+
     /// Create a printable description of interesting objects at location.
     fn describe(&self, r: &impl AsRef<Runtime>) -> Option<String> {
         let mut ret = String::new();

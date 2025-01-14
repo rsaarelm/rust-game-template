@@ -172,6 +172,16 @@ impl Entity {
             }
         }
 
+        // Special case for bumping with interactable terrain. Can't use the
+        // previous block because the interactable blocks can't be walked
+        // into.
+        if let Some(&dir) = s4::DIR.iter().find(|&dir| {
+            let loc = loc + dir.extend(0);
+            path_dest.sd(loc) <= 0 && loc.is_interactable(r)
+        }) {
+            return Some(Action::Bump(dir));
+        }
+
         // Path towards target.
         // Bit of difference, player-aligned mobs path according to seen
         // things, enemy mobs path according to full information.

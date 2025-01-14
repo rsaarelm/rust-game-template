@@ -98,17 +98,30 @@ impl Runtime {
 
         let in_domain = |loc| domain.contains(loc) || dest.sd(loc) <= 0;
 
+        // If destination volume is a single cell, then we're going for a
+        // specific location, have it as a Option variable.
+        let point_dest =
+            (dest.volume() == 1).then_some(Location::from(dest.min()));
+
         let neighbors = |loc: &Location| {
             let mut ret = Vec::new();
 
             for dir in s4::DIR {
                 use FogPathing::*;
 
-                let is_explored = (*loc + dir.extend(0)).is_explored(self);
+                let loc_2 = *loc + dir.extend(0);
+                let is_explored = loc_2.is_explored(self);
+                let is_point_dest = Some(loc_2) == point_dest;
 
                 if is_explored || fog_behavior == Ignore {
-                    // Walk normally when you know where you're going.
-                    if let Some(loc_2) = loc.walk_step(self, dir) {
+                    if is_point_dest
+                        && loc_2.is_interactable(self)
+                        && in_domain(loc_2)
+                    {
+                        // Allow altars as destinations.
+                        ret.push((loc_2, 1));
+                    } else if let Some(loc_2) = loc.walk_step(self, dir) {
+                        // Walk normally when you know where you're going.
                         if in_domain(loc_2) {
                             ret.push((loc_2, 1));
                         }

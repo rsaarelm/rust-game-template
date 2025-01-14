@@ -384,7 +384,20 @@ impl Runtime {
                 }
 
                 if let Some(act) = e.decide(self, goal) {
-                    e.execute_indirect(self, act);
+                    e.execute_indirect(self, act.clone());
+
+                    // HACK: Bump action always ends a long move, but if we're
+                    // standing next to an interactable object, it doesn't
+                    // move the mob so `decide` can't tell that the goal
+                    // should be complete after the first bump. Instead, we
+                    // have a special case here where GoTo goals are cleared
+                    // after they yielded a bump.
+                    if matches!(
+                        (goal, act),
+                        (Goal::GoTo { .. }, Action::Bump(_))
+                    ) {
+                        e.next_goal(self);
+                    }
                 } else {
                     e.next_goal(self);
                 }

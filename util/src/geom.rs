@@ -939,4 +939,12 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn signed_distance() {
+        let vol = Cube::new([10, 10, 10], [11, 11, 11]);
+
+        assert_eq!(vol.sd(ivec3(20, 10, 10)), 10);
+        assert_eq!(vol.sd(ivec3(10, 10, 10)), 0);
+    }
 }
