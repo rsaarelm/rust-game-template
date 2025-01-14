@@ -103,7 +103,8 @@ fn main() -> anyhow::Result<()> {
 
                     log::info!("seed: {seed}");
 
-                    game().r = Runtime::new(seed).unwrap();
+                    game().r = Runtime::new(seed)
+                        .expect("Failed to initialize new game");
 
                     if user_name == "Unknown" {
                         msg!("Welcome to {}!", settings().title);
@@ -121,7 +122,8 @@ fn main() -> anyhow::Result<()> {
                         msg!("Welcome back, {user_name}!");
                     }
                 }
-                Err(_) => {
+                Err(e) => {
+                    log::info!("Error loading save: {e}");
                     game().draw().await;
                     if ask("Corrupt save file detected. Delete it?").await {
                         game().delete_save(&settings().id);
