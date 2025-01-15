@@ -102,12 +102,9 @@ pub fn view_map(win: &Window) -> Option<MapAction> {
                 } else if e.goal(r) != Goal::FollowPlayer {
                     // Frindly mob out on a mission.
                     cell = cell.col(X::GREEN);
-                } else if e.acts_before_next_player_frame(r) {
+                } else {
                     // Friendly mob ready for next command
                     cell = cell.col(X::AQUA);
-                } else {
-                    // Friendly mob still building up it's actions.
-                    cell = cell.col(X::TEAL);
                 }
 
                 if game().selected().any(|a| a == e) {

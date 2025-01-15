@@ -130,6 +130,7 @@ components! {
     IsFriendly,
     Goal,
     ActsNext,
+    LastCommanded,
     Momentum,
     IsEphemeral,
     IsDying,
@@ -191,6 +192,12 @@ pub struct IsMob(pub bool);
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct ItemPower(pub Option<Power>);
+
+/// The time the mob was manually commanded the last time.
+/// Used so we can wait until a NPC has its full action potential back before
+/// it can be manually commanded again.
+#[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
+pub struct LastCommanded(pub Instant);
 
 /// Used by AI movement, moving sets momentum and you can't displace a mob
 /// that moved this turn against its momentum.

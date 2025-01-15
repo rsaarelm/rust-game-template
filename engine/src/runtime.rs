@@ -369,6 +369,9 @@ impl Runtime {
                 e.with_mut::<Buffs, _>(self, |b| b.remove(&buff));
             }
 
+            // Clear last-commanded value when mob moves under AI.
+            e.set(self, LastCommanded::default());
+
             let goal = e.goal(self);
             if goal != Goal::None {
                 if e.is_player(self) && e.first_visible_enemy(self).is_some() {

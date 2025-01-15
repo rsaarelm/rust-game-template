@@ -6,8 +6,8 @@ use world::{Block, Environs, MonsterFlags, Rect};
 
 use crate::{
     ecs::{
-        ActsNext, Buffs, IsDying, IsEphemeral, IsMob, Momentum, Speed, Stats,
-        Wounds,
+        ActsNext, Buffs, IsDying, IsEphemeral, IsMob, LastCommanded, Momentum,
+        Speed, Stats, Wounds,
     },
     prelude::*,
     PHASES_IN_TURN,
@@ -151,6 +151,15 @@ impl Entity {
     pub fn can_be_commanded(&self, r: &impl AsRef<Runtime>) -> bool {
         let r = r.as_ref();
         // NPCs can be commanded up to one full turn into the future.
+        let last = self.get::<LastCommanded>(r).0;
+        // Waiting for a recharge.
+        if last != Default::default()
+            && last != r.now()
+            && !self.acts_before_next_player_frame(r)
+        {
+            return false;
+        }
+
         self.is_alive(r) && self.acts_next(r) - r.now() < PHASES_IN_TURN
     }
 

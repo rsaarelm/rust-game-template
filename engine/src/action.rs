@@ -6,7 +6,7 @@ use util::{s4, RngExt};
 use world::{Block, EquippedAt, Power};
 
 use crate::{
-    ecs::{ActsNext, Momentum, Voice},
+    ecs::{ActsNext, LastCommanded, Momentum, Voice},
     prelude::*,
     ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
 };
@@ -25,6 +25,8 @@ impl Entity {
     ///
     /// Can do things like pick up items automatically.
     pub fn execute_direct(&self, r: &mut impl AsMut<Runtime>, action: Action) {
+        let r = r.as_mut();
+        self.set(r, LastCommanded(r.now()));
         self.execute(r, action, true);
     }
 
