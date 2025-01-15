@@ -86,6 +86,15 @@ fn main() -> anyhow::Result<()> {
         let user_name = util::user_name();
 
         loop {
+            // XXX Draw the screen a few times to get through initial resizes
+            // so that the popup when loading a corrupt save won't be
+            // interrupted by a resize signal.
+            for _ in 0..5 {
+                if game().draw().await.is_some() {
+                    break;
+                }
+            }
+
             // Restore game or init a new one.
             match game().load(&settings().id) {
                 Ok(None) => {
