@@ -524,6 +524,7 @@ impl Entity {
 #[derive(
     Copy, Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize,
 )]
+#[serde(rename_all_fields = "kebab-case")]
 pub enum Goal {
     #[default]
     None,
