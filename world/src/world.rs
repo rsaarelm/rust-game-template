@@ -352,11 +352,13 @@ fn build_skeleton(
 }
 
 impl World {
-    pub fn new(seed: Silo, scenario_id: &str) -> anyhow::Result<Self> {
+    pub fn new(
+        seed: Silo,
+        scenario: Reference<Scenario>,
+    ) -> anyhow::Result<Self> {
         // XXX: Repeating the (somewhat complex, you need to call
         // construct_waypoint_geometry) set-up logic here and in
         // TryFrom<SerWorld> for World. Should find one place for both.
-        let scenario = Reference::new(scenario_id);
         let (player_entrance, skeleton) = build_skeleton(&seed, &scenario)?;
 
         let mut ret = World {

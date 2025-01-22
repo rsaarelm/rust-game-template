@@ -6,12 +6,13 @@ use anyhow::{anyhow, bail};
 use derive_more::{Deref, From};
 use derives::{DeserializeFlags, SerializeFlags};
 use glam::IVec2;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::EnumIter;
 use util::{HashMap, IndexMap, LazyRes, StrExt, _String};
 
-use crate::SectorMap;
+use crate::{Reference, SectorMap};
 
 static DATA: OnceLock<Data> = OnceLock::new();
 
@@ -78,6 +79,77 @@ impl Data {
     pub fn get() -> &'static Data {
         Default::default()
     }
+
+    pub fn list_campaigns(&self) -> impl Iterator<Item = &str> {
+        self.campaign
+            .keys()
+            .map(|s| parse_mission_name(s).expect("Invalid mission name").1 .0)
+            .unique()
+    }
+
+    pub fn first_mission(&self, campaign: &str) -> Reference<Scenario> {
+        Reference::new(
+            self.campaign
+                .keys()
+                .find(|name| {
+                    parse_mission_name(name).expect("Invalid mission name").1 .0
+                        == campaign
+                })
+                .expect("Campaign has no missions"),
+        )
+    }
+
+    pub fn next_missions(
+        &self,
+        current_id: &str,
+    ) -> BTreeMap<usize, Reference<Scenario>> {
+        let (campaign, num, _) = parse_mission_name(current_id)
+            .expect("Invalid mission name")
+            .1;
+
+        let mut ret = BTreeMap::default();
+        for name in self.campaign.keys() {
+            let (c, n, side) =
+                parse_mission_name(name).expect("Invalid mission name").1;
+
+            if c != campaign || n <= num {
+                continue;
+            }
+
+            ret.entry(side).or_insert_with(|| Reference::new(name));
+        }
+
+        ret
+    }
+}
+
+/// Parse mission names into (campaign-name, mission-number, side-branch)
+/// tuples.
+fn parse_mission_name(s: &str) -> nom::IResult<&str, (&str, u32, usize)> {
+    use nom::{
+        bytes::complete::tag,
+        character::complete::{alpha1, digit1},
+        combinator::{all_consuming, map_res},
+        error::{make_error, ErrorKind},
+        sequence::{terminated, tuple},
+        Err,
+    };
+
+    fn side_branch(s: &str) -> nom::IResult<&str, usize> {
+        if let (1, Some(i)) = (s.len(), "abcdefghjkmnpqr".find(s)) {
+            Ok((&s[1..], i + 1))
+        } else if s.is_empty() {
+            Ok((s, 0))
+        } else {
+            Err(Err::Error(make_error(s, ErrorKind::Char)))
+        }
+    }
+
+    all_consuming(tuple((
+        terminated(alpha1, tag("-")),
+        map_res(digit1, str::parse::<u32>),
+        side_branch,
+    )))(s)
 }
 
 /// Trait used by `Reference`s to load themselves.
@@ -576,5 +648,23 @@ mod test {
         // cleanly.
         register_data_from("../data").unwrap();
         assert!(!Data::get().bestiary.is_empty());
+    }
+
+    #[test]
+    fn mission_name() {
+        assert_eq!(
+            parse_mission_name("phobos-10"),
+            Ok(("", ("phobos", 10, 0)))
+        );
+        assert_eq!(
+            parse_mission_name("phobos-15b"),
+            Ok(("", ("phobos", 15, 2)))
+        );
+        assert!(parse_mission_name("phobos-15x").is_err());
+        assert!(parse_mission_name("phobos-15ab").is_err());
+        assert!(parse_mission_name("").is_err());
+        assert!(parse_mission_name("phobos").is_err());
+        assert!(parse_mission_name("-15").is_err());
+        assert!(parse_mission_name("-15a").is_err());
     }
 }
