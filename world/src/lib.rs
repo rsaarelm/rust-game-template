@@ -18,6 +18,9 @@ pub use location::{Coordinates, Environs, Location};
 pub mod mapgen;
 pub use mapgen::{Lot, MapGenerator, Patch};
 
+mod reference;
+pub use reference::Reference;
+
 pub mod sector_map;
 pub use sector_map::SectorMap;
 

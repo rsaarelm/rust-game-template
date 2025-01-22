@@ -80,6 +80,17 @@ impl Data {
     }
 }
 
+/// Trait used by `Reference`s to load themselves.
+pub trait GetReference<T> {
+    fn get_reference(&self, key: &str) -> Option<&T>;
+}
+
+impl GetReference<Scenario> for Data {
+    fn get_reference(&self, key: &str) -> Option<&Scenario> {
+        self.campaign.get(key)
+    }
+}
+
 /// A pod is an inert value that can hatch into one or several live runtime
 /// objects.
 #[derive(

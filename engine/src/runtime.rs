@@ -63,10 +63,8 @@ impl Default for Runtime {
 
 impl Runtime {
     pub fn new(seed: Silo) -> Result<Self> {
-        let world = World::new(
-            seed,
-            Data::get().campaign.iter().next().unwrap().1.clone(),
-        )?;
+        let world =
+            World::new(seed, Data::get().campaign.keys().next().unwrap())?;
         let rng = util::srng(world.seed());
 
         let previous_waypoint = world.player_entrance();

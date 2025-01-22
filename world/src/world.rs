@@ -11,9 +11,9 @@ use util::{
 
 use crate::{
     data::Region, waypoints::WaypointPair, Block, Coordinates, Cube, Environs,
-    Location, Lot, MapGenerator, Patch, Pod, Rect, Scenario, Terrain, Voxel,
-    Zone, DOWN, LEVEL_BASIS, LEVEL_DEPTH, NORTH, SECTOR_HEIGHT, SECTOR_WIDTH,
-    UP, WEST,
+    Location, Lot, MapGenerator, Patch, Pod, Rect, Reference, Scenario,
+    Terrain, Voxel, Zone, DOWN, LEVEL_BASIS, LEVEL_DEPTH, NORTH, SECTOR_HEIGHT,
+    SECTOR_WIDTH, UP, WEST,
 };
 
 /// Non-cached world data that goes in a save file.
@@ -27,7 +27,7 @@ struct SerWorld {
     /// Sectors that have already had their entities spawned.
     spawn_history: Vec<Level>,
     /// Game scenario spec.
-    scenario: Scenario,
+    scenario: Reference<Scenario>,
 }
 
 /// Overall runtime game world data.
@@ -352,10 +352,11 @@ fn build_skeleton(
 }
 
 impl World {
-    pub fn new(seed: Silo, scenario: Scenario) -> anyhow::Result<Self> {
+    pub fn new(seed: Silo, scenario_id: &str) -> anyhow::Result<Self> {
         // XXX: Repeating the (somewhat complex, you need to call
         // construct_waypoint_geometry) set-up logic here and in
         // TryFrom<SerWorld> for World. Should find one place for both.
+        let scenario = Reference::new(scenario_id);
         let (player_entrance, skeleton) = build_skeleton(&seed, &scenario)?;
 
         let mut ret = World {
