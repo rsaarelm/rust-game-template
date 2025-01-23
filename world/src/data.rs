@@ -46,7 +46,7 @@ pub struct Data {
     pub loadout: LazyRes<Pod>,
     pub bestiary: IndexMap<_String, Monster>,
     pub armory: IndexMap<_String, Item>,
-    pub campaign: BTreeMap<String, Scenario>,
+    pub missions: BTreeMap<String, Scenario>,
     /// Irregular plural words.
     pub plurals: HashMap<String, String>,
 }
@@ -81,7 +81,7 @@ impl Data {
     }
 
     pub fn list_campaigns(&self) -> impl Iterator<Item = &str> {
-        self.campaign
+        self.missions
             .keys()
             .map(|s| parse_mission_name(s).expect("Invalid mission name").1 .0)
             .unique()
@@ -89,7 +89,7 @@ impl Data {
 
     pub fn first_mission(&self, campaign: &str) -> Reference<Scenario> {
         Reference::new(
-            self.campaign
+            self.missions
                 .keys()
                 .find(|name| {
                     parse_mission_name(name).expect("Invalid mission name").1 .0
@@ -108,7 +108,7 @@ impl Data {
             .1;
 
         let mut ret = BTreeMap::default();
-        for name in self.campaign.keys() {
+        for name in self.missions.keys() {
             let (c, n, side) =
                 parse_mission_name(name).expect("Invalid mission name").1;
 
@@ -159,7 +159,7 @@ pub trait GetReference<T> {
 
 impl GetReference<Scenario> for Data {
     fn get_reference(&self, key: &str) -> Option<&Scenario> {
-        self.campaign.get(key)
+        self.missions.get(key)
     }
 }
 

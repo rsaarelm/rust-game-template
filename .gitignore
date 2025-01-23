@@ -10,7 +10,7 @@ result
 web/*.wasm
 
 # Extracted Tiled maps
-data/campaign/*.json
+data/missions/*.json
 
 # Generated source
 src/version.rs
