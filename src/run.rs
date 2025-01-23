@@ -12,6 +12,13 @@ use crate::{
 };
 
 pub async fn main_gameplay() {
+    game().viewpoint = game()
+        .r
+        .player()
+        .and_then(|p| p.loc(game()))
+        .unwrap_or_default();
+    game().camera = game().viewpoint;
+
     loop {
         game().tick().await;
         game().draw().await;

@@ -42,8 +42,10 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
+    // Early setup
     util::panic_handler();
 
+    // Command line argument processing
     let args = Args::parse();
 
     if args.version {
@@ -51,6 +53,7 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
+    // Constructing gamedata
     let mut mods: Vec<IncrementalOutline> = Default::default();
     for path in args.mods {
         let md = util::dir_to_idm(path)?;
@@ -61,6 +64,8 @@ fn main() -> anyhow::Result<()> {
         let data = util::dir_to_idm(data_dir)?.to_string();
         idm::from_str(&data)?
     } else {
+        // The compressed IDM blob for the default gamedata is embedded in the
+        // binary.
         let data = snap::raw::Decoder::new()
             .decompress_vec(include_bytes!("../target/data.idm.sz"))?;
         let data = std::str::from_utf8(&data)?;
@@ -73,8 +78,10 @@ fn main() -> anyhow::Result<()> {
 
     world::register_data(idm::transmute(&data)?);
 
+    // Start logger (requires game ID from gamedata)
     navni::logger::start(&settings().id);
 
+    // Enter graphical application mode.
     navni::run(&settings().id, async move {
         ui::init_game();
 
@@ -86,8 +93,8 @@ fn main() -> anyhow::Result<()> {
         let user_name = util::user_name();
 
         loop {
-            // XXX Draw the screen a few times to get through initial resizes
-            // so that the popup when loading a corrupt save won't be
+            // XXX Draw the screen a few times to get through initial resize
+            // events so that the popup when loading a corrupt save won't be
             // interrupted by a resize signal.
             for _ in 0..5 {
                 if game().draw().await.is_some() {
@@ -146,17 +153,11 @@ fn main() -> anyhow::Result<()> {
             }
             break;
         }
-        msg!("Build version {}", VERSION);
-
-        game().viewpoint = game()
-            .r
-            .player()
-            .and_then(|p| p.loc(game()))
-            .unwrap_or_default();
-        game().camera = game().viewpoint;
 
         navni::set_palette(&ui::LIGHT_PALETTE);
+        msg!("Build version {}", VERSION);
 
+        // Run actual gameplay.
         run::main_gameplay().await;
 
         // Save the game if we exited with the game still running.
