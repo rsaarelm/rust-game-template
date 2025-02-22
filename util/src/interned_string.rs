@@ -159,7 +159,7 @@ impl Interner {
             &self.current_buffer[start..]
         };
 
-        &*(interned as *const str)
+        unsafe { &*(interned as *const str) }
     }
 }
 

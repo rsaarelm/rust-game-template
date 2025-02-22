@@ -7,7 +7,7 @@ use syn::{parse_macro_input, DeriveInput};
 pub fn derive_serialize_flags(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let name = &ast.ident;
-    let gen = quote! {
+    let out = quote! {
         impl serde::Serialize for #name {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where
@@ -28,14 +28,14 @@ pub fn derive_serialize_flags(input: TokenStream) -> TokenStream {
             }
         }
     };
-    gen.into()
+    out.into()
 }
 
 #[proc_macro_derive(DeserializeFlags)]
 pub fn derive_deserialize_flags(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let name = &ast.ident;
-    let gen = quote! {
+    let out = quote! {
         impl<'de> serde::Deserialize<'de> for #name {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
@@ -70,5 +70,5 @@ pub fn derive_deserialize_flags(input: TokenStream) -> TokenStream {
             }
         }
     };
-    gen.into()
+    out.into()
 }

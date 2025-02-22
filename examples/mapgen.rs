@@ -71,7 +71,7 @@ impl CorridorsArgs {
         }
     }
 
-    fn gen(&self) -> Patch {
+    fn build(&self) -> Patch {
         let mut lot = Lot::default();
         lot.sides = if self.connected { 0b1111 } else { 0 };
 
@@ -114,7 +114,7 @@ fn main() -> anyhow::Result<()> {
 
     let now = std::time::Instant::now();
     let mut map = match args.command {
-        Cmds::Corridors(args) => args.gen(),
+        Cmds::Corridors(args) => args.build(),
     };
     let elapsed = now.elapsed();
 

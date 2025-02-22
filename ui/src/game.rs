@@ -47,12 +47,15 @@ pub struct Game {
 
 static mut GAME: Option<Game> = None;
 
+// TODO: Implement the game singleton in a way that makes Rust 2024 happy
+#[allow(static_mut_refs)]
 pub fn init_game() {
     unsafe {
         GAME = Some(Game::default());
     }
 }
 
+#[allow(static_mut_refs)]
 pub fn game() -> &'static mut Game {
     let ret = unsafe { GAME.as_mut().expect("game not initialized") };
     // Try to make the dodgy toplevel singleton a bit safer by insisting that

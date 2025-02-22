@@ -309,11 +309,11 @@ fn build_skeleton(
             };
 
             let segment = match r {
-                Generate(gen) => Segment {
+                Generate(g) => Segment {
                     connected_north,
                     connected_west,
                     connected_down,
-                    generator: Box::new(*gen),
+                    generator: Box::new(*g),
                 },
                 Site(map) | Hall(map) => {
                     for p in map.entrances() {
