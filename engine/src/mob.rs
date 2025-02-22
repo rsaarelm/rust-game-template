@@ -5,12 +5,12 @@ use util::v2;
 use world::{Block, Environs, MonsterFlags, Rect};
 
 use crate::{
+    PHASES_IN_TURN,
     ecs::{
         ActsNext, Buffs, IsDying, IsEphemeral, IsMob, LastCommanded, Momentum,
         Speed, Stats, Wounds,
     },
     prelude::*,
-    PHASES_IN_TURN,
 };
 
 impl Entity {

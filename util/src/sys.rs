@@ -115,7 +115,7 @@ pub fn is_active(_layout_name: &str) -> bool {
 /// wrapped to a handler that pops up an error dialog box.
 #[cfg(target_os = "windows")]
 pub fn panic_handler() {
-    use winapi::um::winuser::{MessageBoxW, MB_ICONERROR};
+    use winapi::um::winuser::{MB_ICONERROR, MessageBoxW};
 
     // Wrap panics in dialog boxes on Windows.
     std::panic::set_hook(Box::new(|panic_info| {

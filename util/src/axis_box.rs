@@ -969,16 +969,26 @@ mod tests {
 
     #[test]
     fn intersects() {
-        assert!(AxisBox::new([2, 2], [8, 8])
-            .intersects(&AxisBox::new([4, 4], [6, 6])));
-        assert!(AxisBox::new([2, 2], [8, 8])
-            .intersects(&AxisBox::new([0, 0], [10, 10])));
-        assert!(AxisBox::new([2, 2], [8, 8])
-            .intersects(&AxisBox::new([5, 4], [10, 6])));
-        assert!(!AxisBox::new([2, 2], [8, 8])
-            .intersects(&AxisBox::new([14, 4], [16, 6])));
-        assert!(!AxisBox::new([2, 2], [8, 8])
-            .intersects(&AxisBox::new([4, 14], [6, 16])));
+        assert!(
+            AxisBox::new([2, 2], [8, 8])
+                .intersects(&AxisBox::new([4, 4], [6, 6]))
+        );
+        assert!(
+            AxisBox::new([2, 2], [8, 8])
+                .intersects(&AxisBox::new([0, 0], [10, 10]))
+        );
+        assert!(
+            AxisBox::new([2, 2], [8, 8])
+                .intersects(&AxisBox::new([5, 4], [10, 6]))
+        );
+        assert!(
+            !AxisBox::new([2, 2], [8, 8])
+                .intersects(&AxisBox::new([14, 4], [16, 6]))
+        );
+        assert!(
+            !AxisBox::new([2, 2], [8, 8])
+                .intersects(&AxisBox::new([4, 14], [6, 16]))
+        );
     }
 
     #[test]
@@ -1039,11 +1049,13 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![[0, 0]]
         );
-        assert!(Rect::new([2, 2], [4, 4])
-            .enclosed_lattice([10, 10])
-            .into_iter()
-            .collect::<Vec<_>>()
-            .is_empty());
+        assert!(
+            Rect::new([2, 2], [4, 4])
+                .enclosed_lattice([10, 10])
+                .into_iter()
+                .collect::<Vec<_>>()
+                .is_empty()
+        );
         assert_eq!(
             Rect::new([2, 2], [14, 4])
                 .intersecting_lattice([10, 10])

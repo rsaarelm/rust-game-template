@@ -3,7 +3,7 @@ use std::fmt::Write;
 use engine::prelude::*;
 use navni::Key;
 use ui::prelude::*;
-use util::{write, writeln, StrExt};
+use util::{StrExt, write, writeln};
 use world::EquippedAt;
 
 pub fn item_list(

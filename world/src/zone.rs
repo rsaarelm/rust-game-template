@@ -1,7 +1,7 @@
-use glam::{ivec3, IVec3};
-use util::{v3, Neighbors3D};
+use glam::{IVec3, ivec3};
+use util::{Neighbors3D, v3};
 
-use crate::{Cube, Location, LEVEL_BASIS, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{Cube, LEVEL_BASIS, Location, SECTOR_HEIGHT, SECTOR_WIDTH};
 
 /// Trait for the various volumes of game space.
 ///

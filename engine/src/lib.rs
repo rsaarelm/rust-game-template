@@ -41,7 +41,7 @@ mod mob;
 pub use mob::Buff;
 
 mod msg;
-pub use msg::{send_msg, Grammatize, Msg, Receiver};
+pub use msg::{Grammatize, Msg, Receiver, send_msg};
 
 mod pathing;
 pub use pathing::FogPathing;

@@ -70,14 +70,14 @@ impl<T, N> PathNode<T, N> {
     }
 
     pub fn item(&self) -> &T {
-        &self.0 .0
+        &self.0.0
     }
 
     pub fn total_cost(&self) -> N
     where
         N: Copy,
     {
-        self.0 .1
+        self.0.1
     }
 
     pub fn parent(&self) -> Option<Self>
@@ -85,7 +85,7 @@ impl<T, N> PathNode<T, N> {
         T: Clone,
         N: Copy,
     {
-        self.0 .2.clone()
+        self.0.2.clone()
     }
 
     pub fn into_iter(&self) -> impl Iterator<Item = (T, N)> + '_
@@ -97,11 +97,10 @@ impl<T, N> PathNode<T, N> {
         std::iter::from_fn(move || {
             let n = node.take()?;
             let ret = (
-                n.0 .0.clone(),
-                n.0 .1
-                    - n.0 .2.as_ref().map_or_else(Default::default, |p| p.0 .1),
+                n.0.0.clone(),
+                n.0.1 - n.0.2.as_ref().map_or_else(Default::default, |p| p.0.1),
             );
-            node = n.0 .2.clone();
+            node = n.0.2.clone();
             Some(ret)
         })
     }

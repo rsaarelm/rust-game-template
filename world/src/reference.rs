@@ -2,7 +2,7 @@ use std::{fmt, ops, str::FromStr, sync::OnceLock};
 
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-use crate::{data::GetReference, Data};
+use crate::{Data, data::GetReference};
 
 /// An indirect reference to element stored in data.
 ///

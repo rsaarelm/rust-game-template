@@ -29,21 +29,13 @@ impl From<Location> for Place {
 
 impl From<Place> for Option<Entity> {
     fn from(val: Place) -> Self {
-        if let In(e) = val {
-            Some(e)
-        } else {
-            None
-        }
+        if let In(e) = val { Some(e) } else { None }
     }
 }
 
 impl From<Place> for Option<Location> {
     fn from(val: Place) -> Self {
-        if let At(loc) = val {
-            Some(loc)
-        } else {
-            None
-        }
+        if let At(loc) = val { Some(loc) } else { None }
     }
 }
 

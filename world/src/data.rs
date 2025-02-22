@@ -10,7 +10,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::EnumIter;
-use util::{HashMap, IndexMap, LazyRes, StrExt, _String};
+use util::{_String, HashMap, IndexMap, LazyRes, StrExt};
 
 use crate::{Reference, SectorMap};
 
@@ -33,7 +33,9 @@ pub fn register_data(data: Data) {
             log::info!("registering the same gamedata twice, ignored");
         }
         _ => {
-            panic!("Tried to register different gamedata when data is already registered");
+            panic!(
+                "Tried to register different gamedata when data is already registered"
+            );
         }
     }
 }
@@ -83,7 +85,7 @@ impl Data {
     pub fn list_campaigns(&self) -> impl Iterator<Item = &str> {
         self.missions
             .keys()
-            .map(|s| parse_mission_name(s).expect("Invalid mission name").1 .0)
+            .map(|s| parse_mission_name(s).expect("Invalid mission name").1.0)
             .unique()
     }
 
@@ -92,7 +94,7 @@ impl Data {
             self.missions
                 .keys()
                 .find(|name| {
-                    parse_mission_name(name).expect("Invalid mission name").1 .0
+                    parse_mission_name(name).expect("Invalid mission name").1.0
                         == campaign
                 })
                 .expect("Campaign has no missions"),
@@ -127,12 +129,12 @@ impl Data {
 /// tuples.
 fn parse_mission_name(s: &str) -> nom::IResult<&str, (&str, u32, usize)> {
     use nom::{
+        Err, Parser,
         bytes::complete::tag,
         character::complete::{alpha1, digit1},
         combinator::{all_consuming, map_res},
-        error::{make_error, ErrorKind},
+        error::{ErrorKind, make_error},
         sequence::terminated,
-        Err, Parser,
     };
 
     fn side_branch(s: &str) -> nom::IResult<&str, usize> {
@@ -218,12 +220,14 @@ impl<T: Into<PodObject>> From<T> for Pod {
 impl Pod {
     pub fn objects(&self) -> impl Iterator<Item = &PodObject> + '_ {
         let mut stack = vec![self.0.iter()];
-        std::iter::from_fn(move || loop {
-            if let Some(((obj,), pod)) = stack.last_mut()?.next() {
-                stack.push(pod.0.iter());
-                return Some(obj);
-            } else {
-                stack.pop();
+        std::iter::from_fn(move || {
+            loop {
+                if let Some(((obj,), pod)) = stack.last_mut()?.next() {
+                    stack.push(pod.0.iter());
+                    return Some(obj);
+                } else {
+                    stack.pop();
+                }
             }
         })
     }

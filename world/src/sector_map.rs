@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use glam::{ivec2, ivec3, IVec2};
+use glam::{IVec2, ivec2, ivec3};
 use rand::distr::{Distribution, StandardUniform};
 use serde::{Deserialize, Serialize};
 use util::{Cloud, HashMap, IndexMap, LazyRes, Neighbors2D, StrExt};

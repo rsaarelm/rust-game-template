@@ -29,11 +29,7 @@ pub fn multiples(input: &str) -> Result<i32> {
         return Err(input);
     };
 
-    if num > 0 {
-        Ok((num, rest))
-    } else {
-        Err(input)
-    }
+    if num > 0 { Ok((num, rest)) } else { Err(input) }
 }
 
 pub fn multipliable(input: &str) -> (i32, &str) {

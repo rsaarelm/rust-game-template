@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, de::DeserializeOwned};
 
 /// Lazily initialized resource handle.
 ///

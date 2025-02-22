@@ -1,13 +1,13 @@
 use std::{fmt, ops::RangeInclusive};
 
 use nom::{
+    Finish, IResult, Parser,
     branch::alt,
     bytes::complete::tag,
     character::complete::digit1,
     combinator::{all_consuming, map_res, opt, recognize},
     error::Error,
     sequence::{pair, preceded},
-    Finish, IResult, Parser,
 };
 use rand::Rng;
 use serde_with::{DeserializeFromStr, SerializeDisplay};

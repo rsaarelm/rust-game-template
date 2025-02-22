@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use glam::{ivec2, ivec3, vec2, IVec2, IVec3, Vec2};
+use glam::{IVec2, IVec3, Vec2, ivec2, ivec3, vec2};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::Cube;
@@ -21,7 +21,7 @@ pub const AXIS_DIRS: [IVec3; 6] = [
 
 /// 4-directional grid space using taxicab metric.
 pub mod s4 {
-    use glam::{ivec2, IVec2};
+    use glam::{IVec2, ivec2};
 
     use crate::VecExt;
 
@@ -54,11 +54,7 @@ pub mod s4 {
         // if adx == ady alternate between horizontal and vertical dirs on
         // different starting positions to generate pseudo-diagonal movement.
         if ady > adx || (adx == ady && !p1.prefer_horizontals_here()) {
-            if dy < 0 {
-                DIR[0]
-            } else {
-                DIR[2]
-            }
+            if dy < 0 { DIR[0] } else { DIR[2] }
         } else if dx < 0 {
             DIR[3]
         } else {
@@ -96,7 +92,7 @@ pub mod s4 {
 pub mod s_hex {
     use std::f32::consts::TAU;
 
-    use glam::{ivec2, IVec2};
+    use glam::{IVec2, ivec2};
 
     /// 6-dirs.
     ///
@@ -192,7 +188,7 @@ pub mod s_hex {
 pub mod s8 {
     use std::f32::consts::TAU;
 
-    use glam::{ivec2, IVec2};
+    use glam::{IVec2, ivec2};
 
     /// 8-dirs in clock face order.
     pub const DIR: [IVec2; 8] = [

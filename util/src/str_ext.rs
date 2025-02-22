@@ -1,6 +1,6 @@
 use std::{iter, sync::LazyLock};
 
-use glam::{ivec2, IVec2};
+use glam::{IVec2, ivec2};
 use regex::Regex;
 
 use crate::HashMap;

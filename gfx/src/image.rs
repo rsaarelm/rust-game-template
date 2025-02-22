@@ -6,7 +6,7 @@ use std::{
 use glam::IVec2;
 use navni::Rgba;
 use regex::Regex;
-use util::{v2, HashMap};
+use util::{HashMap, v2};
 
 use crate::{Buffer, Pixel, Rect};
 

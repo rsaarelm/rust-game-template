@@ -3,13 +3,13 @@ use std::collections::BTreeSet;
 
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use util::{s4, Sdf};
+use util::{Sdf, s4};
 use world::{Cube, EquippedAt};
 
 use crate::{
+    FOV_RADIUS, THROW_RANGE,
     ecs::{IsEphemeral, IsFriendly},
     prelude::*,
-    FOV_RADIUS, THROW_RANGE,
 };
 
 impl Entity {

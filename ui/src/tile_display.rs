@@ -1,6 +1,6 @@
 use derive_more::Deref;
 use engine::prelude::*;
-use glam::{ivec3, IVec3};
+use glam::{IVec3, ivec3};
 use navni::prelude::*;
 use rand::Rng;
 use world::{Block, Tile, Zone};

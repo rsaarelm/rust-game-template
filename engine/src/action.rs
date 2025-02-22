@@ -1,14 +1,14 @@
 //! Entities doing things
 
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 use serde::{Deserialize, Serialize};
-use util::{s4, RngExt};
+use util::{RngExt, s4};
 use world::{Block, EquippedAt, Power};
 
 use crate::{
+    ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
     ecs::{ActsNext, LastCommanded, Momentum, Voice},
     prelude::*,
-    ALERT_RADIUS, PHASES_IN_TURN, SHOUT_RADIUS,
 };
 
 impl Entity {
@@ -62,12 +62,16 @@ impl Entity {
                         if loc.voxel(r) == Some(Block::Altar) {
                             if self.is_player(r) {
                                 if self.is_threatened(r) {
-                                    msg!("The altar has no power in the presence of enemies.");
+                                    msg!(
+                                        "The altar has no power in the presence of enemies."
+                                    );
                                 } else {
                                     send_msg(Msg::ActivatedAltar(loc));
                                 }
                             } else if self.is_player_aligned(r) {
-                                msg!("The altar does not respond to your minion.");
+                                msg!(
+                                    "The altar does not respond to your minion."
+                                );
                             }
                         }
                     }

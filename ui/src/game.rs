@@ -1,11 +1,11 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use engine::prelude::*;
-use glam::{ivec3, IVec3};
-use navni::{prelude::*, X256Color as X};
-use util::{s4, s8, Layout, SameThread, StrExt};
-use world::{Level, Zone, DOWN, EAST, NORTH, SOUTH, UP, WEST};
+use glam::{IVec3, ivec3};
+use navni::{X256Color as X, prelude::*};
+use util::{Layout, SameThread, StrExt, s4, s8};
+use world::{DOWN, EAST, Level, NORTH, SOUTH, UP, WEST, Zone};
 
-use crate::{anim, camp_menu::camp, prelude::*, Command, InputMap, SectorView};
+use crate::{Command, InputMap, SectorView, anim, camp_menu::camp, prelude::*};
 
 // Maximum GUI terminal size.
 // Get just about to a size where a whole sector fits on map screen.

@@ -4,18 +4,18 @@ use std::{cell::RefCell, collections::BTreeMap, fmt};
 
 use derive_more::{Deref, DerefMut};
 use hecs::{
-    serialize::row::{self, SerializeContext},
     EntityBuilder, EntityRef,
+    serialize::row::{self, SerializeContext},
 };
 use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
     de::{DeserializeSeed, MapAccess, Visitor},
     ser::SerializeMap,
-    Deserialize, Deserializer, Serialize, Serializer,
 };
 use util::InString;
 use world::{EquippedAt, ItemKind, MonsterFlags, Power};
 
-use crate::{power::PowerState, prelude::*, Buff};
+use crate::{Buff, power::PowerState, prelude::*};
 
 macro_rules! components {
     {

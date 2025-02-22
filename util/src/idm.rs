@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, fmt, fs, path::Path, str::FromStr};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -184,7 +184,7 @@ impl std::ops::AddAssign<&IncrementalOutline> for Outline {
                 if matches!(head, Overwrite(_)) {
                     self.0[i].1 = body.clone().into();
                 } else {
-                    self.0[i].1 .0.extend(Outline::from(body.clone()).0);
+                    self.0[i].1.0.extend(Outline::from(body.clone()).0);
                 }
             } else {
                 self.0.push(((head.clone().into(),), body.clone().into()));
@@ -259,7 +259,7 @@ impl AsRef<str> for IncrementalHeadline {
 /// Functions to serialize an Option value so that "-" denotes `None`.
 pub mod dash_option {
     use serde::{
-        de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer,
+        Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned,
     };
 
     pub fn serialize<S, T>(

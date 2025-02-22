@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{prelude::*, ConfirmationDialog};
+use crate::{ConfirmationDialog, prelude::*};
 use navni::X256Color as X;
 
 pub async fn ask(msg: impl Into<Cow<'_, str>>) -> bool {

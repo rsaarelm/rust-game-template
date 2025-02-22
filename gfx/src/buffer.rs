@@ -3,9 +3,9 @@ use std::{
     sync::{LazyLock, Mutex},
 };
 
-use glam::{ivec2, IVec2};
+use glam::{IVec2, ivec2};
 use navni::{CharCell, Rgba};
-use util::{hash_map::Entry, HashMap};
+use util::{HashMap, hash_map::Entry};
 
 use crate::{Image, Pixel, Rect};
 

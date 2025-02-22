@@ -25,7 +25,7 @@ use std::{cmp::Reverse, collections::BinaryHeap};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use util::{v3, HashMap, HashSet};
+use util::{HashMap, HashSet, v3};
 
 use crate::{Level, World};
 
@@ -237,7 +237,9 @@ impl World {
             .collect::<HashSet<_>>()
             .len();
 
-        log::info!("Constructed waypoint geometry, {total_waypoints} waypoints covering {covered_segments} / {total_segments} segments.");
+        log::info!(
+            "Constructed waypoint geometry, {total_waypoints} waypoints covering {covered_segments} / {total_segments} segments."
+        );
 
         // Print more detailed diagnostics.
         if log::log_enabled!(log::Level::Debug) {

@@ -1,22 +1,22 @@
 use std::sync::Arc;
 
 use derive_more::{Deref, DerefMut};
-use glam::{ivec3, IVec2, IVec3};
+use glam::{IVec2, IVec3, ivec3};
 use memoize::memoize;
 use rand::{
+    Rng, RngCore,
     distr::Distribution,
     seq::{IndexedRandom, SliceRandom},
-    Rng, RngCore,
 };
 use util::{
-    a3, v3, Cloud, HashMap, HashSet, IndexMap, IndexSet, Neighbors2D, Silo,
-    _String,
+    _String, Cloud, HashMap, HashSet, IndexMap, IndexSet, Neighbors2D, Silo,
+    a3, v3,
 };
 
 use crate::{
-    data::GenericSector, world, Block, Coordinates, Cube, Data, Environs, Item,
-    Level, Location, Monster, Pod, PodObject, SectorMap, SpawnDist, Voxel,
-    Zone, SECTOR_HEIGHT, SECTOR_WIDTH,
+    Block, Coordinates, Cube, Data, Environs, Item, Level, Location, Monster,
+    Pod, PodObject, SECTOR_HEIGHT, SECTOR_WIDTH, SectorMap, SpawnDist, Voxel,
+    Zone, data::GenericSector, world,
 };
 
 pub trait MapGenerator {
@@ -139,13 +139,17 @@ impl Lot {
         if let Some(up) = up {
             let expected = snap_stairwell_position(up);
             if up != expected {
-                log::warn!("Bad upstairs spot in Lot: {up}, closest match is {expected}");
+                log::warn!(
+                    "Bad upstairs spot in Lot: {up}, closest match is {expected}"
+                );
             }
         }
         if let Some(down) = down {
             let expected = snap_stairwell_position(down);
             if down != expected {
-                log::warn!("Bad downstairs spot in Lot: {down}, closest match is {expected}");
+                log::warn!(
+                    "Bad downstairs spot in Lot: {down}, closest match is {expected}"
+                );
             }
         }
 

@@ -1,19 +1,19 @@
 use std::collections::hash_map::Entry;
 
-use anyhow::{bail, Context};
-use glam::{ivec2, ivec3, IVec2, IVec3};
+use anyhow::{Context, bail};
+use glam::{IVec2, IVec3, ivec2, ivec3};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize, Serializer};
 use static_assertions::const_assert;
 use util::{
-    a3, v2, v3, HashMap, HashSet, IndexMap, Neighbors2D, Silo, AXIS_DIRS,
+    AXIS_DIRS, HashMap, HashSet, IndexMap, Neighbors2D, Silo, a3, v2, v3,
 };
 
 use crate::{
-    data::Region, waypoints::WaypointPair, Block, Coordinates, Cube, Environs,
-    Location, Lot, MapGenerator, Patch, Pod, Rect, Reference, Scenario,
-    Terrain, Voxel, Zone, DOWN, LEVEL_BASIS, LEVEL_DEPTH, NORTH, SECTOR_HEIGHT,
-    SECTOR_WIDTH, UP, WEST,
+    Block, Coordinates, Cube, DOWN, Environs, LEVEL_BASIS, LEVEL_DEPTH,
+    Location, Lot, MapGenerator, NORTH, Patch, Pod, Rect, Reference,
+    SECTOR_HEIGHT, SECTOR_WIDTH, Scenario, Terrain, UP, Voxel, WEST, Zone,
+    data::Region, waypoints::WaypointPair,
 };
 
 /// Non-cached world data that goes in a save file.
@@ -297,7 +297,10 @@ fn build_skeleton(
                     let loc = Location::from(s.min()) + pos.extend(-1);
                     let aligned = snap_stairwell_position(loc);
                     if loc != aligned {
-                        bail!("Upstairs at {:?} misaligned at {loc}, closest matching is {aligned}", p + DOWN);
+                        bail!(
+                            "Upstairs at {:?} misaligned at {loc}, closest matching is {aligned}",
+                            p + DOWN
+                        );
                     }
                     Some(loc)
                 } else {
@@ -320,7 +323,9 @@ fn build_skeleton(
                         if start_pos.is_none() {
                             start_pos = Some(origin + p.extend(0));
                         } else {
-                            bail!("Scenario defines more than one start location.");
+                            bail!(
+                                "Scenario defines more than one start location."
+                            );
                         }
                     }
                     Segment {

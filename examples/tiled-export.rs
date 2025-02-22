@@ -5,11 +5,11 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use glam::{ivec2, ivec3, IVec3};
+use glam::{IVec3, ivec2, ivec3};
 use serde::{Deserialize, Serialize};
 
 use util::{HashMap, HashSet, StrExt};
-use world::{Rect, Region, Scenario, SectorMap, SECTOR_HEIGHT, SECTOR_WIDTH};
+use world::{Rect, Region, SECTOR_HEIGHT, SECTOR_WIDTH, Scenario, SectorMap};
 
 // NB. This thing is sort of weird and janky, the actual spatial positions of
 // prefab maps aren't stable with the presence of procgen segments and

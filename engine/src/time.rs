@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Runtime, PHASES_IN_TURN};
+use crate::{PHASES_IN_TURN, Runtime};
 
 /// An opaque representation of a time instant.
 ///

@@ -2,13 +2,13 @@
 
 use rand::seq::IndexedRandom;
 use strum::IntoEnumIterator;
-use util::{s4, RngExt};
+use util::{RngExt, s4};
 use world::{EquippedAt, ItemKind};
 
 use crate::{
+    THROW_RANGE,
     ecs::{Cash, Count, IsEphemeral, ItemPower},
     prelude::*,
-    THROW_RANGE,
 };
 
 impl Entity {

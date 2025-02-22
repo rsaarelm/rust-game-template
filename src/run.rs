@@ -4,10 +4,10 @@ use engine::prelude::*;
 use navni::X256Color as X;
 use ui::{ask, prelude::*};
 use util::{wizard_mode, writeln};
-use world::{settings, DOWN, EAST, NORTH, SOUTH, UP, WEST};
+use world::{DOWN, EAST, NORTH, SOUTH, UP, WEST, settings};
 
 use crate::{
-    map_view::{view_map, MapAction::*},
+    map_view::{MapAction::*, view_map},
     view,
 };
 

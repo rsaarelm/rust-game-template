@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use util::{GameRng, Silo};
 use world::{Data, Environs, Level, Pod, Voxel, World, Zone};
 
-use crate::{ecs::*, placement::Place, prelude::*, EntitySpec, Fov, Placement};
+use crate::{EntitySpec, Fov, Placement, ecs::*, placement::Place, prelude::*};
 
 /// Main data container for game engine runtime.
 #[derive(Serialize, Deserialize)]

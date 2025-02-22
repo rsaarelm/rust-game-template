@@ -16,9 +16,9 @@ pub use distribution::{PlottedDistribution, RangeDistribution};
 
 mod geom;
 pub use geom::{
-    a3, bresenham_line, reverse_dir_mask_4, s4, s8, s_hex, v2, v3,
-    wallform_mask, Neighbors2D, Neighbors3D, PlottedPoint, PolyLineIter, Sdf,
-    VecExt, AXIS_DIRS,
+    AXIS_DIRS, Neighbors2D, Neighbors3D, PlottedPoint, PolyLineIter, Sdf,
+    VecExt, a3, bresenham_line, reverse_dir_mask_4, s_hex, s4, s8, v2, v3,
+    wallform_mask,
 };
 
 mod grammar;
@@ -28,7 +28,7 @@ mod grid;
 pub use grid::Grid;
 
 mod idm;
-pub use idm::{_String, dash_option, dir_to_idm, IncrementalOutline, Outline};
+pub use idm::{_String, IncrementalOutline, Outline, dash_option, dir_to_idm};
 
 mod interned_string;
 pub use interned_string::InString;
@@ -45,7 +45,7 @@ mod path;
 pub use path::{bfs, dijkstra_search};
 
 mod rng;
-pub use rng::{srng, Odds, RngExt};
+pub use rng::{Odds, RngExt, srng};
 
 mod silo;
 pub use silo::Silo;
@@ -57,7 +57,7 @@ mod sync;
 pub use sync::SameThread;
 
 mod sys;
-pub use sys::{can_quit_program, panic_handler, user_name, KeyboardLayout};
+pub use sys::{KeyboardLayout, can_quit_program, panic_handler, user_name};
 
 mod unchecked_write;
 

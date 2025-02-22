@@ -4,8 +4,8 @@ pub mod prelude {
     use navni::prelude::*;
 
     pub use crate::{
-        anim::Anim, cell, game, input_press, Backdrop, Cursor, Game,
-        InputAction, Widget, Window,
+        Backdrop, Cursor, Game, InputAction, Widget, Window, anim::Anim, cell,
+        game, input_press,
     };
 
     pub type Buffer = gfx::Buffer<CharCell>;
@@ -30,13 +30,13 @@ mod dialog;
 pub use dialog::ask;
 
 mod game;
-pub use game::{game, init_game, Game};
+pub use game::{Game, game, init_game};
 
 mod input;
-pub use input::{input_press, InputAction, InputMap};
+pub use input::{InputAction, InputMap, input_press};
 
 mod tile_display;
-pub use tile_display::{render_fog, DisplayTile, SectorView};
+pub use tile_display::{DisplayTile, SectorView, render_fog};
 
 mod widget;
 pub use widget::{Centered, ConfirmationDialog, Widget};

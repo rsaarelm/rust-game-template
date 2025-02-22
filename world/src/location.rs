@@ -4,10 +4,10 @@ use std::{
 };
 
 use anyhow::bail;
-use glam::{ivec3, IVec2, IVec3};
-use util::{a3, s4, wallform_mask, Cloud, Neighbors2D};
+use glam::{IVec2, IVec3, ivec3};
+use util::{Cloud, Neighbors2D, a3, s4, wallform_mask};
 
-use crate::{Block, Cube, Tile, Voxel, Zone, SECTOR_HEIGHT, SECTOR_WIDTH};
+use crate::{Block, Cube, SECTOR_HEIGHT, SECTOR_WIDTH, Tile, Voxel, Zone};
 
 pub type Location = IVec3;
 
@@ -354,11 +354,7 @@ impl Coordinates for Location {
 
             // Ignore cliff bits that aren't connected to any other cliff.
             // They seem to mostly end up being display noise.
-            if mask != 0 {
-                Some(mask)
-            } else {
-                None
-            }
+            if mask != 0 { Some(mask) } else { None }
         } else {
             None
         }

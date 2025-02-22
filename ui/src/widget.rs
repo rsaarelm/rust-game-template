@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use glam::{ivec2, IVec2};
+use glam::{IVec2, ivec2};
 use navni::prelude::*;
 use util::StrExt;
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::Parser;
 
 use util::{GameRng, IncrementalOutline, Outline, Silo};
-use world::{mapgen, Block, Lot, Patch, SectorMap, Zone};
+use world::{Block, Lot, Patch, SectorMap, Zone, mapgen};
 
 #[derive(Parser, Debug)]
 #[command(about = "Test map generators")]

@@ -1,8 +1,8 @@
 use glam::ivec3;
-use util::{s4, s8, Neighbors2D};
+use util::{Neighbors2D, s4, s8};
 use world::{Block, Environs, Tile};
 
-use crate::{prelude::*, Grammatize};
+use crate::{Grammatize, prelude::*};
 
 pub trait RuntimeCoordinates: Coordinates {
     /// Tile setter that doesn't cover functional terrain.

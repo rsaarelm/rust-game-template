@@ -1,7 +1,7 @@
 use pathfinding::prelude::*;
 use rand::seq::SliceRandom;
-use util::{bfs, s4, v3, Neighbors2D, Sdf};
-use world::{Cube, Zone, LEVEL_BASIS};
+use util::{Neighbors2D, Sdf, bfs, s4, v3};
+use world::{Cube, LEVEL_BASIS, Zone};
 
 use crate::{placement::Place, prelude::*};
 

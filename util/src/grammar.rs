@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{CharExt, StrExt};
@@ -236,11 +236,7 @@ mod test {
             .lines()
             .filter_map(|s| {
                 let s = s.trim();
-                if s.is_empty() {
-                    None
-                } else {
-                    Some(s)
-                }
+                if s.is_empty() { None } else { Some(s) }
             })
             .collect::<Vec<&str>>()
             .chunks(3)
@@ -253,11 +249,7 @@ mod test {
             .lines()
             .filter_map(|s| {
                 let s = s.trim();
-                if s.is_empty() {
-                    None
-                } else {
-                    Some(s)
-                }
+                if s.is_empty() { None } else { Some(s) }
             })
             .collect::<Vec<&str>>()
             .chunks(4)

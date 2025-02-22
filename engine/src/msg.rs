@@ -1,8 +1,8 @@
 //! Emitting messages about instant events to the UI layer
 
 use std::sync::{
-    mpsc::{self, Sender},
     LazyLock, Mutex,
+    mpsc::{self, Sender},
 };
 
 use anyhow::bail;

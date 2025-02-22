@@ -6,13 +6,13 @@ pub use block::{Block, Terrain, Tile, Voxel};
 
 mod data;
 pub use data::{
-    register_data, register_data_from, settings, Data, EquippedAt, Item,
-    ItemKind, Monster, MonsterFlags, Pod, PodKind, PodObject, Power, Region,
-    Scenario, Settings, SpawnDist,
+    Data, EquippedAt, Item, ItemKind, Monster, MonsterFlags, Pod, PodKind,
+    PodObject, Power, Region, Scenario, Settings, SpawnDist, register_data,
+    register_data_from, settings,
 };
 
 mod location;
-use glam::{ivec3, IVec3};
+use glam::{IVec3, ivec3};
 pub use location::{Coordinates, Environs, Location};
 
 pub mod mapgen;

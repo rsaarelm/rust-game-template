@@ -1,13 +1,13 @@
 //! Special powers entities can use
 
 use serde::{Deserialize, Serialize};
-use util::{v2, Neighbors2D};
+use util::{Neighbors2D, v2};
 use world::{Pod, PodObject, Power, Rect, Zone};
 
 use crate::{
+    FOV_RADIUS,
     ecs::{self, Powers, Wounds},
     prelude::*,
-    FOV_RADIUS,
 };
 
 impl Runtime {

@@ -1,9 +1,9 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
 use derive_more::Deref;
-use glam::{ivec2, IVec2, IVec3};
+use glam::{IVec2, IVec3, ivec2};
 use serde::{Deserialize, Serialize};
-use util::{v2, HashMap, HashSet};
+use util::{HashMap, HashSet, v2};
 
 use crate::{Coordinates, Location, Rect};
 

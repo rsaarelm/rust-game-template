@@ -1,8 +1,8 @@
 use engine::prelude::*;
-use glam::{ivec3, IVec3};
-use navni::{prelude::*, X256Color as X};
-use ui::{prelude::*, render_fog, DisplayTile, SectorView};
-use util::{v2, PolyLineIter};
+use glam::{IVec3, ivec3};
+use navni::{X256Color as X, prelude::*};
+use ui::{DisplayTile, SectorView, prelude::*, render_fog};
+use util::{PolyLineIter, v2};
 use world::{Level, Zone};
 
 #[derive(Clone, Debug)]

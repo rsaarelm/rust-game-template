@@ -1,7 +1,7 @@
 use gfx::{Buffer, Field, Image, Rect};
-use glam::{ivec2, IVec2};
-use navni::{prelude::*, X256Color as X};
-use util::{v2, Neighbors2D};
+use glam::{IVec2, ivec2};
+use navni::{X256Color as X, prelude::*};
+use util::{Neighbors2D, v2};
 
 use crate::{game, tile_display::SINGLE_LINE};
 

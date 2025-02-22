@@ -1,9 +1,9 @@
-use crate::{prelude::*, SectorView};
+use crate::{SectorView, prelude::*};
 use engine::prelude::*;
 use glam::Vec2;
-use navni::{prelude::*, X256Color as X};
+use navni::{X256Color as X, prelude::*};
 use rand::Rng;
-use util::{v2, PlottedPoint};
+use util::{PlottedPoint, v2};
 
 pub trait Anim {
     fn render(
