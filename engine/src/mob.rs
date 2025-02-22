@@ -250,7 +250,7 @@ impl Entity {
     pub fn has_buff(&self, r: &impl AsRef<Runtime>, buff: Buff) -> bool {
         let r = r.as_ref();
         self.with::<Buffs, _>(r, |b| {
-            b.get(&buff).map_or(false, |&e| e >= r.now())
+            b.get(&buff).is_some_and(|&e| e >= r.now())
         })
     }
 

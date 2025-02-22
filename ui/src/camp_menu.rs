@@ -24,9 +24,7 @@ async fn render(win: &Window) -> Option<CampAction> {
     let mut cur = Cursor::new(win);
 
     let key = navni::keypress();
-    let Some(player) = game().r.player() else {
-        return None;
-    };
+    let player = game().r.player()?;
 
     // Dim out the level-up when you don't have enough cash
     if !player.can_afford_level_up(game()) {

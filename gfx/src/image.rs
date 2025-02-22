@@ -14,7 +14,7 @@ pub trait Field<P> {
     fn get(&self, pos: [i32; 2]) -> P;
 }
 
-impl<'a, P: Pixel> Field<P> for &'a Buffer<P> {
+impl<P: Pixel> Field<P> for &'_ Buffer<P> {
     fn get(&self, pos: [i32; 2]) -> P {
         let area = self.area();
 

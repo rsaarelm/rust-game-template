@@ -56,7 +56,7 @@ impl Runtime {
                     && loc2.is_explored(self)
                     && loc2
                         .item_at(self)
-                        .map_or(false, |i| i.is_autopickup_item(self))
+                        .is_some_and(|i| i.is_autopickup_item(self))
                 {
                     return true;
                 }

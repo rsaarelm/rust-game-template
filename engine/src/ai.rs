@@ -157,7 +157,7 @@ impl Entity {
             .find(|(_, loc)| path_dest.sd(*loc) <= 0)
         {
             // There's an enemy, fight it.
-            if dest.mob_at(r).map_or(false, |e| e.is_enemy(r, self)) {
+            if dest.mob_at(r).is_some_and(|e| e.is_enemy(r, self)) {
                 return Some(Action::Bump(dir));
             }
 

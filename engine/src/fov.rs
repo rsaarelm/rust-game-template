@@ -1,7 +1,6 @@
 //! Logic for revealing unexplored game terrain
 
 use derive_more::{Deref, DerefMut};
-use glam::IVec3;
 use serde::{Deserialize, Serialize};
 use world::BitAtlas;
 
@@ -27,7 +26,7 @@ impl TryFrom<BitAtlas> for Fov {
 
 impl From<Fov> for BitAtlas {
     fn from(fov: Fov) -> Self {
-        Self::from_iter(fov.0.into_iter().map(IVec3::from))
+        Self::from_iter(fov.0)
     }
 }
 
@@ -44,13 +43,13 @@ impl Runtime {
             radius: i32,
         }
 
-        impl<'a> PartialEq for FovState<'a> {
+        impl PartialEq for FovState<'_> {
             fn eq(&self, other: &Self) -> bool {
                 self.origin == other.origin && self.radius == other.radius
             }
         }
 
-        impl<'a> Eq for FovState<'a> {}
+        impl Eq for FovState<'_> {}
 
         impl<'a> FovState<'a> {
             pub fn new(
@@ -62,7 +61,7 @@ impl Runtime {
             }
         }
 
-        impl<'a> fov::State for FovState<'a> {
+        impl fov::State for FovState<'_> {
             type Vector = glam::IVec2;
 
             fn advance(&self, offset: Self::Vector) -> Option<Self> {

@@ -50,7 +50,7 @@ impl Entity {
     }
 
     pub fn use_needs_aim(&self, r: &impl AsRef<Runtime>) -> bool {
-        self.get::<ItemPower>(r).0.map_or(false, |p| p.needs_aim())
+        self.get::<ItemPower>(r).0.is_some_and(|p| p.needs_aim())
     }
 
     pub fn can_be_used(&self, r: &impl AsRef<Runtime>) -> bool {

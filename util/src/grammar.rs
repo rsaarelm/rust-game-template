@@ -63,7 +63,7 @@ impl Noun {
             // TODO: Add look-up table of irregular words ('honor', 'unit') as they show up in game
             // text.
             let article =
-                if self.name().chars().next().map_or(false, |c| c.is_vowel()) {
+                if self.name().chars().next().is_some_and(|c| c.is_vowel()) {
                     "an"
                 } else {
                     "a"

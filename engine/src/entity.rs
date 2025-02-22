@@ -247,7 +247,7 @@ impl Entity {
             self.base_desc(r)
         };
 
-        let is_proper = name.chars().next().map_or(false, |c| c.is_uppercase());
+        let is_proper = name.chars().next().is_some_and(|c| c.is_uppercase());
 
         if !nickname.is_empty() {
             if is_proper {

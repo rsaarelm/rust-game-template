@@ -131,9 +131,11 @@ impl Game {
 
         // If player doesn't exist, player is not acting this frame or player
         // is executing a goal, run in real time.
-        if self.r.player().map_or(true, |p| {
-            !p.acts_this_frame(self) || p.goal(self).is_some()
-        }) {
+        if self
+            .r
+            .player()
+            .is_none_or(|p| !p.acts_this_frame(self) || p.goal(self).is_some())
+        {
             self.r.tick();
         }
 

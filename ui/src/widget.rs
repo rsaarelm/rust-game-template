@@ -61,7 +61,7 @@ impl<'a> ConfirmationDialog<'a> {
     }
 }
 
-impl<'a> Widget for ConfirmationDialog<'a> {
+impl Widget for ConfirmationDialog<'_> {
     type Output = bool;
 
     fn render(&self, win: &Window) -> Option<Self::Output> {

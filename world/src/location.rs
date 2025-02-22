@@ -55,12 +55,12 @@ pub trait Coordinates:
 
     /// Neighboring floors you can step on, with walking up and down slopes
     /// included in the step.
-    fn walk_neighbors<'a>(
+    fn walk_neighbors(
         self,
         r: &impl Environs,
     ) -> impl Iterator<Item = (IVec2, Self)> + '_;
 
-    fn hover_neighbors<'a>(
+    fn hover_neighbors(
         self,
         r: &impl Environs,
     ) -> impl Iterator<Item = (IVec2, Self)> + '_;
@@ -78,7 +78,7 @@ pub trait Coordinates:
     /// Location is traversable space immediately above a support block.
     fn can_be_stood_in(&self, r: &impl Environs) -> bool {
         matches!(self.voxel(r), None | Some(Block::Door))
-            && self.below().voxel(r).map_or(false, |b| b.is_support())
+            && self.below().voxel(r).is_some_and(|b| b.is_support())
     }
 
     /// Return the pseudo-2D tile for terrain at given location.
@@ -109,8 +109,7 @@ pub trait Coordinates:
             .iter()
             .enumerate()
             .map(|(i, &d)| {
-                if self.walk_step(r, d).map_or(false, |loc| loc.z() > self.z())
-                {
+                if self.walk_step(r, d).is_some_and(|loc| loc.z() > self.z()) {
                     1 << i
                 } else {
                     0
@@ -125,8 +124,7 @@ pub trait Coordinates:
             .iter()
             .enumerate()
             .map(|(i, &d)| {
-                if self.walk_step(r, d).map_or(false, |loc| loc.z() < self.z())
-                {
+                if self.walk_step(r, d).is_some_and(|loc| loc.z() < self.z()) {
                     1 << i
                 } else {
                     0
@@ -266,7 +264,7 @@ impl Coordinates for Location {
         )
     }
 
-    fn walk_neighbors<'a>(
+    fn walk_neighbors(
         self,
         r: &impl Environs,
     ) -> impl Iterator<Item = (IVec2, Self)> + '_ {
@@ -276,7 +274,7 @@ impl Coordinates for Location {
         })
     }
 
-    fn hover_neighbors<'a>(
+    fn hover_neighbors(
         self,
         r: &impl Environs,
     ) -> impl Iterator<Item = (IVec2, Self)> + '_ {

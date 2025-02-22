@@ -86,8 +86,7 @@ impl World {
             // need to cover them all.
             if n.item() == &b {
                 finishing_distance = n.total_cost();
-                for ((a, _), (b, _)) in n.into_iter().zip(n.into_iter().skip(1))
-                {
+                for ((a, _), (b, _)) in n.iter().zip(n.iter().skip(1)) {
                     ret.insert(WaypointPair::new(a, b));
                 }
             }

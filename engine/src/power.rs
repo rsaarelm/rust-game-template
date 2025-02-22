@@ -142,7 +142,7 @@ impl Runtime {
         // Target enemies of caster, or any mob if there is no caster.
         let Some(target) = targets
             .into_iter()
-            .find(|e| perp.map_or(true, |perp| e.is_enemy(self, &perp)))
+            .find(|e| perp.is_none_or(|perp| e.is_enemy(self, &perp)))
         else {
             msg!("You hear distant thunder.");
             return;

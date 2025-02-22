@@ -88,7 +88,7 @@ impl<T, N> PathNode<T, N> {
         self.0.2.clone()
     }
 
-    pub fn into_iter(&self) -> impl Iterator<Item = (T, N)> + '_
+    pub fn iter(&self) -> impl Iterator<Item = (T, N)> + '_
     where
         T: Clone,
         N: Copy + Default + Sub<Output = N>,
