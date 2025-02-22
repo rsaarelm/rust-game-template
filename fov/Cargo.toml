@@ -3,7 +3,7 @@ name = "fov"
 version = "0.1.0"
 license = "MIT/Apache-2.0"
 authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
-edition = "2021"
+edition = "2024"
 description = "Generic recursive shadowcasting field-of-view algorithm"
 keywords = ["gamedev", "field-of-view"]
 
