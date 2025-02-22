@@ -158,7 +158,6 @@
             hotspot
 
             # Utils
-            grafx2
             just
             optipng
             snzip

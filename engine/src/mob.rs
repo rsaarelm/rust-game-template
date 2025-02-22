@@ -382,7 +382,7 @@ impl Entity {
                     let avg = 20 + level * 5;
 
                     let amount =
-                        r.rng().gen_range(avg - avg / 2..=avg + avg / 2);
+                        r.rng().random_range(avg - avg / 2..=avg + avg / 2);
 
                     let pile = r.spawn_cash_at(amount, loc);
                     pile.set(r, IsEphemeral(true));

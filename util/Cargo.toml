@@ -8,17 +8,17 @@ description = "Miscellaneous low-level utilities"
 [dependencies]
 anyhow = "1"
 bitflags = "2"
-derive_more = { version = "1", features = ["deref"] }
-glam = { version = "0.29", features = ["serde"] }
+derive_more = { version = "2", features = ["deref"] }
+glam = { version = "0.30", features = ["serde"] }
 idm = "0.4"
 indexmap = { version = "2", features = ["serde"] }
 itertools = "0.14"
-memoize = "0.4"
-nom = "7"
+memoize = "0.5"
+nom = "8"
 num-traits = "0.2"
 pathfinding = "4"
-rand = "0.8"
-rand_xorshift = { version = "0.3", features = ["serde1"] }
+rand = "0.9"
+rand_xorshift = { version = "0.4", features = ["serde"] }
 regex = "1"
 rustc-hash = "2"
 serde = { version = "1", features = ["derive"] }

@@ -319,14 +319,14 @@ fn floor_cell(rng: &mut impl Rng, block: Block, is_center: bool) -> CharCell {
     match block {
         Grass if is_center => {
             const GRASS_SPARSENESS: usize = 3;
-            if rng.gen_range(0..GRASS_SPARSENESS) == 0 {
+            if rng.random_range(0..GRASS_SPARSENESS) == 0 {
                 CharCell::c(',').col(X::GREEN)
             } else {
                 CharCell::c(' ')
             }
         }
         Stone | Glass | Altar | Door | Grass | Rubble => CharCell::c(' '),
-        SplatteredStone => CharCell::c(match rng.gen_range(0..=10) {
+        SplatteredStone => CharCell::c(match rng.random_range(0..=10) {
             d if d < 4 => ',',
             d if d < 7 => '\'',
             8 => ';',

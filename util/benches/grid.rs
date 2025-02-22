@@ -99,10 +99,10 @@ impl<const N: usize> Space<AxisBox<i32, N>> for Grid<i32, N, AxisBox<i32, N>> {
 
 fn fill(rng: &mut impl Rng, s: &mut impl Space<AxisBox<i32, 2>>) {
     for _ in 0..1000 {
-        let x = rng.gen_range(0..1024);
-        let y = rng.gen_range(0..1024);
-        let w = rng.gen_range(1..12);
-        let h = rng.gen_range(1..12);
+        let x = rng.random_range(0..1024);
+        let y = rng.random_range(0..1024);
+        let w = rng.random_range(1..12);
+        let h = rng.random_range(1..12);
 
         s.insert(AxisBox::new([x, y], [x + w, y + h]));
     }
@@ -133,8 +133,10 @@ fn perturb(s: &mut impl Space<AxisBox<i32, 2>>) {
             .iter()
             .map(|(i, b)| {
                 let [x, y] = b.min();
-                let [x, y] =
-                    [x + rng.gen_range(-8..=8), y + rng.gen_range(-8..=8)];
+                let [x, y] = [
+                    x + rng.random_range(-8..=8),
+                    y + rng.random_range(-8..=8),
+                ];
                 let [sx, sy] = b.dim();
                 (i, AxisBox::new([x, y], [x + sx, y + sy]))
             })

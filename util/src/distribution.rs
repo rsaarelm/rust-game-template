@@ -6,8 +6,8 @@ use nom::{
     character::complete::digit1,
     combinator::{all_consuming, map_res, opt, recognize},
     error::Error,
-    sequence::{pair, preceded, tuple},
-    Finish, IResult,
+    sequence::{pair, preceded},
+    Finish, IResult, Parser,
 };
 use rand::Rng;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -23,7 +23,7 @@ pub trait PlottedDistribution {
     fn plot(&self, x: f32) -> Self::Item;
 
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::Item {
-        self.plot(rng.gen::<f32>())
+        self.plot(rng.random::<f32>())
     }
 }
 
@@ -100,7 +100,8 @@ impl std::str::FromStr for RangeDistribution {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         fn number(s: &str) -> IResult<&str, i32> {
-            map_res(recognize(preceded(opt(tag("-")), digit1)), str::parse)(s)
+            map_res(recognize(preceded(opt(tag("-")), digit1)), str::parse)
+                .parse(s)
         }
 
         let pair = |s| {
@@ -115,17 +116,18 @@ impl std::str::FromStr for RangeDistribution {
                     step,
                     max,
                 })
-            })(s)
+            })
+            .parse(s)
         };
 
         let range =
             |s| {
                 map_res(
-                    tuple((
+                    (
                         number,
                         opt(preceded(tag(","), number)),
                         preceded(tag(".."), number),
-                    )),
+                    ),
                     |(min, next, max)| {
                         let next = next.unwrap_or(min + 1);
                         if next <= min {
@@ -136,10 +138,12 @@ impl std::str::FromStr for RangeDistribution {
                             RangeDistribution { min, step, max },
                         )
                     },
-                )(s)
+                )
+                .parse(s)
             };
 
-        Ok(all_consuming(alt((range, pair)))(s)
+        Ok(all_consuming(alt((range, pair)))
+            .parse(s)
             .finish()
             .map_err(|e: Error<&str>| Error::new(e.input.to_string(), e.code))?
             .1)

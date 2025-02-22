@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use rand::{distributions::Standard, prelude::*};
+use rand::{distr::StandardUniform, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::GameRng;
@@ -43,15 +43,15 @@ impl Odds {
     }
 }
 
-impl Distribution<Odds> for Standard {
+impl Distribution<Odds> for StandardUniform {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Odds {
-        Odds::from_prob(rng.gen())
+        Odds::from_prob(rng.random())
     }
 }
 
 impl Distribution<bool> for Odds {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> bool {
-        rng.gen_range(0.0..1.0) < self.prob()
+        rng.random_range(0.0..1.0) < self.prob()
     }
 }
 
@@ -86,6 +86,6 @@ impl<T: Rng + ?Sized> RngExt for T {
         if n == 0 {
             return false;
         }
-        self.gen_range(0..n) == 0
+        self.random_range(0..n) == 0
     }
 }

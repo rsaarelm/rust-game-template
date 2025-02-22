@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use glam::{ivec2, ivec3, IVec2};
-use rand::distributions::{Distribution, Standard};
+use rand::distr::{Distribution, StandardUniform};
 use serde::{Deserialize, Serialize};
 use util::{Cloud, HashMap, IndexMap, LazyRes, Neighbors2D, StrExt};
 
@@ -209,14 +209,14 @@ impl SectorMap {
     }
 }
 
-impl Distribution<SectorMap> for Standard {
+impl Distribution<SectorMap> for StandardUniform {
     fn sample<R: rand::prelude::Rng + ?Sized>(&self, rng: &mut R) -> SectorMap {
         // Generate regular empty rectangular rooms.
 
         // Dimensions must be odd.
         const MAX_HALF_DIM: i32 = 6;
-        let w = 2 * rng.gen_range(2..MAX_HALF_DIM) + 1;
-        let h = 2 * rng.gen_range(2..MAX_HALF_DIM) + 1;
+        let w = 2 * rng.random_range(2..MAX_HALF_DIM) + 1;
+        let h = 2 * rng.random_range(2..MAX_HALF_DIM) + 1;
 
         let mut map = String::new();
         for y in 0..h {

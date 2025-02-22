@@ -34,16 +34,19 @@ clap = { version = "4", features = ["derive"] }
 engine = { path = "engine" }
 fov = { path = "fov" }
 gfx = { path = "gfx" }
-glam = { version = "0.29", features = ["serde"] }
+glam = { version = "0.30", features = ["serde"] }
 idm = "0.4"
 log = "0.4"
 navni = { git = "https://github.com/rsaarelm/navni" }
-rand = "0.8"
+rand = "0.9"
 snap = "1"
 ui = { path = "ui" }
 util = { path = "util" }
 world = { path = "world" }
 
+# TODO: getrandom 0.2 is outdated, but it seems we need to have the feature
+# setter here for WASM while it's being pulled in through dependencies. See
+# about dropping it once all dependencies have getrandom 0.3 or better.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["custom"] }
 

@@ -1,6 +1,6 @@
 //! Entity logic for usable items.
 
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use strum::IntoEnumIterator;
 use util::{s4, RngExt};
 use world::{EquippedAt, ItemKind};

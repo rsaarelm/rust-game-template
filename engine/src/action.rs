@@ -1,6 +1,6 @@
 //! Entities doing things
 
-use rand::{seq::SliceRandom, Rng};
+use rand::{seq::IndexedRandom, Rng};
 use serde::{Deserialize, Serialize};
 use util::{s4, RngExt};
 use world::{Block, EquippedAt, Power};

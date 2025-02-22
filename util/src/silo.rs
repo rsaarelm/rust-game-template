@@ -31,25 +31,25 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 /// use rand::prelude::*;
 ///
 /// assert_ne!(
-///   srng("pass word").gen_range(0..1000),
-///   srng("password").gen_range(0..1000));
+///   srng("pass word").random_range(0..1000),
+///   srng("password").random_range(0..1000));
 ///
 /// assert_eq!(
-///   srng(&Silo::new("pAss Word")).gen_range(0..1000),
-///   srng(&Silo::new("password")).gen_range(0..1000));
+///   srng(&Silo::new("pAss Word")).random_range(0..1000),
+///   srng(&Silo::new("password")).random_range(0..1000));
 ///
 /// // Trailing zeroes are ignored for hashing.
 /// assert_eq!(
-///   srng(&Silo::new("xyzzy")).gen_range(0..1000),
-///   srng(&Silo::new("xyzzy000")).gen_range(0..1000));
+///   srng(&Silo::new("xyzzy")).random_range(0..1000),
+///   srng(&Silo::new("xyzzy000")).random_range(0..1000));
 ///
 /// assert_ne!(
-///   srng(&Silo::new("pAss Word 123")).gen_range(0..1000),
-///   srng(&Silo::new("password")).gen_range(0..1000));
+///   srng(&Silo::new("pAss Word 123")).random_range(0..1000),
+///   srng(&Silo::new("password")).random_range(0..1000));
 ///
 /// assert_eq!(
-///   srng(&Silo::new("!@#'")).gen_range(0..1000),
-///   srng(&Silo::new(" ")).gen_range(0..1000));
+///   srng(&Silo::new("!@#'")).random_range(0..1000),
+///   srng(&Silo::new(" ")).random_range(0..1000));
 /// ```
 #[derive(
     Clone,
@@ -380,18 +380,18 @@ mod test {
         let mut rng = crate::rng::srng(&seed);
         eprintln!(
             "The sequence should be {} {} {} {}",
-            rng.gen_range(0..100),
-            rng.gen_range(0..100),
-            rng.gen_range(0..100),
-            rng.gen_range(0..100)
+            rng.random_range(0..100),
+            rng.random_range(0..100),
+            rng.random_range(0..100),
+            rng.random_range(0..100)
         );
 
         // For real now.
         let mut rng = crate::rng::srng(&seed);
-        assert_eq!(rng.gen_range(0..100), 14);
-        assert_eq!(rng.gen_range(0..100), 58);
-        assert_eq!(rng.gen_range(0..100), 51);
-        assert_eq!(rng.gen_range(0..100), 52);
+        assert_eq!(rng.random_range(0..100), 14);
+        assert_eq!(rng.random_range(0..100), 58);
+        assert_eq!(rng.random_range(0..100), 51);
+        assert_eq!(rng.random_range(0..100), 52);
     }
 
     #[quickcheck]

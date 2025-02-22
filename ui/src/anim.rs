@@ -233,7 +233,7 @@ impl Anim for Lightning {
         for y in (0..=origin.y).rev() {
             let p = ivec2(x, y);
             win.put(p, CharCell::c('|').col(X::AQUA));
-            match util::srng(&(p, self.lifetime / 5)).gen_range(0..7) {
+            match util::srng(&(p, self.lifetime / 5)).random_range(0..7) {
                 0 if x >= origin.x => x -= 1,
                 1 if x <= origin.x => x += 1,
                 _ => {}

@@ -3,7 +3,11 @@ use std::sync::Arc;
 use derive_more::{Deref, DerefMut};
 use glam::{ivec3, IVec2, IVec3};
 use memoize::memoize;
-use rand::{distributions::Distribution, seq::SliceRandom, Rng, RngCore};
+use rand::{
+    distr::Distribution,
+    seq::{IndexedRandom, SliceRandom},
+    Rng, RngCore,
+};
 use util::{
     a3, v3, Cloud, HashMap, HashSet, IndexMap, IndexSet, Neighbors2D, Silo,
     _String,
@@ -405,7 +409,7 @@ pub fn rooms_and_corridors(
     let mut room_fill = (floor.volume() as f32 * roominess) as i32;
     let mut room_failure_budget = 10;
     'rooms: while room_fill > 0 && room_failure_budget > 0 {
-        let room = rng.gen::<SectorMap>();
+        let room = rng.random::<SectorMap>();
 
         // This part is expensive, so do it only once for every room.
         let (border, inside) = room.border_and_inside();

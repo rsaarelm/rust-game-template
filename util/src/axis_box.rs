@@ -6,7 +6,7 @@ use std::{
 };
 
 use num_traits::{AsPrimitive, Euclid, FromPrimitive, One, Zero};
-use rand::{distributions::uniform::SampleUniform, prelude::Distribution};
+use rand::{distr::uniform::SampleUniform, prelude::Distribution};
 use serde::{Deserialize, Serialize};
 
 /// An integer box describes a region over a discrete cellular lattice.
@@ -839,7 +839,7 @@ where
 {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> U {
         U::from(std::array::from_fn(|i| {
-            rng.gen_range(self.p0[i]..self.p1[i])
+            rng.random_range(self.p0[i]..self.p1[i])
         }))
     }
 }

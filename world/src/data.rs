@@ -131,8 +131,8 @@ fn parse_mission_name(s: &str) -> nom::IResult<&str, (&str, u32, usize)> {
         character::complete::{alpha1, digit1},
         combinator::{all_consuming, map_res},
         error::{make_error, ErrorKind},
-        sequence::{terminated, tuple},
-        Err,
+        sequence::terminated,
+        Err, Parser,
     };
 
     fn side_branch(s: &str) -> nom::IResult<&str, usize> {
@@ -145,11 +145,12 @@ fn parse_mission_name(s: &str) -> nom::IResult<&str, (&str, u32, usize)> {
         }
     }
 
-    all_consuming(tuple((
+    all_consuming((
         terminated(alpha1, tag("-")),
         map_res(digit1, str::parse::<u32>),
         side_branch,
-    )))(s)
+    ))
+    .parse(s)
 }
 
 /// Trait used by `Reference`s to load themselves.
